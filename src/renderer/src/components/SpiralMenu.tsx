@@ -53,11 +53,12 @@ interface FanCardProps {
   animDuration: number
   staggerMs: number
   onSelect: () => void
+  onRotateTo: (steps: number) => void
 }
 
 const FanCard = memo(function FanCard({
   tool, angleDeg, index, total, radius, arcCenterX, arcCenterY,
-  isRecommended, isCenter, animDuration, staggerMs, onSelect,
+  isRecommended, isCenter, animDuration, staggerMs, onSelect, onRotateTo,
 }: FanCardProps) {
   const [hovered, setHovered] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -67,9 +68,9 @@ const FanCard = memo(function FanCard({
     return () => clearTimeout(t)
   }, [index, staggerMs])
 
-  const midIndex = (total - 1) / 2
-  const distFromCenter = Math.abs(index - midIndex)
-  const tNorm = midIndex > 0 ? distFromCenter / midIndex : 0
+  const midIndexF = (total - 1) / 2
+  const distFromCenter = Math.abs(index - midIndexF)
+  const tNorm = midIndexF > 0 ? distFromCenter / midIndexF : 0
 
   // 지수 감소: 중앙=1.65, 가장자리≈0.46 — 9장 간격에서 겹치지 않는 비율
   const baseScale = 0.38 + 1.27 * Math.exp(-2.8 * tNorm)
@@ -81,11 +82,17 @@ const FanCard = memo(function FanCard({
   // 중앙 ±1만 콘텐츠 표시
   const showContent = distFromCenter <= 1
 
+  const stepsToCenter = index - Math.floor(total / 2)
+
   const { x, y } = cardPosition(angleDeg, radius, arcCenterX, arcCenterY)
+
+  const handleClick = isCenter
+    ? onSelect
+    : () => onRotateTo(stepsToCenter)
 
   return (
     <div
-      onClick={onSelect}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -96,7 +103,7 @@ const FanCard = memo(function FanCard({
         height: CARD_H,
         transform: `scale(${activeScale})`,
         transformOrigin: 'center center',
-        cursor: 'pointer',
+        cursor: isCenter ? 'pointer' : stepsToCenter < 0 ? 'w-resize' : 'e-resize',
         borderRadius: 10,
         background: isCenter
           ? `linear-gradient(175deg, #2a2318, #1e1a10)`
@@ -380,7 +387,7 @@ export default function SpiralMenu({
     )
   }, [tools, centerIdx, isSearching, filteredTools])
 
-  const rotate = useCallback((dir: 1 | -1) => {
+  const rotate = useCallback((dir: number) => {
     setCenterIdx(i => (i + dir + tools.length) % tools.length)
   }, [tools.length])
 
@@ -469,6 +476,7 @@ export default function SpiralMenu({
           animDuration={animDuration}
           staggerMs={staggerMs}
           onSelect={() => handleSelect(tool.id)}
+          onRotateTo={(steps) => rotate(steps)}
         />
       ))}
 
