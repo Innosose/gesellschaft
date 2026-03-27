@@ -13,6 +13,7 @@ export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.Rea
   const [lang, setLang] = React.useState('kor+eng')
   const [progress, setProgress] = React.useState(0)
   const [running, setRunning] = React.useState(false)
+  const [ocrStatus, setOcrStatus] = React.useState('')
   const [result, setResult] = React.useState('')
   const [error, setError] = React.useState('')
   const [copied, setCopied] = React.useState(false)
@@ -50,6 +51,7 @@ export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.Rea
     try {
       const worker = await createWorker(lang, 1, {
         logger: (m: { status: string; progress: number }) => {
+          setOcrStatus(m.status)
           if (m.status === 'recognizing text') {
             setProgress(Math.round(m.progress * 100))
           }
@@ -62,6 +64,7 @@ export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.Rea
     } catch (e: any) {
       setError(e?.message || 'OCR 처리 중 오류가 발생했습니다.')
     }
+    setOcrStatus('')
     setRunning(false)
   }
 
@@ -84,19 +87,21 @@ export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.Rea
   return (
     <Modal title="이미지 OCR (텍스트 추출)" onClose={onClose} asPanel={asPanel}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, height: '100%' }}>
-        {/* 첫 실행 안내 */}
-        <div
-          style={{
-            padding: '8px 14px',
-            background: 'var(--win-surface-2)',
-            borderRadius: 6,
-            fontSize: 12,
-            color: 'var(--win-text-muted)',
-            border: '1px solid var(--win-border)',
-          }}
-        >
-          ℹ️ 첫 실행 시 언어 데이터를 다운로드합니다 (약 10-30MB). 잠시 기다려주세요.
-        </div>
+        {/* 첫 실행 / 다운로드 안내 */}
+        {running && ocrStatus && ocrStatus !== 'recognizing text' && (
+          <div
+            style={{
+              padding: '8px 14px',
+              background: 'var(--win-surface-2)',
+              borderRadius: 6,
+              fontSize: 12,
+              color: 'var(--win-text-muted)',
+              border: '1px solid var(--win-border)',
+            }}
+          >
+            ⬇️ 언어 데이터 준비 중 (첫 실행 시 10-30MB 다운로드): {ocrStatus}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 14, flex: 1, minHeight: 0 }}>
           {/* 왼쪽: 이미지 */}
@@ -212,15 +217,17 @@ export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.Rea
                   <div
                     style={{
                       height: '100%',
-                      width: `${progress}%`,
+                      width: ocrStatus === 'recognizing text' ? `${progress}%` : '100%',
                       background: 'var(--win-accent)',
                       borderRadius: 3,
                       transition: 'width 0.2s',
+                      animation: ocrStatus !== 'recognizing text' ? 'pulse 1.5s ease-in-out infinite' : 'none',
+                      opacity: ocrStatus !== 'recognizing text' ? 0.6 : 1,
                     }}
                   />
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--win-text-muted)', marginTop: 4 }}>
-                  {progress}% 완료
+                  {ocrStatus === 'recognizing text' ? `${progress}% 완료` : '준비 중...'}
                 </div>
               </div>
             )}

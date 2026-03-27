@@ -176,6 +176,22 @@ const api = {
     captureAndAnalyze: () => ipcRenderer.invoke('screen:captureAndAnalyze'),
   },
 
+  // Snippets
+  snippets: {
+    get: () => ipcRenderer.invoke('snippets:get'),
+    save: (snippet: { id?: string; title?: string; content?: string; tags?: string[] }) =>
+      ipcRenderer.invoke('snippets:save', snippet),
+    delete: (id: string) => ipcRenderer.invoke('snippets:delete', id),
+  },
+
+  // Email Templates
+  emailTemplates: {
+    get: () => ipcRenderer.invoke('emailTemplates:get'),
+    save: (template: { id?: string; name?: string; subject?: string; body?: string }) =>
+      ipcRenderer.invoke('emailTemplates:save', template),
+    delete: (id: string) => ipcRenderer.invoke('emailTemplates:delete', id),
+  },
+
   // AI Assistant
   ai: {
     getConfig: () => ipcRenderer.invoke('ai:getConfig'),

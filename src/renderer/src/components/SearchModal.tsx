@@ -43,7 +43,7 @@ export default function SearchModal({
     includeDirs: initialOptions?.includeDirs ?? true,
     extensions: initialOptions?.extensions?.join(',') || '',
     minSize: initialOptions?.minSize ? String(Math.round(initialOptions.minSize / 1024)) : '',
-    maxSize: initialOptions?.maxSize ? String(Math.round(initialOptions.maxSize / (1024 * 1024))) : '',
+    maxSize: initialOptions?.maxSize ? String(Math.round(initialOptions.maxSize / 1024)) : '',
     caseSensitive: initialOptions?.caseSensitive ?? false,
     regex: initialOptions?.regex ?? false,
     contentSearch: initialOptions?.contentSearch ?? false
@@ -87,7 +87,7 @@ export default function SearchModal({
         ? opts.extensions.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean).map((e) => (e.startsWith('.') ? e : `.${e}`))
         : undefined,
       minSize: opts.minSize ? parseInt(opts.minSize) * 1024 : undefined,
-      maxSize: opts.maxSize ? parseInt(opts.maxSize) * 1024 * 1024 : undefined,
+      maxSize: opts.maxSize ? parseInt(opts.maxSize) * 1024 : undefined,
       caseSensitive: opts.caseSensitive,
       regex: opts.regex,
       contentSearch: opts.contentSearch
@@ -118,7 +118,7 @@ export default function SearchModal({
           ? opts.extensions.split(',').map((e) => e.trim()).filter(Boolean)
           : undefined,
         minSize: opts.minSize ? parseInt(opts.minSize) * 1024 : undefined,
-        maxSize: opts.maxSize ? parseInt(opts.maxSize) * 1024 * 1024 : undefined,
+        maxSize: opts.maxSize ? parseInt(opts.maxSize) * 1024 : undefined,
         caseSensitive: opts.caseSensitive,
         regex: opts.regex,
         contentSearch: opts.contentSearch
@@ -202,7 +202,7 @@ export default function SearchModal({
               <input className="win-input w-32 text-xs" type="number" placeholder="0" value={opts.minSize} onChange={(e) => setOpts({ ...opts, minSize: e.target.value })} />
             </div>
             <div className="flex gap-2 items-center">
-              <label className="w-20" style={{ color: 'var(--win-text-muted)' }}>최대 크기 (MB)</label>
+              <label className="w-20" style={{ color: 'var(--win-text-muted)' }}>최대 크기 (KB)</label>
               <input className="win-input w-32 text-xs" type="number" placeholder="∞" value={opts.maxSize} onChange={(e) => setOpts({ ...opts, maxSize: e.target.value })} />
             </div>
           </div>

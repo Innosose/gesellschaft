@@ -35,7 +35,7 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
   const [lastTool, setLastTool] = useState('')
 
   const apply = (tool: Tool): void => {
-    setOutput(tool.fn(input || output))
+    setOutput(tool.fn(output || input))
     setLastTool(tool.label)
     setCopied(false)
   }

@@ -316,7 +316,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     type="password"
                     value={draft.apiKeyRaw ?? ''}
                     onChange={e => setDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
-                    placeholder={config.apiKey ? `현재: ${config.apiKey}` : '키 입력...'}
+                    placeholder={config.apiKey ? `현재: ••••${config.apiKey.slice(-4)}` : '키 입력...'}
                     style={{ width: '100%', height: 30, fontSize: 12, background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '0 8px', boxSizing: 'border-box' }}
                   />
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>
@@ -607,7 +607,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     type="password"
                     value={draft.apiKeyRaw ?? ''}
                     onChange={e => setDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
-                    placeholder={config.apiKey ? `현재: ${config.apiKey}` : '키 입력...'}
+                    placeholder={config.apiKey ? `현재: ••••${config.apiKey.slice(-4)}` : '키 입력...'}
                     style={{ width: '100%', height: 30, fontSize: 12 }}
                   />
                   <div style={{ fontSize: 10, color: 'var(--win-text-muted)', marginTop: 3 }}>

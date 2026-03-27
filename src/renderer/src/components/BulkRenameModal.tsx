@@ -45,6 +45,7 @@ export default function BulkRenameModal({
 
   const [applying, setApplying] = useState(false)
   const [results, setResults] = useState<{ success: number; failed: number } | null>(null)
+  const [regexError, setRegexError] = useState('')
 
   const loadFiles = async (): Promise<void> => {
     setLoading(true)
@@ -63,6 +64,17 @@ export default function BulkRenameModal({
 
   // 미리보기 계산
   useEffect(() => {
+    if (mode === 'replace' && useRegex && findText) {
+      try {
+        new RegExp(findText)
+        setRegexError('')
+      } catch (e: unknown) {
+        setRegexError(e instanceof Error ? e.message : '잘못된 정규식')
+        return
+      }
+    } else {
+      setRegexError('')
+    }
     setFiles((prev) =>
       prev.map((f, i) => {
         const newName = computeNewName(f.name, i)
@@ -181,6 +193,11 @@ export default function BulkRenameModal({
                     <input type="checkbox" checked={useRegex} onChange={(e) => setUseRegex(e.target.checked)} className="accent-[#0078d4]" />
                     정규식 사용
                   </label>
+                  {regexError && (
+                    <div className="text-xs px-2 py-1 rounded" style={{ background: '#c42b1c20', color: '#c42b1c', border: '1px solid #c42b1c40' }}>
+                      ⚠️ 잘못된 정규식: {regexError}
+                    </div>
+                  )}
                 </>
               )}
               {(mode === 'prefix' || mode === 'suffix') && (
