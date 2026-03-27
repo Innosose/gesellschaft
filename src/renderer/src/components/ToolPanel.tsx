@@ -23,6 +23,9 @@ import QrCodeModal from './QrCodeModal'
 import ColorPickerModal from './ColorPickerModal'
 import OcrModal from './OcrModal'
 import AiPanel from './AiPanel'
+import MeetingTimerModal from './MeetingTimerModal'
+import SalaryCalcModal from './SalaryCalcModal'
+import AnnualLeaveModal from './AnnualLeaveModal'
 import ErrorBoundary from './ErrorBoundary'
 import { useAppStore } from '../store/appStore'
 
@@ -195,6 +198,9 @@ export default function ToolPanel({
           {toolId === 'qrCode'        && <QrCodeModal        onClose={onBack} asPanel />}
           {toolId === 'colorPicker'   && <ColorPickerModal   onClose={onBack} asPanel />}
           {toolId === 'ocr'           && <OcrModal           onClose={onBack} asPanel />}
+          {toolId === 'meetingTimer'  && <MeetingTimerModal  onClose={onBack} asPanel />}
+          {toolId === 'salaryCalc'    && <SalaryCalcModal    onClose={onBack} asPanel />}
+          {toolId === 'annualLeave'   && <AnnualLeaveModal   onClose={onBack} asPanel />}
         </div>
         </ErrorBoundary>
       </div>

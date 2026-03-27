@@ -20,7 +20,7 @@ interface SpiralMenuProps {
 const ANIM_DURATION: Record<string, number> = { slow: 520, normal: 300, fast: 140 }
 const STAGGER: Record<string, number>       = { slow: 44,  normal: 26,  fast: 11  }
 
-const BRICK_ROWS: number[] = [5, 4, 5, 4, 5]
+const BRICK_ROWS: number[] = [5, 4, 5, 4, 5, 3]
 const BASE_W   = 122
 const BASE_H   = 165
 const BASE_GAP = 12
