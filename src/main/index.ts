@@ -20,6 +20,8 @@ import { registerExcelToolHandlers } from './excelTool'
 import { registerAiAssistantHandlers } from './aiAssistant'
 import { registerScreenCaptureHandlers } from './screenCapture'
 import { initShortcut, registerSettingsHandlers } from './settings'
+import { registerSnippetsHandlers } from './snippets'
+import { registerEmailTemplatesHandlers } from './emailTemplates'
 
 function createWindow(): void {
   const primaryDisplay = screen.getPrimaryDisplay()
@@ -129,6 +131,8 @@ app.whenReady().then(() => {
   registerAiAssistantHandlers()
   registerScreenCaptureHandlers()
   registerSettingsHandlers()
+  registerSnippetsHandlers()
+  registerEmailTemplatesHandlers()
 
   createWindow()
 

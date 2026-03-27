@@ -17,7 +17,7 @@ function today(): string {
 }
 
 function diffDays(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / 86400000)
+  return Math.floor((b.getTime() - a.getTime()) / 86400000)
 }
 
 function businessDays(start: Date, end: Date): number {

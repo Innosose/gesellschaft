@@ -30,6 +30,7 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
   const [content, setContent] = useState('')
   const [color, setColor] = useState(COLORS[0].bg)
   const [dirty, setDirty] = useState(false)
+  const [savedMsg, setSavedMsg] = useState(false)
   const saveTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -60,6 +61,8 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
       })
       setNotes(updated)
       setDirty(false)
+      setSavedMsg(true)
+      setTimeout(() => setSavedMsg(false), 1500)
     }, 800)
   }
 
@@ -140,6 +143,7 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
                   ))}
                 </div>
                 {dirty && <span className="text-[10px]" style={{ color: 'var(--win-text-muted)' }}>저장 중...</span>}
+                {savedMsg && !dirty && <span className="text-[10px]" style={{ color: 'var(--win-success)' }}>✓ 저장됨</span>}
               </div>
               <textarea
                 className="flex-1 win-input resize-none text-sm leading-relaxed"

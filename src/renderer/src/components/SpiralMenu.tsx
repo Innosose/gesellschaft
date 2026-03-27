@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react'
-import { rgba } from '../utils/color'
 
 interface Tool {
   id: string
@@ -17,316 +16,392 @@ interface SpiralMenuProps {
   onSelectTool: (id: string) => void
 }
 
-const ANIM_DURATION: Record<string, number> = { slow: 520, normal: 300, fast: 140 }
-const STAGGER: Record<string, number>       = { slow: 44,  normal: 26,  fast: 11  }
+const ANIM_MS: Record<string, number> = { slow: 540, normal: 300, fast: 140 }
+const STAGGER_MS: Record<string, number> = { slow: 40, normal: 22, fast: 9 }
 
-const BRICK_ROWS: number[] = [5, 4, 5, 4, 5]
-const BASE_W   = 122
-const BASE_H   = 165
-const BASE_GAP = 12
+// ─── Fan geometry ──────────────────────────────────────────────────────────────
+// Arc center is off-screen below the viewport.
+// Cards are placed along the arc and rotated to face outward from the center.
+const CARD_W  = 108   // px
+const CARD_H  = 152   // px
+const TOTAL_ARC_DEG = 148  // total spread in degrees (left edge to right edge)
 
-function buildPositions(count: number, w: number, h: number, gap: number): { x: number; y: number }[] {
-  const positions: { x: number; y: number }[] = []
-  const stride = w + gap
-  let idx = 0
-  for (let r = 0; r < BRICK_ROWS.length; r++) {
-    const cols  = BRICK_ROWS[r]
-    const rowY  = r * (h + gap)
-    const rowW  = cols * stride - gap
-    const fullW = 5 * stride - gap
-    const offX  = (fullW - rowW) / 2
-    for (let c = 0; c < cols && idx < count; c++) {
-      positions.push({ x: offX + c * stride, y: rowY })
-      idx++
-    }
-  }
-  return positions
+function getArcParams(vw: number, vh: number, scale: number) {
+  const radius    = Math.min(vh * 0.62 * scale, 820)
+  const arcCenterX = vw / 2
+  const arcCenterY = vh + 210  // below the screen
+  return { radius, arcCenterX, arcCenterY }
 }
 
-// ── Memoized card ─────────────────────────────────────────────────────────────
-interface ToolCardProps {
+function cardPosition(
+  angleDeg: number,
+  radius: number,
+  arcCenterX: number,
+  arcCenterY: number,
+) {
+  const rad = (angleDeg * Math.PI) / 180
+  const x = arcCenterX + radius * Math.sin(rad)
+  const y = arcCenterY - radius * Math.cos(rad)
+  return { x, y }
+}
+
+// ─── Single Fan Card ────────────────────────────────────────────────────────────
+interface FanCardProps {
   tool: Tool
-  pos: { x: number; y: number }
-  cardW: number
-  cardH: number
-  dur: number
-  stagger: number
+  angleDeg: number
   index: number
-  spiralScale: number
-  isHovered: boolean
-  isRec: boolean
-  dimmed: boolean
-  highlighted: boolean
-  mounted: boolean
-  onHover: (id: string | null) => void
-  onSelect: (id: string) => void
+  total: number
+  radius: number
+  arcCenterX: number
+  arcCenterY: number
+  isRecommended: boolean
+  animDuration: number
+  staggerMs: number
+  onSelect: () => void
 }
 
-const ToolCard = memo(function ToolCard({
-  tool, pos, cardW, cardH, dur, stagger, index, spiralScale,
-  isHovered, isRec, dimmed, highlighted, mounted,
-  onHover, onSelect,
-}: ToolCardProps): React.ReactElement {
-  const delay = index * stagger
+const FanCard = memo(function FanCard({
+  tool,
+  angleDeg,
+  index,
+  total,
+  radius,
+  arcCenterX,
+  arcCenterY,
+  isRecommended,
+  animDuration,
+  staggerMs,
+  onSelect,
+}: FanCardProps) {
+  const [hovered, setHovered] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  const entryY     = mounted ? 0 : 24
-  const entryScale = mounted ? 1 : 0.72
-  const opacity    = mounted ? (dimmed ? 0.07 : 1) : 0
-  const hoverY     = isHovered ? -10 : 0
-  const hoverRot   = isHovered ? (index % 2 === 0 ? 1.0 : -1.0) : 0
-  const scale      = dimmed ? 0.93 : isHovered ? 1.04 : 1
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), index * staggerMs + 40)
+    return () => clearTimeout(t)
+  }, [index, staggerMs])
+
+  // Center card (index near middle) is the "feature" card
+  const midIndex = (total - 1) / 2
+  const distFromCenter = Math.abs(index - midIndex)
+  const isCenterCard = distFromCenter < 1.5
+  const featureScale = isCenterCard ? 1.06 : 1 - distFromCenter * 0.012
+
+  // Hover: extend outward along the radius
+  const hoverRadius = hovered ? radius + 30 : radius
+  const { x, y } = cardPosition(angleDeg, hoverRadius, arcCenterX, arcCenterY)
+
+  // Cards farther from center are slightly dimmer
+  const dimFactor = Math.max(0.55, 1 - distFromCenter * 0.04)
 
   return (
     <div
+      onClick={onSelect}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        position: 'absolute',
-        left: pos.x, top: pos.y,
-        width: cardW, height: cardH,
-        opacity,
-        willChange: 'transform, opacity',
-        transform: mounted
-          ? `translateY(${hoverY}px) rotate(${hoverRot}deg) scale(${scale})`
-          : `translateY(${entryY}px) scale(${entryScale})`,
-        transition: mounted
-          ? [
-              `transform ${isHovered ? 200 : dur}ms cubic-bezier(0.34,${isHovered ? 1.18 : 1.06},0.64,1) ${isHovered ? 0 : delay}ms`,
-              `opacity ${Math.round(dur * 0.85)}ms ease ${delay}ms`,
-              `filter 200ms ease`,
-            ].join(', ')
-          : 'none',
-        pointerEvents: dimmed ? 'none' : 'auto',
-        zIndex: isHovered ? 5 : 1,
-        filter: dimmed ? 'grayscale(0.9) brightness(0.35)' : 'none',
+        position: 'fixed',
+        left: x - CARD_W / 2,
+        top: y - CARD_H / 2,
+        width: CARD_W,
+        height: CARD_H,
+        transform: `rotate(${angleDeg}deg) scale(${hovered ? featureScale * 1.08 : featureScale})`,
+        transformOrigin: 'center center',
+        cursor: 'pointer',
+        borderRadius: 12,
+        background: hovered
+          ? `linear-gradient(160deg, ${tool.color}30, ${tool.color}14)`
+          : `linear-gradient(170deg, ${tool.color}22, ${tool.color}08)`,
+        border: `1.5px solid ${hovered ? tool.color + 'cc' : tool.color + (isCenterCard ? '66' : '3a')}`,
+        boxShadow: hovered
+          ? `0 0 32px ${tool.color}55, 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 ${tool.color}33`
+          : isRecommended
+            ? `0 0 18px ${tool.color}77, 0 4px 20px rgba(0,0,0,0.4)`
+            : isCenterCard
+              ? `0 0 14px ${tool.color}33, 0 6px 24px rgba(0,0,0,0.45)`
+              : `0 4px 18px rgba(0,0,0,0.35)`,
+        backdropFilter: hovered ? 'blur(6px)' : undefined,
+        transition: `all ${animDuration * 0.8}ms cubic-bezier(0.22,1,0.36,1)`,
+        opacity: mounted ? dimFactor : 0,
+        zIndex: hovered ? 30 : isCenterCard ? 5 : 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 0,
+        userSelect: 'none',
+        overflow: 'hidden',
       }}
     >
-      <button
-        onClick={() => onSelect(tool.id)}
-        onMouseEnter={() => onHover(tool.id)}
-        onMouseLeave={() => onHover(null)}
+      {/* Recommended indicator */}
+      {isRecommended && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: '#fbbf24',
+            boxShadow: '0 0 8px #fbbf24aa',
+          }}
+        />
+      )}
+
+      {/* Color accent bar at top */}
+      <div
         style={{
-          width: '100%', height: '100%',
-          borderRadius: 12,
-          border: `1px solid ${
-            isHovered
-              ? rgba(tool.color, 0.70)
-              : isRec || highlighted
-              ? rgba(tool.color, 0.40)
-              : 'rgba(255,255,255,0.08)'
-          }`,
-          // Bookmark feel: top half has color gradient, bottom fades to near-black
-          background: isHovered
-            ? `linear-gradient(180deg,
-                ${rgba(tool.color, 0.32)} 0%,
-                ${rgba(tool.color, 0.10)} 40%,
-                rgba(8,6,20,0.97) 100%
-              )`
-            : `linear-gradient(180deg,
-                ${rgba(tool.color, isRec ? 0.22 : 0.14)} 0%,
-                ${rgba(tool.color, 0.04)} 45%,
-                rgba(8,6,20,0.96) 100%
-              )`,
-          boxShadow: isHovered
-            ? [
-                `0 0 0 1px ${rgba(tool.color, 0.25)}`,
-                `0 16px 48px ${rgba(tool.color, 0.25)}`,
-                `inset 0 1px 0 rgba(255,255,255,0.10)`,
-              ].join(', ')
-            : isRec
-            ? `0 4px 20px ${rgba(tool.color, 0.18)}, inset 0 1px 0 rgba(255,255,255,0.05)`
-            : `0 2px 12px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)`,
-          backdropFilter: 'none',
-          cursor: 'pointer',
-          outline: 'none',
-          position: 'relative',
-          overflow: 'hidden',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          background: hovered
+            ? `linear-gradient(90deg, ${tool.color}aa, ${tool.color}55)`
+            : `linear-gradient(90deg, ${tool.color}66, ${tool.color}22)`,
+          borderRadius: '12px 12px 0 0',
+          transition: `background ${animDuration * 0.6}ms ease`,
+        }}
+      />
+
+      {/* Card content — counter-rotated so text is always upright */}
+      <div
+        style={{
+          transform: `rotate(${-angleDeg}deg)`,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'flex-start',
-          paddingTop: cardH * 0.16,
-          gap: 7,
-          transition: 'background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease',
+          gap: 10,
+          padding: '0 8px',
+          width: '100%',
         }}
       >
-        {/* Top accent bar — bookmark ribbon effect */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-          background: `linear-gradient(90deg,
-            transparent 5%,
-            ${rgba(tool.color, isHovered ? 1 : isRec ? 0.75 : 0.45)} 50%,
-            transparent 95%
-          )`,
-        }} />
-
-        {/* Glow halo behind icon */}
-        <div style={{
-          position: 'absolute',
-          top: cardH * 0.14,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: cardW * 0.7,
-          height: cardW * 0.7,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${rgba(tool.color, isHovered ? 0.22 : 0.08)}, transparent 70%)`,
-          pointerEvents: 'none',
-          transition: 'background 0.22s ease',
-        }} />
-
-        {/* Main icon */}
-        <span style={{
-          fontSize: Math.round(32 * Math.min(spiralScale, 1.2)),
-          lineHeight: 1,
-          position: 'relative', zIndex: 1,
-          filter: isHovered ? `drop-shadow(0 0 10px ${rgba(tool.color, 0.9)})` : 'none',
-          transform: isHovered ? 'scale(1.15)' : 'scale(1)',
-          transition: 'filter 0.22s ease, transform 0.22s cubic-bezier(0.34,1.3,0.64,1)',
-        }}>
+        <span
+          style={{
+            fontSize: hovered ? 34 : 30,
+            lineHeight: 1,
+            transition: `font-size ${animDuration * 0.5}ms ease`,
+            filter: hovered ? `drop-shadow(0 0 8px ${tool.color}88)` : undefined,
+          }}
+        >
           {tool.icon}
         </span>
 
-        {/* Label */}
-        <span style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.02em',
-          color: isHovered
-            ? 'rgba(255,255,255,0.95)'
-            : isRec || highlighted
-            ? rgba(tool.color, 0.95)
-            : 'rgba(255,255,255,0.58)',
-          textAlign: 'center',
-          lineHeight: 1.3,
-          maxWidth: '88%',
-          position: 'relative', zIndex: 1,
-          transition: 'color 0.18s ease',
-        }}>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: hovered || isCenterCard ? 700 : 500,
+            color: hovered ? '#fff' : `rgba(255,255,255,${isCenterCard ? 0.85 : 0.68})`,
+            textAlign: 'center',
+            lineHeight: 1.35,
+            wordBreak: 'keep-all',
+            transition: `color ${animDuration * 0.5}ms ease`,
+          }}
+        >
           {tool.label}
         </span>
-
-        {/* Bottom watermark icon — large decorative */}
-        <div style={{
-          position: 'absolute',
-          bottom: -10, right: -6,
-          fontSize: cardH * 0.50,
-          lineHeight: 1,
-          opacity: isHovered ? 0.10 : 0.05,
-          filter: 'blur(1px)',
-          pointerEvents: 'none',
-          transition: 'opacity 0.22s ease',
-          userSelect: 'none',
-        }}>
-          {tool.icon}
-        </div>
-
-        {/* Bottom subtle color wash — like bookmark tail */}
-        <div style={{
-          position: 'absolute',
-          bottom: 0, left: 0, right: 0,
-          height: cardH * 0.28,
-          background: `linear-gradient(0deg, ${rgba(tool.color, isHovered ? 0.08 : 0.03)}, transparent)`,
-          pointerEvents: 'none',
-          transition: 'background 0.22s ease',
-        }} />
-
-        {/* Recommended star */}
-        {isRec && (
-          <div style={{
-            position: 'absolute', top: 9, right: 10,
-            fontSize: 9, fontWeight: 900,
-            color: '#fbbf24',
-            filter: 'drop-shadow(0 0 5px #fbbf2480)',
-            lineHeight: 1, zIndex: 2,
-          }}>
-            ✦
-          </div>
-        )}
-
-        {/* Hover corner shimmer */}
-        {isHovered && (
-          <div style={{
-            position: 'absolute', inset: 0, borderRadius: 12,
-            background: `linear-gradient(135deg, ${rgba(tool.color, 0.10)} 0%, transparent 55%)`,
-            pointerEvents: 'none',
-          }} />
-        )}
-      </button>
+      </div>
     </div>
   )
 })
 
-// ── Main SpiralMenu ───────────────────────────────────────────────────────────
-export default function SpiralMenu({
-  tools, recommended, spiralScale, animSpeed, filterQuery, onSelectTool,
-}: SpiralMenuProps): React.ReactElement {
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
-  const [mounted, setMounted]     = useState(false)
-
-  const dur     = ANIM_DURATION[animSpeed]
-  const stagger = STAGGER[animSpeed]
-  const query   = filterQuery.trim().toLowerCase()
-
-  const cardW = BASE_W * spiralScale
-  const cardH = BASE_H * spiralScale
-  const gap   = BASE_GAP * spiralScale
-
-  const gridW = 5 * (cardW + gap) - gap
-  const gridH = BRICK_ROWS.length * (cardH + gap) - gap
-
-  const positions = useMemo(
-    () => buildPositions(tools.length, cardW, cardH, gap),
-    [tools.length, cardW, cardH, gap]
-  )
-
-  const matchMap = useMemo(() => {
-    if (!query) return null
-    const m: Record<string, boolean> = {}
-    for (const t of tools) {
-      m[t.id] = t.label.toLowerCase().includes(query) || t.id.toLowerCase().includes(query)
-    }
-    return m
-  }, [tools, query])
-
-  const handleHover = useCallback((id: string | null) => setHoveredId(id), [])
-
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 24)
-    return () => clearTimeout(t)
-  }, [])
+// ─── Grid Card (filter mode) ────────────────────────────────────────────────────
+const GridCard = memo(function GridCard({
+  tool,
+  isRecommended,
+  animDuration,
+  onSelect,
+}: {
+  tool: Tool
+  isRecommended: boolean
+  animDuration: number
+  onSelect: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
 
   return (
-    <div
+    <button
+      onClick={onSelect}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        position: 'fixed',
-        left: '50%', top: '52%',
-        transform: 'translate(-50%, -50%)',
-        zIndex: 15,
-        width: gridW, height: gridH,
-        pointerEvents: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '10px 14px',
+        borderRadius: 10,
+        cursor: 'pointer',
+        background: hovered
+          ? `linear-gradient(135deg, ${tool.color}28, ${tool.color}12)`
+          : `rgba(255,255,255,0.04)`,
+        border: `1px solid ${hovered ? tool.color + '99' : isRecommended ? tool.color + '55' : 'rgba(255,255,255,0.1)'}`,
+        boxShadow: hovered ? `0 0 20px ${tool.color}33` : undefined,
+        transition: `all ${animDuration * 0.6}ms ease`,
+        textAlign: 'left',
+        width: '100%',
+        color: 'inherit',
       }}
     >
-      {tools.map((tool, i) => {
-        const pos = positions[i]
-        if (!pos) return null
-        const matches     = matchMap ? matchMap[tool.id] : true
-        const dimmed      = query.length > 0 && !matches
-        const highlighted = query.length > 0 && !!matches
-        return (
-          <ToolCard
-            key={tool.id}
-            tool={tool} pos={pos}
-            cardW={cardW} cardH={cardH}
-            dur={dur} stagger={stagger} index={i}
-            spiralScale={spiralScale}
-            isHovered={hoveredId === tool.id}
-            isRec={recommended.includes(tool.id)}
-            dimmed={dimmed}
-            highlighted={highlighted}
-            mounted={mounted}
-            onHover={handleHover}
-            onSelect={onSelectTool}
-          />
-        )
-      })}
-    </div>
+      <span style={{ fontSize: 22, lineHeight: 1 }}>{tool.icon}</span>
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: hovered ? '#fff' : 'rgba(255,255,255,0.82)',
+        }}
+      >
+        {tool.label}
+      </span>
+      {isRecommended && (
+        <span style={{ marginLeft: 'auto', fontSize: 10, color: '#fbbf24', fontWeight: 600 }}>
+          AI ✦
+        </span>
+      )}
+    </button>
+  )
+})
+
+// ─── Main SpiralMenu ────────────────────────────────────────────────────────────
+export default function SpiralMenu({
+  tools,
+  recommended,
+  spiralScale,
+  animSpeed,
+  filterQuery,
+  onSelectTool,
+}: SpiralMenuProps): React.ReactElement {
+  const [vw, setVw] = useState(window.innerWidth)
+  const [vh, setVh] = useState(window.innerHeight)
+
+  useEffect(() => {
+    const onResize = (): void => {
+      setVw(window.innerWidth)
+      setVh(window.innerHeight)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  const animDuration = ANIM_MS[animSpeed] ?? 300
+  const staggerMs    = STAGGER_MS[animSpeed] ?? 22
+
+  const { radius, arcCenterX, arcCenterY } = useMemo(
+    () => getArcParams(vw, vh, spiralScale),
+    [vw, vh, spiralScale],
+  )
+
+  const filteredTools = useMemo(() => {
+    if (!filterQuery) return tools
+    const q = filterQuery.toLowerCase()
+    return tools.filter(t =>
+      t.label.toLowerCase().includes(q) ||
+      t.id.toLowerCase().includes(q),
+    )
+  }, [tools, filterQuery])
+
+  const isSearching = filterQuery.length > 0
+
+  // Fan positions for full list
+  const fanAngles = useMemo(() => {
+    const N = filteredTools.length
+    if (N === 0) return []
+    if (N === 1) return [0]
+    const step = TOTAL_ARC_DEG / (N - 1)
+    const start = -TOTAL_ARC_DEG / 2
+    return filteredTools.map((_, i) => start + i * step)
+  }, [filteredTools])
+
+  const handleSelect = useCallback(
+    (id: string) => onSelectTool(id),
+    [onSelectTool],
+  )
+
+  // ── Filter mode: floating grid ──────────────────────────────────────────────
+  if (isSearching) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 20,
+          pointerEvents: 'none',
+        }}
+      >
+        <div
+          style={{
+            pointerEvents: 'auto',
+            width: 460,
+            maxHeight: '60vh',
+            overflowY: 'auto',
+            background: 'rgba(8,5,20,0.88)',
+            backdropFilter: 'blur(24px)',
+            borderRadius: 16,
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            animation: 'fadeScaleIn 0.2s cubic-bezier(0.22,1,0.36,1) both',
+          }}
+        >
+          {filteredTools.length === 0 ? (
+            <div
+              style={{
+                padding: '24px 0',
+                textAlign: 'center',
+                color: 'rgba(255,255,255,0.3)',
+                fontSize: 13,
+              }}
+            >
+              검색 결과가 없습니다
+            </div>
+          ) : (
+            filteredTools.map(t => (
+              <GridCard
+                key={t.id}
+                tool={t}
+                isRecommended={recommended.includes(t.id)}
+                animDuration={animDuration}
+                onSelect={() => handleSelect(t.id)}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Fan mode ────────────────────────────────────────────────────────────────
+  return (
+    <>
+      {filteredTools.map((tool, i) => (
+        <FanCard
+          key={tool.id}
+          tool={tool}
+          angleDeg={fanAngles[i]}
+          index={i}
+          total={filteredTools.length}
+          radius={radius}
+          arcCenterX={arcCenterX}
+          arcCenterY={arcCenterY}
+          isRecommended={recommended.includes(tool.id)}
+          animDuration={animDuration}
+          staggerMs={staggerMs}
+          onSelect={() => handleSelect(tool.id)}
+        />
+      ))}
+
+      <style>{`
+        @keyframes fadeScaleIn {
+          from { opacity: 0; transform: scale(0.96) translateY(8px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}</style>
+    </>
   )
 }

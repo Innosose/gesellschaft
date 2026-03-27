@@ -209,6 +209,14 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
               </div>
             </div>
 
+            {status === 'processing' && (
+              <div style={{ padding: '6px 0' }}>
+                <div style={{ height: 4, background: 'var(--win-surface-3)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '40%', background: 'var(--win-accent)', borderRadius: 2, animation: 'pdfProgress 1.2s ease-in-out infinite alternate' }} />
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--win-text-muted)', marginTop: 4 }}>PDF 병합 중...</div>
+              </div>
+            )}
             {status === 'error' && (
               <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: '#fff', borderRadius: 6, fontSize: 13 }}>
                 ⚠️ {errorMsg}
@@ -311,6 +319,7 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
           </div>
         )}
       </div>
+      <style>{`@keyframes pdfProgress { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }`}</style>
     </Modal>
   )
 }

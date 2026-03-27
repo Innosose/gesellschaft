@@ -51,6 +51,7 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
   }
 
   const remove = async (id: string): Promise<void> => {
+    if (!window.confirm('항목을 삭제하시겠습니까?')) return
     const updated = await window.api.todo.delete(id)
     setTodos(updated)
   }
