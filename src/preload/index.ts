@@ -154,11 +154,11 @@ const api = {
   // Excel Tool
   excelTool: {
     openFiles: () => ipcRenderer.invoke('excelTool:openFiles'),
-    openOutputDir: () => ipcRenderer.invoke('excelTool:openOutputDir'),
-    defaultOutputDir: () => ipcRenderer.invoke('excelTool:defaultOutputDir'),
-    readFile: (filePath: string) => ipcRenderer.invoke('excelTool:readFile', filePath),
-    exportCsv: (data: unknown[][], outputPath: string) => ipcRenderer.invoke('excelTool:exportCsv', data, outputPath),
-    exportXlsx: (sheets: Record<string, unknown[][]>, outputPath: string) => ipcRenderer.invoke('excelTool:exportXlsx', sheets, outputPath)
+    loadFile: (filePath: string) => ipcRenderer.invoke('excelTool:loadFile', filePath),
+    loadSheet: (filePath: string, sheet: string) => ipcRenderer.invoke('excelTool:loadSheet', filePath, sheet),
+    openOutputPath: (format: string) => ipcRenderer.invoke('excelTool:openOutputPath', format),
+    export: (opts: { filePath: string; sheet: string; columns: string[]; filterText: string; outputFormat: string; outputPath: string }) =>
+      ipcRenderer.invoke('excelTool:export', opts),
   },
 
   // App Settings

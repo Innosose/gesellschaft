@@ -22,7 +22,7 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
   const [exportError, setExportError] = React.useState('')
 
   const handleOpenFile = async (): Promise<void> => {
-    const files: string[] = await (window.api as any).excelTool.openFiles()
+    const files: string[] = await window.api.excelTool.openFiles()
     if (!files || files.length === 0) return
     const fp = files[0]
     setFilePath(fp)
@@ -30,7 +30,7 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
     setExportDone(false)
     setExportError('')
     try {
-      const result = await (window.api as any).excelTool.loadFile(fp)
+      const result = await window.api.excelTool.loadFile(fp)
       const sheetNames: string[] = result.sheets
       setSheets(sheetNames)
       const first = sheetNames[0] || ''
@@ -50,7 +50,7 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
     setActiveSheet(sheetName)
     setLoading(true)
     try {
-      const result = await (window.api as any).excelTool.loadSheet(filePath, sheetName)
+      const result = await window.api.excelTool.loadSheet(filePath, sheetName)
       const cols: string[] = result[0] || []
       setColumns(cols)
       setSelectedCols(new Set(cols))
@@ -75,8 +75,8 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
   )
 
   const handleBrowseOutput = async (): Promise<void> => {
-    const path: string = await (window.api as any).excelTool.openOutputPath?.(outputFormat)
-    if (path) setOutputPath(path)
+    const p: string = await window.api.excelTool.openOutputPath(outputFormat)
+    if (p) setOutputPath(p)
   }
 
   const handleExport = async (): Promise<void> => {
@@ -85,7 +85,7 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
     setExportDone(false)
     setExportError('')
     try {
-      await (window.api as any).excelTool.export({
+      const result = await window.api.excelTool.export({
         filePath,
         sheet: activeSheet,
         columns: [...selectedCols],
@@ -93,9 +93,13 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
         outputFormat,
         outputPath,
       })
-      setExportDone(true)
-    } catch (e: any) {
-      setExportError(e?.message || '내보내기 중 오류가 발생했습니다.')
+      if (result?.success === false) {
+        setExportError(result.error || '내보내기 중 오류가 발생했습니다.')
+      } else {
+        setExportDone(true)
+      }
+    } catch (e: unknown) {
+      setExportError(e instanceof Error ? e.message : '내보내기 중 오류가 발생했습니다.')
     }
     setExporting(false)
   }
@@ -328,7 +332,7 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
             }}
             onClick={handleOpenFile}
           >
-            Excel 또는 CSV 파일을 열어주세요
+            Excel (.xlsx) 또는 CSV 파일을 열어주세요
           </div>
         )}
       </div>
