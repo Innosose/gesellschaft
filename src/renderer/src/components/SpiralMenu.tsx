@@ -26,7 +26,8 @@ const TOTAL_ARC_DEG = 148
 function getArcParams(vw: number, vh: number, scale: number) {
   const radius = Math.min(vh * 0.62 * scale, 820)
   const arcCenterX = vw / 2
-  const arcCenterY = vh + 210
+  // 중앙 카드가 화면 정중앙에 위치하도록: arcCenterY - radius = vh/2
+  const arcCenterY = vh / 2 + radius
   return { radius, arcCenterX, arcCenterY }
 }
 
