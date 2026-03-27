@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, screen } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import log from './logger'
 import { registerFileSystemHandlers } from './fileSystem'
 import { registerSearchHandlers } from './search'
 import { registerCadConvertHandlers } from './cadConvert'
@@ -103,6 +104,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  log.info(`게젤샤프트 시작 — v${app.getVersion()} / Electron ${process.versions.electron} / Node ${process.versions.node}`)
   electronApp.setAppUserModelId('com.gesellschaft.app')
 
   app.on('browser-window-created', (_, window) => {
@@ -136,6 +138,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  log.info('모든 창 닫힘 — 앱 종료')
   if (process.platform !== 'darwin') {
     app.quit()
   }

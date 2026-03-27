@@ -1,6 +1,8 @@
 import { ipcMain, desktopCapturer, app } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
+import log, { logIpcError } from './logger'
+import { TOOL_DESCRIPTIONS } from '../shared/constants'
 
 const CONFIG_PATH = (): string => path.join(app.getPath('userData'), 'ai-config.json')
 
@@ -26,33 +28,9 @@ function loadConfig(): AiConfig {
   }
 }
 
-const TOOL_DESCRIPTIONS: Record<string, string> = {
-  search:        '파일 검색 및 탐색',
-  cadConvert:    'DWG/DXF CAD 파일을 PDF로 변환',
-  pdfTool:       'PDF 병합, 분할, 편집',
-  imageConvert:  '이미지 포맷 변환, 리사이징',
-  excelTool:     'Excel/CSV 파일 열기, 변환, 내보내기',
-  bulkRename:    '여러 파일을 한번에 이름 변경',
-  folderCompare: '두 폴더의 차이점 비교',
-  todo:          '할일 목록 관리',
-  reminder:      '파일 관련 업무 리마인더',
-  notes:         '빠른 메모 작성',
-  snippets:      '자주 쓰는 코드나 텍스트 스니펫 관리',
-  emailTemplate: '이메일 템플릿 저장 및 불러오기',
-  clipboard:     '클립보드 복사 기록',
-  vatCalc:       '부가세 계산',
-  dateCalc:      '날짜 차이, D-Day 계산',
-  exchangeRate:  '환율 계산 및 변환',
-  unitConverter: '길이, 무게, 온도 등 단위 변환',
-  korEng:        '한영 오타 자동 변환',
-  textTools:     '텍스트 대소문자, 공백, 줄바꿈 정리',
-  qrCode:        'QR 코드 생성',
-  colorPicker:   '색상 코드 추출 및 변환',
-  ocr:           '이미지에서 텍스트 추출',
-}
-
 export function registerScreenCaptureHandlers(): void {
   ipcMain.handle('screen:captureAndAnalyze', async () => {
+    log.debug('[screen:captureAndAnalyze] 캡처 시작')
     try {
       const sources = await desktopCapturer.getSources({
         types: ['screen'],
@@ -122,8 +100,10 @@ ${toolList}
         recommendations = match ? JSON.parse(match[0]) : []
       }
 
+      log.info(`[screen:captureAndAnalyze] 추천: ${JSON.stringify(recommendations)}`)
       return { success: true, recommendations }
     } catch (e) {
+      logIpcError('screen:captureAndAnalyze', e)
       return {
         success: false,
         error: e instanceof Error ? e.message : '알 수 없는 오류',

@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import CenterHub from './components/CenterHub'
 import SpiralMenu from './components/SpiralMenu'
 import ToolPanel from './components/ToolPanel'
+import { useAppStore } from './store/appStore'
+import { ALL_TOOLS } from '../../shared/constants'
 
 interface Tool {
   id: string
@@ -10,61 +12,19 @@ interface Tool {
   color: string
 }
 
-const ALL_TOOLS: Tool[] = [
-  { id: 'search',        icon: '🔍', label: '고급 검색',        color: '#0078d4' },
-  { id: 'cadConvert',    icon: '📐', label: 'CAD → PDF',         color: '#8764b8' },
-  { id: 'pdfTool',       icon: '📄', label: 'PDF 병합 / 분할',   color: '#e74c3c' },
-  { id: 'imageConvert',  icon: '🖼️', label: '이미지 변환',       color: '#9b59b6' },
-  { id: 'excelTool',     icon: '📊', label: 'Excel / CSV',       color: '#27ae60' },
-  { id: 'bulkRename',    icon: '✏️', label: '일괄 이름 변경',    color: '#038387' },
-  { id: 'folderCompare', icon: '📂', label: '폴더 비교',         color: '#ca5010' },
-  { id: 'todo',          icon: '✅', label: '할일 목록',         color: '#498205' },
-  { id: 'reminder',      icon: '🔔', label: '업무 리마인더',     color: '#c19c00' },
-  { id: 'notes',         icon: '📝', label: '빠른 메모',         color: '#0099bc' },
-  { id: 'snippets',      icon: '💾', label: '스니펫 관리',       color: '#16a085' },
-  { id: 'emailTemplate', icon: '✉️', label: '이메일 템플릿',     color: '#8e44ad' },
-  { id: 'clipboard',     icon: '📋', label: '클립보드 기록',     color: '#107c41' },
-  { id: 'vatCalc',       icon: '🧮', label: '부가세 계산',       color: '#1abc9c' },
-  { id: 'dateCalc',      icon: '📅', label: '날짜 계산기',       color: '#3498db' },
-  { id: 'exchangeRate',  icon: '💱', label: '환율 계산',         color: '#c0392b' },
-  { id: 'unitConverter', icon: '📏', label: '단위 변환',         color: '#d35400' },
-  { id: 'translate',     icon: '🌐', label: '번역기',            color: '#2980b9' },
-  { id: 'textTools',     icon: '🔤', label: '텍스트 도구',       color: '#7a7574' },
-  { id: 'qrCode',        icon: '🔳', label: 'QR 코드 생성',     color: '#34495e' },
-  { id: 'colorPicker',   icon: '🎨', label: '색상 피커',         color: '#e67e22' },
-  { id: 'ocr',           icon: '🔍', label: '이미지 OCR',        color: '#7f8c8d' },
-  { id: 'ai',            icon: '✦',  label: 'AI 어시스턴트',     color: '#a78bfa' },
-]
-
 type UIState = 'hub' | 'menu' | 'tool'
 
 export default function App(): React.ReactElement {
+  const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, loadFromAPI } = useAppStore()
+
   const [uiState, setUiState] = useState<UIState>('hub')
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
   const [recommended, setRecommended] = useState<string[]>([])
   const [scanning, setScanning] = useState(false)
-  const [hubColor, setHubColor] = useState('#8b5cf6')
   const [toolSearch, setToolSearch] = useState('')
-  const [hubSize, setHubSize] = useState(114)
-  const [overlayOpacity, setOverlayOpacity] = useState(0.88)
-  const [spiralScale, setSpiralScale] = useState(1.0)
-  const [animSpeed, setAnimSpeed] = useState<'slow' | 'normal' | 'fast'>('normal')
 
-  // Sync --gs-accent CSS variable whenever hubColor changes (used by range sliders etc.)
-  useEffect(() => {
-    document.documentElement.style.setProperty('--gs-accent', hubColor)
-  }, [hubColor])
-
-  // Load all settings on mount
-  useEffect(() => {
-    window.api.settings.getTheme().then(color => { if (color) setHubColor(color) })
-    window.api.settings.getDisplay().then(d => {
-      if (d.hubSize) setHubSize(d.hubSize)
-      if (d.overlayOpacity) setOverlayOpacity(d.overlayOpacity)
-      if (d.spiralScale) setSpiralScale(d.spiralScale)
-      if (d.animSpeed) setAnimSpeed(d.animSpeed as 'slow' | 'normal' | 'fast')
-    })
-  }, [])
+  // 설정 초기 로드
+  useEffect(() => { loadFromAPI() }, [loadFromAPI])
 
   const handleHubClick = useCallback(() => {
     setUiState(s => (s === 'menu' ? 'hub' : 'menu'))
@@ -80,13 +40,6 @@ export default function App(): React.ReactElement {
     setActiveTool(null)
     setUiState('menu')
     setToolSearch('')
-  }, [])
-
-  const handleDisplayChange = useCallback((patch: Record<string, unknown>) => {
-    if (patch.hubSize !== undefined) setHubSize(patch.hubSize as number)
-    if (patch.overlayOpacity !== undefined) setOverlayOpacity(patch.overlayOpacity as number)
-    if (patch.spiralScale !== undefined) setSpiralScale(patch.spiralScale as number)
-    if (patch.animSpeed !== undefined) setAnimSpeed(patch.animSpeed as 'slow' | 'normal' | 'fast')
   }, [])
 
   // Memoize hub color RGB components for search bar background
@@ -119,13 +72,12 @@ export default function App(): React.ReactElement {
       window.api.window.setIgnoreMouseEvents(false)
       return
     }
-    // hub 상태: 투명 영역은 클릭 통과, 버튼 위에서는 캡처
     window.api.window.setIgnoreMouseEvents(true, { forward: true })
     let lastCall = 0
     let lastHit = false
     const onMove = (e: MouseEvent): void => {
       const now = Date.now()
-      if (now - lastCall < 16) return   // throttle ~60fps
+      if (now - lastCall < 16) return
       lastCall = now
       const el = document.elementFromPoint(e.clientX, e.clientY)
       const hit = el?.closest('button, input, a, [data-interactive]') != null
@@ -213,12 +165,7 @@ export default function App(): React.ReactElement {
             animation: 'slideUp 0.32s cubic-bezier(0.25,1,0.5,1) 0.15s both',
           }}
         >
-          <div
-            style={{
-              position: 'relative',
-              pointerEvents: 'auto',
-            }}
-          >
+          <div style={{ position: 'relative', pointerEvents: 'auto' }}>
             <span
               style={{
                 position: 'absolute',
@@ -226,7 +173,7 @@ export default function App(): React.ReactElement {
                 top: '50%',
                 transform: 'translateY(-50%)',
                 fontSize: 14,
-                color: `rgba(140,110,70,0.65)`,
+                color: 'rgba(140,110,70,0.65)',
                 pointerEvents: 'none',
                 userSelect: 'none',
               }}
@@ -278,7 +225,7 @@ export default function App(): React.ReactElement {
             )}
           </div>
 
-          {/* AI 추천 버튼 — 메뉴가 열렸을 때 검색 아래 표시 */}
+          {/* AI 추천 버튼 */}
           <button
             onClick={handleScan}
             disabled={scanning}
@@ -314,7 +261,7 @@ export default function App(): React.ReactElement {
         </div>
       )}
 
-      {/* Tool Panel */}
+      {/* Tool Panel — settings prop은 Zustand에서 읽으므로 전달 불필요 */}
       {uiState === 'tool' && activeTool && (
         <ToolPanel
           key={activeTool.id}
@@ -322,13 +269,6 @@ export default function App(): React.ReactElement {
           toolColor={activeTool.color}
           toolLabel={activeTool.label}
           onBack={handleBack}
-          hubColor={hubColor}
-          hubSize={hubSize}
-          overlayOpacity={overlayOpacity}
-          spiralScale={spiralScale}
-          animSpeed={animSpeed}
-          onThemeChange={setHubColor}
-          onDisplayChange={handleDisplayChange}
         />
       )}
 
@@ -372,7 +312,7 @@ export default function App(): React.ReactElement {
         ⚙
       </button>
 
-      {/* Quit button — top right corner, subtle */}
+      {/* Quit button */}
       <button
         onClick={() => window.api.window.close()}
         title="앱 종료"
