@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import CenterHub from './components/CenterHub'
 import SpiralMenu from './components/SpiralMenu'
 import ToolPanel from './components/ToolPanel'
@@ -14,6 +14,14 @@ interface Tool {
 
 type UIState = 'hub' | 'menu' | 'tool'
 
+interface Notification {
+  id: number
+  message: string
+  type: 'info' | 'error' | 'success'
+}
+
+let notifIdCounter = 0
+
 export default function App(): React.ReactElement {
   const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, loadFromAPI } = useAppStore()
 
@@ -22,10 +30,32 @@ export default function App(): React.ReactElement {
   const [recommended, setRecommended] = useState<string[]>([])
   const [scanning, setScanning] = useState(false)
   const [toolSearch, setToolSearch] = useState('')
-  const [scanMsg, setScanMsg] = useState('')
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const dismissTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
 
   // 설정 초기 로드
   useEffect(() => { loadFromAPI() }, [loadFromAPI])
+
+  const addNotification = useCallback((message: string, type: Notification['type'] = 'info') => {
+    const id = ++notifIdCounter
+    setNotifications(prev => [...prev, { id, message, type }])
+    const timer = setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      dismissTimers.current.delete(id)
+    }, 4000)
+    dismissTimers.current.set(id, timer)
+  }, [])
+
+  const dismissNotification = useCallback((id: number) => {
+    const timer = dismissTimers.current.get(id)
+    if (timer) { clearTimeout(timer); dismissTimers.current.delete(id) }
+    setNotifications(prev => prev.filter(n => n.id !== id))
+  }, [])
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => { dismissTimers.current.forEach(t => clearTimeout(t)) }
+  }, [])
 
   const handleHubClick = useCallback(() => {
     setUiState(s => (s === 'menu' ? 'hub' : 'menu'))
@@ -50,35 +80,31 @@ export default function App(): React.ReactElement {
     b: parseInt(hubColor.slice(5, 7), 16),
   }), [hubColor])
 
-  const showScanMsg = useCallback((msg: string) => {
-    setScanMsg(msg)
-    setTimeout(() => setScanMsg(''), 3500)
-  }, [])
-
   const handleScan = useCallback(async () => {
     setScanning(true)
-    setScanMsg('')
     try {
       const result = await window.api.screen.captureAndAnalyze()
       if (result.success) {
         setRecommended(result.recommendations)
         setUiState('menu')
         if (result.recommendations.length === 0) {
-          showScanMsg('화면에서 추천 기능을 찾지 못했습니다.')
+          addNotification('화면에서 추천 기능을 찾지 못했습니다.', 'info')
+        } else {
+          addNotification(`${result.recommendations.length}개 기능을 추천합니다.`, 'success')
         }
       } else {
         setUiState('menu')
         const msg = result.error?.includes('API 키')
           ? '⚙ AI 어시스턴트 설정에서 API 키를 등록해주세요.'
           : `분석 실패: ${result.error ?? '알 수 없는 오류'}`
-        showScanMsg(msg)
+        addNotification(msg, 'error')
       }
     } catch {
-      showScanMsg('화면 분석 중 오류가 발생했습니다.')
+      addNotification('화면 분석 중 오류가 발생했습니다.', 'error')
     } finally {
       setScanning(false)
     }
-  }, [showScanMsg])
+  }, [addNotification])
 
   const handleHide = useCallback(() => {
     window.api.window.hide()
@@ -122,6 +148,12 @@ export default function App(): React.ReactElement {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [uiState, handleBack])
+
+  const notifColors: Record<Notification['type'], { bg: string; border: string; color: string; dot: string }> = {
+    info:    { bg: 'rgba(18,14,34,0.97)',  border: 'rgba(139,92,246,0.45)',  color: 'rgba(196,181,253,0.95)', dot: '#8b5cf6' },
+    error:   { bg: 'rgba(22,8,8,0.97)',    border: 'rgba(220,38,38,0.45)',   color: 'rgba(252,165,165,0.95)', dot: '#ef4444' },
+    success: { bg: 'rgba(6,18,12,0.97)',   border: 'rgba(34,197,94,0.40)',   color: 'rgba(134,239,172,0.95)', dot: '#22c55e' },
+  }
 
   return (
     <div
@@ -279,33 +311,67 @@ export default function App(): React.ReactElement {
         </div>
       )}
 
-      {/* AI 스캔 결과 토스트 */}
-      {scanMsg && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 58,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 200,
-            padding: '9px 20px',
-            borderRadius: 22,
-            background: 'rgba(22,14,6,0.97)',
-            border: '1px solid rgba(210,148,50,0.5)',
-            color: 'rgba(255,215,130,0.96)',
-            fontSize: 12,
-            fontWeight: 500,
-            backdropFilter: 'blur(14px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.65)',
-            animation: 'popIn 0.2s cubic-bezier(0.22,1,0.36,1) both',
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            letterSpacing: '0.01em',
-          }}
-        >
-          {scanMsg}
-        </div>
-      )}
+      {/* Notification stack — top right */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 54,
+          right: 16,
+          zIndex: 300,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          alignItems: 'flex-end',
+          pointerEvents: 'none',
+        }}
+      >
+        {notifications.map(n => {
+          const c = notifColors[n.type]
+          return (
+            <div
+              key={n.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px 8px 10px',
+                borderRadius: 10,
+                background: c.bg,
+                border: `1px solid ${c.border}`,
+                color: c.color,
+                fontSize: 12,
+                fontWeight: 500,
+                backdropFilter: 'blur(16px)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
+                maxWidth: 280,
+                pointerEvents: 'auto',
+                animation: 'slideInRight 0.22s cubic-bezier(0.22,1,0.36,1) both',
+                letterSpacing: '0.01em',
+                lineHeight: 1.4,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{n.message}</span>
+              <button
+                onClick={() => dismissNotification(n.id)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: c.color,
+                  opacity: 0.45,
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  padding: '0 0 0 4px',
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )
+        })}
+      </div>
 
       {/* Tool Panel — settings prop은 Zustand에서 읽으므로 전달 불필요 */}
       {uiState === 'tool' && activeTool && (
