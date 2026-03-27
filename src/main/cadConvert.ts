@@ -1,6 +1,8 @@
 import { ipcMain, BrowserWindow, dialog, app } from 'electron'
 import { join, dirname, basename, extname } from 'path'
 import fs from 'fs'
+import { z } from 'zod'
+import log, { logIpcError } from './logger'
 
 export interface ConvertResult {
   inputPath: string
@@ -8,6 +10,9 @@ export interface ConvertResult {
   success: boolean
   error?: string
 }
+
+const FilePathsSchema = z.array(z.string().min(1)).min(1).max(500)
+const DirPathSchema   = z.string()
 
 // DXF → SVG string
 async function dxfToSvg(filePath: string): Promise<string> {
@@ -25,10 +30,7 @@ async function svgToPdf(svgContent: string, outputPath: string): Promise<void> {
       show: false,
       width: 1200,
       height: 900,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true
-      }
+      webPreferences: { nodeIntegration: false, contextIsolation: true },
     })
 
     const html = `<!DOCTYPE html>
@@ -48,7 +50,7 @@ async function svgToPdf(svgContent: string, outputPath: string): Promise<void> {
           landscape: true,
           pageSize: 'A4',
           printBackground: true,
-          margins: { marginType: 'custom', top: 0, bottom: 0, left: 0, right: 0 }
+          margins: { marginType: 'custom', top: 0, bottom: 0, left: 0, right: 0 },
         })
         fs.writeFileSync(outputPath, pdfBuffer)
         win.close()
@@ -67,87 +69,79 @@ async function svgToPdf(svgContent: string, outputPath: string): Promise<void> {
 }
 
 export function registerCadConvertHandlers(): void {
-  // 파일 다중 선택 다이얼로그
   ipcMain.handle('cadConvert:openFiles', async () => {
     const result = await dialog.showOpenDialog({
       title: 'CAD 파일 선택',
       filters: [
         { name: 'CAD 파일', extensions: ['dxf', 'dwg'] },
-        { name: '모든 파일', extensions: ['*'] }
+        { name: '모든 파일', extensions: ['*'] },
       ],
-      properties: ['openFile', 'multiSelections']
+      properties: ['openFile', 'multiSelections'],
     })
     return result.canceled ? [] : result.filePaths
   })
 
-  // 출력 폴더 선택
   ipcMain.handle('cadConvert:openOutputDir', async () => {
     const result = await dialog.showOpenDialog({
       title: '저장 폴더 선택',
-      properties: ['openDirectory']
+      properties: ['openDirectory'],
     })
     return result.canceled ? null : result.filePaths[0]
   })
 
-  // 변환 실행 (파일 하나씩 변환 후 진행 상황 전송)
-  ipcMain.handle(
-    'cadConvert:convert',
-    async (
-      event,
-      files: string[],
-      outputDir: string
-    ): Promise<ConvertResult[]> => {
-      const results: ConvertResult[] = []
+  ipcMain.handle('cadConvert:convert', async (event, rawFiles: unknown, rawOutputDir: unknown) => {
+    const filesResult  = FilePathsSchema.safeParse(rawFiles)
+    const outputResult = DirPathSchema.safeParse(rawOutputDir)
+    if (!filesResult.success) {
+      log.warn('[cadConvert:convert] 유효하지 않은 파일 목록')
+      return [{ inputPath: '', success: false, error: '유효하지 않은 파일 목록' }]
+    }
+    const files     = filesResult.data
+    const outputDir = outputResult.success ? outputResult.data : ''
+    const results: ConvertResult[] = []
 
-      for (const filePath of files) {
-        const ext = extname(filePath).toLowerCase()
-        const nameWithoutExt = basename(filePath, ext)
-        const outDir = outputDir || dirname(filePath)
-        const outputPath = join(outDir, `${nameWithoutExt}.pdf`)
+    for (const filePath of files) {
+      const ext           = extname(filePath).toLowerCase()
+      const nameWithoutExt = basename(filePath, ext)
+      const outDir        = outputDir || dirname(filePath)
+      const outputPath    = join(outDir, `${nameWithoutExt}.pdf`)
 
-        // 진행 상황 전송
-        event.sender.send('cadConvert:progress', { filePath, status: 'converting' })
+      event.sender.send('cadConvert:progress', { filePath, status: 'converting' })
 
-        if (ext === '.dwg') {
-          results.push({
-            inputPath: filePath,
-            success: false,
-            error: 'DWG는 직접 변환 불가 — AutoCAD에서 DXF로 내보낸 후 변환하세요'
-          })
-          event.sender.send('cadConvert:progress', { filePath, status: 'error' })
-          continue
-        }
-
-        if (ext !== '.dxf') {
-          results.push({ inputPath: filePath, success: false, error: `지원하지 않는 형식: ${ext}` })
-          event.sender.send('cadConvert:progress', { filePath, status: 'error' })
-          continue
-        }
-
-        try {
-          const svg = await dxfToSvg(filePath)
-          await svgToPdf(svg, outputPath)
-          results.push({ inputPath: filePath, outputPath, success: true })
-          event.sender.send('cadConvert:progress', { filePath, status: 'done', outputPath })
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e)
-          results.push({ inputPath: filePath, success: false, error: msg })
-          event.sender.send('cadConvert:progress', { filePath, status: 'error', error: msg })
-        }
+      if (ext === '.dwg') {
+        results.push({ inputPath: filePath, success: false, error: 'DWG는 직접 변환 불가 — AutoCAD에서 DXF로 내보낸 후 변환하세요' })
+        event.sender.send('cadConvert:progress', { filePath, status: 'error' })
+        continue
       }
 
-      return results
+      if (ext !== '.dxf') {
+        results.push({ inputPath: filePath, success: false, error: `지원하지 않는 형식: ${ext}` })
+        event.sender.send('cadConvert:progress', { filePath, status: 'error' })
+        continue
+      }
+
+      try {
+        const svg = await dxfToSvg(filePath)
+        await svgToPdf(svg, outputPath)
+        results.push({ inputPath: filePath, outputPath, success: true })
+        event.sender.send('cadConvert:progress', { filePath, status: 'done', outputPath })
+        log.info(`[cadConvert] 변환 완료: ${basename(filePath)} → ${outputPath}`)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        results.push({ inputPath: filePath, success: false, error: msg })
+        event.sender.send('cadConvert:progress', { filePath, status: 'error', error: msg })
+        logIpcError('cadConvert:convert', err, { filePath })
+      }
     }
-  )
 
-  // 완성된 PDF 열기
-  ipcMain.handle('cadConvert:openPdf', async (_, pdfPath: string) => {
+    return results
+  })
+
+  ipcMain.handle('cadConvert:openPdf', async (_, rawPath: unknown) => {
+    if (typeof rawPath !== 'string' || !rawPath) return
     const { shell } = await import('electron')
-    await shell.openPath(pdfPath)
+    await shell.openPath(rawPath)
   })
 
-  // 기본 출력 폴더 (다운로드)
-  ipcMain.handle('cadConvert:defaultOutputDir', () => {
-    return app.getPath('downloads')
-  })
+  ipcMain.handle('cadConvert:defaultOutputDir', () => app.getPath('downloads'))
 }

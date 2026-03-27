@@ -1,6 +1,9 @@
 import { ipcMain, app, Notification, shell, BrowserWindow } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import { z } from 'zod'
+import log, { logIpcError } from './logger'
+import { REMINDER_CHECK_INTERVAL } from '../shared/constants'
 
 export interface Reminder {
   id: string
@@ -11,6 +14,15 @@ export interface Reminder {
   done: boolean
 }
 
+const ReminderAddSchema = z.object({
+  filePath: z.string(),
+  fileName: z.string().min(1).max(260),
+  note:     z.string().max(500),
+  remindAt: z.number().int().positive(),
+})
+
+const ReminderIdSchema = z.string().min(1)
+
 function getRemindersPath(): string {
   return path.join(app.getPath('userData'), 'reminders.json')
 }
@@ -18,14 +30,22 @@ function getRemindersPath(): string {
 function loadReminders(): Reminder[] {
   try {
     const data = fs.readFileSync(getRemindersPath(), 'utf-8')
-    return JSON.parse(data)
-  } catch {
+    const parsed = JSON.parse(data)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      log.warn('[reminders] 파일 로드 실패', err)
+    }
     return []
   }
 }
 
 function saveReminders(items: Reminder[]): void {
-  fs.writeFileSync(getRemindersPath(), JSON.stringify(items, null, 2))
+  try {
+    fs.writeFileSync(getRemindersPath(), JSON.stringify(items, null, 2))
+  } catch (err) {
+    log.error('[reminders] 파일 저장 실패', err)
+  }
 }
 
 function checkAndNotify(): void {
@@ -48,6 +68,7 @@ function checkAndNotify(): void {
           BrowserWindow.getAllWindows()[0]?.focus()
         })
         notif.show()
+        log.info(`[reminders] 알림 표시: "${r.fileName}"`)
       }
     }
   }
@@ -58,27 +79,39 @@ function checkAndNotify(): void {
 export function registerRemindersHandlers(): void {
   ipcMain.handle('reminders:get', () => loadReminders())
 
-  ipcMain.handle('reminders:add', (_, reminder: Omit<Reminder, 'id' | 'done'>) => {
+  ipcMain.handle('reminders:add', (_, raw: unknown) => {
+    const result = ReminderAddSchema.safeParse(raw)
+    if (!result.success) {
+      log.warn('[reminders:add] 유효하지 않은 입력', result.error.flatten())
+      return { success: false, error: '유효하지 않은 리마인더 데이터' }
+    }
     const items = loadReminders()
-    items.push({ ...reminder, id: `r-${Date.now()}`, done: false })
+    items.push({ ...result.data, id: `r-${Date.now()}`, done: false })
     saveReminders(items)
+    log.debug(`[reminders:add] 추가: "${result.data.fileName}"`)
     return items
   })
 
-  ipcMain.handle('reminders:delete', (_, id: string) => {
-    const items = loadReminders().filter((r) => r.id !== id)
+  ipcMain.handle('reminders:delete', (_, raw: unknown) => {
+    const result = ReminderIdSchema.safeParse(raw)
+    if (!result.success) return { success: false, error: '유효하지 않은 id' }
+    const items = loadReminders().filter(r => r.id !== result.data)
     saveReminders(items)
+    log.debug(`[reminders:delete] id=${result.data}`)
     return items
   })
 
-  ipcMain.handle('reminders:markDone', (_, id: string) => {
-    const items = loadReminders().map((r) => (r.id === id ? { ...r, done: true } : r))
+  ipcMain.handle('reminders:markDone', (_, raw: unknown) => {
+    const result = ReminderIdSchema.safeParse(raw)
+    if (!result.success) return { success: false, error: '유효하지 않은 id' }
+    const items = loadReminders().map(r => r.id === result.data ? { ...r, done: true } : r)
     saveReminders(items)
+    log.debug(`[reminders:markDone] id=${result.data}`)
     return items
   })
 
-  // 앱 시작 시 즉시 확인 후 1분마다 반복
+  // 앱 시작 시 즉시 확인 후 주기적 반복
   checkAndNotify()
-  const timer = setInterval(checkAndNotify, 60 * 1000)
+  const timer = setInterval(checkAndNotify, REMINDER_CHECK_INTERVAL)
   app.on('before-quit', () => clearInterval(timer))
 }

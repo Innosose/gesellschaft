@@ -3,6 +3,9 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import mime from 'mime-types'
+import { z } from 'zod'
+import log, { logIpcError } from './logger'
+import { WINDOWS_RESERVED_NAMES } from '../shared/constants'
 
 export interface FileEntry {
   name: string
@@ -16,9 +19,27 @@ export interface FileEntry {
   tags?: string[]
 }
 
+/** Windows/Linux 모두 안전한 파일명인지 검사 */
+function isValidFileName(name: string): { valid: boolean; reason?: string } {
+  if (!name || name.trim() === '') return { valid: false, reason: '빈 파일명' }
+  if (name.includes('/') || name.includes('\\')) return { valid: false, reason: '경로 구분자 포함' }
+  if (name === '.' || name === '..') return { valid: false, reason: '예약된 경로 이름' }
+  // Windows 예약 파일명 (확장자 무시, 대소문자 무관)
+  const baseName = name.split('.')[0].toUpperCase()
+  if (WINDOWS_RESERVED_NAMES.has(baseName)) return { valid: false, reason: `Windows 예약 파일명: ${baseName}` }
+  // Windows 금지 문자: < > : " | ? *
+  if (/[<>:"|?*]/.test(name)) return { valid: false, reason: 'Windows 금지 문자 포함' }
+  // 끝이 공백이나 마침표이면 안 됨 (Windows)
+  if (/[. ]$/.test(name)) return { valid: false, reason: '파일명 끝에 공백 또는 마침표 불가' }
+  return { valid: true }
+}
+
 export function registerFileSystemHandlers(): void {
-  // 디렉토리 목록 읽기 (일괄 이름 변경에서 사용)
+  // 디렉토리 목록 읽기
   ipcMain.handle('fs:readDir', async (_, dirPath: string) => {
+    if (typeof dirPath !== 'string' || !dirPath) {
+      return { success: false, error: '유효하지 않은 경로' }
+    }
     try {
       const entries = fs.readdirSync(dirPath, { withFileTypes: true })
       const result: FileEntry[] = []
@@ -47,6 +68,7 @@ export function registerFileSystemHandlers(): void {
 
       return { success: true, data: result }
     } catch (err) {
+      logIpcError('fs:readDir', err, { dirPath })
       return { success: false, error: String(err) }
     }
   })
@@ -54,31 +76,40 @@ export function registerFileSystemHandlers(): void {
   // 홈 디렉토리
   ipcMain.handle('fs:homeDir', () => os.homedir())
 
-  // 파일/폴더 삭제 (휴지통) - 중복 탐지에서 사용
-  ipcMain.handle('fs:delete', async (_, filePaths: string[]) => {
+  // 파일/폴더 삭제 (휴지통)
+  ipcMain.handle('fs:delete', async (_, filePaths: unknown) => {
+    const result = z.array(z.string().min(1)).safeParse(filePaths)
+    if (!result.success) return { success: false, error: '유효하지 않은 경로 배열' }
     try {
-      for (const p of filePaths) {
+      for (const p of result.data) {
         await shell.trashItem(p)
       }
+      log.debug(`[fs:delete] ${result.data.length}개 삭제`)
       return { success: true }
     } catch (err) {
+      logIpcError('fs:delete', err)
       return { success: false, error: String(err) }
     }
   })
 
   // 일괄 이름 변경
-  ipcMain.handle('fs:bulkRename', async (_, items: { path: string; newName: string }[]) => {
+  ipcMain.handle('fs:bulkRename', async (_, items: unknown) => {
+    const ItemSchema = z.array(z.object({ path: z.string().min(1), newName: z.string().min(1) }))
+    const parsed = ItemSchema.safeParse(items)
+    if (!parsed.success) return [{ path: '', success: false, error: '유효하지 않은 입력' }]
+
     const results: { path: string; success: boolean; newPath?: string; error?: string }[] = []
-    for (const item of items) {
-      const name = item.newName
-      // 경로 구분자, .. 포함 시 경로 탐색 공격 차단
-      if (!name || name.includes('/') || name.includes('\\') || name === '..' || name === '.') {
-        results.push({ path: item.path, success: false, error: '유효하지 않은 파일명' })
+
+    for (const item of parsed.data) {
+      const check = isValidFileName(item.newName)
+      if (!check.valid) {
+        log.warn(`[fs:bulkRename] 유효하지 않은 파일명: "${item.newName}" — ${check.reason}`)
+        results.push({ path: item.path, success: false, error: check.reason ?? '유효하지 않은 파일명' })
         continue
       }
       try {
         const dir = path.dirname(item.path)
-        const newPath = path.join(dir, name)
+        const newPath = path.join(dir, item.newName)
         // 최종 경로가 동일 디렉터리 안에 있는지 재확인
         if (path.dirname(newPath) !== dir) {
           results.push({ path: item.path, success: false, error: '디렉터리 이탈 차단' })
@@ -87,44 +118,53 @@ export function registerFileSystemHandlers(): void {
         fs.renameSync(item.path, newPath)
         results.push({ path: item.path, success: true, newPath })
       } catch (err) {
+        logIpcError('fs:bulkRename', err, { path: item.path })
         results.push({ path: item.path, success: false, error: String(err) })
       }
     }
+    log.debug(`[fs:bulkRename] ${results.filter(r => r.success).length}/${results.length} 성공`)
     return results
   })
 
-  // 폴더 크기 계산 - 디스크 분석
+  // 폴더 크기 계산
   ipcMain.handle('fs:folderSize', async (_, dirPath: string) => {
+    if (typeof dirPath !== 'string' || !dirPath) return { success: false, error: '유효하지 않은 경로' }
     try {
       const size = calcFolderSize(dirPath)
       return { success: true, size }
     } catch (err) {
+      logIpcError('fs:folderSize', err, { dirPath })
       return { success: false, error: String(err) }
     }
   })
 
-  // 파일 타입별 통계 - 디스크 분석
+  // 파일 타입별 통계
   ipcMain.handle('fs:typeStats', async (_, dirPath: string) => {
+    if (typeof dirPath !== 'string' || !dirPath) return { success: false, error: '유효하지 않은 경로' }
     try {
       const stats = calcTypeStats(dirPath)
       return { success: true, data: stats }
     } catch (err) {
+      logIpcError('fs:typeStats', err, { dirPath })
       return { success: false, error: String(err) }
     }
   })
 
   // 외부 앱으로 열기
   ipcMain.handle('fs:open', async (_, filePath: string) => {
+    if (typeof filePath !== 'string' || !filePath) return { success: false, error: '유효하지 않은 경로' }
     try {
       await shell.openPath(filePath)
       return { success: true }
     } catch (err) {
+      logIpcError('fs:open', err, { filePath })
       return { success: false, error: String(err) }
     }
   })
 
   // 파일 탐색기에서 표시
   ipcMain.handle('fs:showInExplorer', async (_, filePath: string) => {
+    if (typeof filePath !== 'string' || !filePath) return { success: false, error: '유효하지 않은 경로' }
     shell.showItemInFolder(filePath)
     return { success: true }
   })

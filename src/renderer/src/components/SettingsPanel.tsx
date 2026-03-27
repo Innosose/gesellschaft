@@ -1,22 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { rgba, THEMES } from '../utils/color'
-
-interface DisplaySettings {
-  hubSize: number
-  overlayOpacity: number
-  spiralScale: number
-  animSpeed: 'slow' | 'normal' | 'fast'
-}
-
-interface SettingsPanelProps {
-  hubColor: string
-  hubSize: number
-  overlayOpacity: number
-  spiralScale: number
-  animSpeed: 'slow' | 'normal' | 'fast'
-  onThemeChange: (color: string) => void
-  onDisplayChange: (patch: Partial<DisplaySettings>) => void
-}
+import { useAppStore } from '../store/appStore'
 
 // Key → Electron accelerator mapping
 const KEY_MAP: Record<string, string> = {
@@ -108,10 +92,8 @@ const TABS: { id: PanelTab; icon: string; label: string }[] = [
   { id: 'shortcut', icon: '⌨️', label: '단축키' },
 ]
 
-export default function SettingsPanel({
-  hubColor, hubSize, overlayOpacity, spiralScale, animSpeed,
-  onThemeChange, onDisplayChange,
-}: SettingsPanelProps): React.ReactElement {
+export default function SettingsPanel(): React.ReactElement {
+  const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, setHubColor, setDisplay } = useAppStore()
   const [tab, setTab] = useState<PanelTab>('theme')
 
   // ── Theme state ──
@@ -153,15 +135,13 @@ export default function SettingsPanel({
   useEffect(() => { if (recording) recorderRef.current?.focus() }, [recording])
 
   // ── Handlers ──
-  const handleThemeSelect = async (color: string): Promise<void> => {
+  const handleThemeSelect = (color: string): void => {
     setSelectedColor(color); setCustomColor(color)
-    await window.api.settings.setTheme(color)
-    onThemeChange(color)
+    setHubColor(color) // Zustand: API 저장 + CSS 변수 업데이트
   }
 
-  const saveDisplay = async (patch: Partial<{ hubSize: number; overlayOpacity: number; spiralScale: number; animSpeed: string }>): Promise<void> => {
-    await window.api.settings.setDisplay(patch as Record<string, unknown>)
-    onDisplayChange(patch as Partial<DisplaySettings>)
+  const saveDisplay = (patch: Partial<{ hubSize: number; overlayOpacity: number; spiralScale: number; animSpeed: 'slow' | 'normal' | 'fast' }>): void => {
+    setDisplay(patch) // Zustand: API 저장 + 상태 업데이트
   }
 
   const handleSaveShortcut = async (): Promise<void> => {

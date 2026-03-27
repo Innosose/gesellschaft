@@ -1,6 +1,8 @@
 import { ipcMain } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import { z } from 'zod'
+import log, { logIpcError } from './logger'
 
 export interface CompareEntry {
   relativePath: string
@@ -11,6 +13,8 @@ export interface CompareEntry {
   modifiedA?: number
   modifiedB?: number
 }
+
+const DirPathSchema = z.string().min(1).max(4096)
 
 function getFilesRecursive(
   dir: string,
@@ -29,14 +33,26 @@ function getFilesRecursive(
           const stat = fs.statSync(fullPath)
           map.set(relPath, { size: stat.size, modified: stat.mtimeMs })
         }
-      } catch {}
+      } catch (err) {
+        log.debug(`[folderCompare] 항목 접근 실패: ${fullPath}`, err)
+      }
     }
-  } catch {}
+  } catch (err) {
+    log.debug(`[folderCompare] 디렉토리 읽기 실패: ${dir}`, err)
+  }
   return map
 }
 
 export function registerFolderCompareHandlers(): void {
-  ipcMain.handle('folderCompare:compare', async (_, pathA: string, pathB: string) => {
+  ipcMain.handle('folderCompare:compare', async (_, rawA: unknown, rawB: unknown) => {
+    const resultA = DirPathSchema.safeParse(rawA)
+    const resultB = DirPathSchema.safeParse(rawB)
+    if (!resultA.success || !resultB.success) {
+      return { success: false, error: '유효하지 않은 경로' }
+    }
+    const pathA = resultA.data
+    const pathB = resultB.data
+
     try {
       const filesA = getFilesRecursive(pathA)
       const filesB = getFilesRecursive(pathB)
@@ -61,16 +77,18 @@ export function registerFolderCompareHandlers(): void {
             sizeA: inA.size,
             sizeB: inB.size,
             modifiedA: inA.modified,
-            modifiedB: inB.modified
+            modifiedB: inB.modified,
           })
         }
       }
 
-      const order = { modified: 0, only_a: 1, only_b: 2, same: 3 }
+      const order: Record<CompareEntry['status'], number> = { modified: 0, only_a: 1, only_b: 2, same: 3 }
       results.sort((a, b) => order[a.status] - order[b.status] || a.relativePath.localeCompare(b.relativePath, 'ko'))
 
+      log.info(`[folderCompare] 비교 완료: ${results.length}개 항목`)
       return { success: true, data: results }
     } catch (err) {
+      logIpcError('folderCompare:compare', err, { pathA, pathB })
       return { success: false, error: String(err) }
     }
   })

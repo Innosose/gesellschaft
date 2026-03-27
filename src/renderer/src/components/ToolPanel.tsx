@@ -23,20 +23,14 @@ import QrCodeModal from './QrCodeModal'
 import ColorPickerModal from './ColorPickerModal'
 import OcrModal from './OcrModal'
 import AiPanel from './AiPanel'
-// AiPanel still imported for asPanel (ai tool)
+import ErrorBoundary from './ErrorBoundary'
+import { useAppStore } from '../store/appStore'
 
 interface ToolPanelProps {
   toolId: string
   toolColor: string
   toolLabel: string
   onBack: () => void
-  hubColor?: string
-  hubSize?: number
-  overlayOpacity?: number
-  spiralScale?: number
-  animSpeed?: 'slow' | 'normal' | 'fast'
-  onThemeChange?: (color: string) => void
-  onDisplayChange?: (patch: Record<string, unknown>) => void
 }
 
 export default function ToolPanel({
@@ -44,14 +38,8 @@ export default function ToolPanel({
   toolColor,
   toolLabel,
   onBack,
-  hubColor,
-  hubSize,
-  overlayOpacity,
-  spiralScale,
-  animSpeed,
-  onThemeChange,
-  onDisplayChange,
 }: ToolPanelProps): React.ReactElement {
+  const { hubColor } = useAppStore()
   const [folder, setFolder] = useState('')
 
   const folderTools = ['search', 'bulkRename', 'folderCompare']
@@ -178,22 +166,12 @@ export default function ToolPanel({
               </button>
             </div>
           )}
-
         </div>
 
-        {/* Tool content */}
+        {/* Tool content — ErrorBoundary로 감싸 개별 도구 크래시가 앱 전체에 영향 없도록 */}
+        <ErrorBoundary>
         <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
-          {toolId === 'settings' && hubColor !== undefined && (
-            <SettingsPanel
-              hubColor={hubColor}
-              hubSize={hubSize ?? 130}
-              overlayOpacity={overlayOpacity ?? 0.91}
-              spiralScale={spiralScale ?? 1.05}
-              animSpeed={animSpeed ?? 'normal'}
-              onThemeChange={onThemeChange ?? (() => {})}
-              onDisplayChange={onDisplayChange as ((patch: Partial<{hubSize:number;overlayOpacity:number;spiralScale:number;animSpeed:'slow'|'normal'|'fast'}>) => void) ?? (() => {})}
-            />
-          )}
+          {toolId === 'settings' && <SettingsPanel />}
           {toolId === 'ai' && <AiPanel asPanel onClose={onBack} />}
           {toolId === 'search'        && <SearchModal        onClose={onBack} initialFolder={folder} asPanel />}
           {toolId === 'cadConvert'    && <CadConvertModal    onClose={onBack} asPanel />}
@@ -218,8 +196,8 @@ export default function ToolPanel({
           {toolId === 'colorPicker'   && <ColorPickerModal   onClose={onBack} asPanel />}
           {toolId === 'ocr'           && <OcrModal           onClose={onBack} asPanel />}
         </div>
+        </ErrorBoundary>
       </div>
-
     </div>
   )
 }
