@@ -21,7 +21,8 @@ const STAGGER_MS: Record<string, number> = { slow: 40, normal: 22, fast: 9 }
 
 const CARD_W = 104
 const CARD_H = 156
-const TOTAL_ARC_DEG = 148
+const TOTAL_ARC_DEG = 110
+const VISIBLE_COUNT = 5  // 한 번에 보이는 카드 수 (겹침 방지)
 
 function getArcParams(vw: number, vh: number, scale: number) {
   const radius = Math.min(vh * 0.62 * scale, 820)
@@ -71,12 +72,12 @@ const FanCard = memo(function FanCard({
   const distFromCenter = Math.abs(index - midIndex)
   const tNorm = midIndex > 0 ? distFromCenter / midIndex : 0  // 0=center, 1=edge
 
-  // Scale: center=2.4, quadratic falloff to 0.36 at edges
-  const baseScale = Math.max(0.36, 2.4 - 2.04 * tNorm * tNorm)
+  // Scale: center=2.0, 선형 감소 → 0.42 (겹치지 않는 비율)
+  const baseScale = Math.max(0.42, 2.0 - 1.58 * tNorm)
   const activeScale = hovered ? baseScale * 1.06 : baseScale
 
-  // Opacity: center=1.0, edges fade to 0.18
-  const baseOpacity = Math.max(0.18, 1.0 - 0.82 * Math.pow(tNorm, 1.4))
+  // Opacity: center=1.0, edges fade to 0.30
+  const baseOpacity = Math.max(0.30, 1.0 - 0.70 * tNorm)
 
   // Only center ± 1 show icon + label; others are color-only silhouettes
   const showContent = distFromCenter <= 1
@@ -252,12 +253,14 @@ export default function SpiralMenu({
     return tools.filter(t => t.label.toLowerCase().includes(q) || t.id.toLowerCase().includes(q))
   }, [tools, filterQuery])
 
-  // Rotate: reorder tools so centerIdx is always at the visual center
+  // Rotate: centerIdx 기준으로 VISIBLE_COUNT개만 보여줌 (겹침 방지)
   const displayTools = useMemo(() => {
     if (isSearching) return filteredTools
     const N = tools.length
-    const mid = Math.floor(N / 2)
-    return Array.from({ length: N }, (_, i) => tools[(centerIdx - mid + i + N) % N])
+    const half = Math.floor(VISIBLE_COUNT / 2)
+    return Array.from({ length: VISIBLE_COUNT }, (_, i) =>
+      tools[(centerIdx - half + i + N) % N]
+    )
   }, [tools, centerIdx, isSearching, filteredTools])
 
   const rotate = useCallback((dir: 1 | -1) => {
