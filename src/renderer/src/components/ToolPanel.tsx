@@ -39,7 +39,7 @@ export default function ToolPanel({
   toolLabel,
   onBack,
 }: ToolPanelProps): React.ReactElement {
-  const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, setHubColor, setDisplay } = useAppStore()
+  const { hubColor } = useAppStore()
   const [folder, setFolder] = useState('')
 
   const folderTools = ['search', 'bulkRename', 'folderCompare']
@@ -171,17 +171,7 @@ export default function ToolPanel({
         {/* Tool content — ErrorBoundary로 감싸 개별 도구 크래시가 앱 전체에 영향 없도록 */}
         <ErrorBoundary>
         <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
-          {toolId === 'settings' && (
-            <SettingsPanel
-              hubColor={hubColor}
-              hubSize={hubSize}
-              overlayOpacity={overlayOpacity}
-              spiralScale={spiralScale}
-              animSpeed={animSpeed}
-              onThemeChange={setHubColor}
-              onDisplayChange={setDisplay}
-            />
-          )}
+          {toolId === 'settings' && <SettingsPanel />}
           {toolId === 'ai' && <AiPanel asPanel onClose={onBack} />}
           {toolId === 'search'        && <SearchModal        onClose={onBack} initialFolder={folder} asPanel />}
           {toolId === 'cadConvert'    && <CadConvertModal    onClose={onBack} asPanel />}

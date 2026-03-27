@@ -54,6 +54,22 @@ export const DEFAULT_OVERLAY_OPACITY = 0.88
 export const DEFAULT_SPIRAL_SCALE   = 1.0
 export const DEFAULT_ANIM_SPEED     = 'normal' as const
 
+// ──────────────────────────────────────────────
+// 기능별 한계값
+// ──────────────────────────────────────────────
+
+/** 클립보드 히스토리 최대 보관 개수 */
+export const CLIPBOARD_HISTORY_LIMIT = 50
+/** 클립보드 폴링 간격 (ms) */
+export const CLIPBOARD_POLL_INTERVAL = 1000
+/** 리마인더 확인 주기 (ms) */
+export const REMINDER_CHECK_INTERVAL = 60 * 1000
+/** 클립보드 항목 최대 길이 */
+export const CLIPBOARD_MAX_LENGTH = 10_000
+
+/** 빠른 메모 기본 배경색 목록 */
+export const QUICK_NOTE_COLORS = ['#2d2d2d', '#1a3a2a', '#1a1a3a', '#3a1a1a', '#2a2a1a'] as const
+
 // Windows 예약 파일명 (대소문자 무관)
 export const WINDOWS_RESERVED_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL',

@@ -2,23 +2,27 @@ import { ipcMain, dialog, app, BrowserWindow } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
 import Jimp from 'jimp'
+import { z } from 'zod'
+import log, { logIpcError } from './logger'
 
-interface ConvertJob {
-  filePath: string
-  outputDir: string
-  format: 'jpg' | 'png' | 'bmp'
-  quality: number
-  width: number   // 0 = no resize
-  height: number  // 0 = no resize
-  keepAspect: boolean
-}
+const ConvertJobSchema = z.object({
+  filePath:   z.string().min(1),
+  outputDir:  z.string().min(1),
+  format:     z.enum(['jpg', 'png', 'bmp']),
+  quality:    z.number().int().min(1).max(100),
+  width:      z.number().int().min(0),
+  height:     z.number().int().min(0),
+  keepAspect: z.boolean(),
+})
+
+const ConvertJobsSchema = z.array(ConvertJobSchema).min(1).max(200)
 
 export function registerImageToolHandlers(): void {
   ipcMain.handle('imageTool:openFiles', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     const result = await dialog.showOpenDialog(win!, {
       filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'bmp', 'gif', 'tiff', 'tif'] }],
-      properties: ['openFile', 'multiSelections']
+      properties: ['openFile', 'multiSelections'],
     })
     return result.canceled ? [] : result.filePaths
   })
@@ -29,21 +33,27 @@ export function registerImageToolHandlers(): void {
     return result.canceled ? null : result.filePaths[0]
   })
 
-  ipcMain.handle('imageTool:defaultOutputDir', () => {
-    return path.join(app.getPath('desktop'), 'Image_Converted')
-  })
+  ipcMain.handle('imageTool:defaultOutputDir', () =>
+    path.join(app.getPath('desktop'), 'Image_Converted')
+  )
 
-  ipcMain.handle('imageTool:convert', async (_, jobs: ConvertJob[]) => {
+  ipcMain.handle('imageTool:convert', async (_, rawJobs: unknown) => {
+    const parsed = ConvertJobsSchema.safeParse(rawJobs)
+    if (!parsed.success) {
+      log.warn('[imageTool:convert] 유효하지 않은 입력', parsed.error.flatten())
+      return [{ filePath: '', success: false, error: '유효하지 않은 변환 작업' }]
+    }
+
     const results: { filePath: string; success: boolean; outputPath?: string; error?: string }[] = []
 
-    for (const job of jobs) {
+    for (const job of parsed.data) {
       try {
         if (!fs.existsSync(job.outputDir)) fs.mkdirSync(job.outputDir, { recursive: true })
 
         const img = await Jimp.read(job.filePath)
 
         if (job.width > 0 || job.height > 0) {
-          const w = job.width > 0 ? job.width : Jimp.AUTO
+          const w = job.width  > 0 ? job.width  : Jimp.AUTO
           const h = job.height > 0 ? job.height : Jimp.AUTO
           if (job.keepAspect) {
             img.scaleToFit(job.width > 0 ? job.width : 999999, job.height > 0 ? job.height : 999999)
@@ -55,18 +65,21 @@ export function registerImageToolHandlers(): void {
         const mimeMap: Record<string, string> = {
           jpg: Jimp.MIME_JPEG,
           png: Jimp.MIME_PNG,
-          bmp: Jimp.MIME_BMP
+          bmp: Jimp.MIME_BMP,
         }
         img.quality(job.quality)
 
         const baseName = path.basename(job.filePath, path.extname(job.filePath))
-        const outPath = path.join(job.outputDir, `${baseName}.${job.format}`)
+        const outPath  = path.join(job.outputDir, `${baseName}.${job.format}`)
         await img.writeAsync(outPath)
         results.push({ filePath: job.filePath, success: true, outputPath: outPath })
-      } catch (e: any) {
-        results.push({ filePath: job.filePath, success: false, error: e.message })
+      } catch (err) {
+        logIpcError('imageTool:convert', err, { filePath: job.filePath })
+        results.push({ filePath: job.filePath, success: false, error: err instanceof Error ? err.message : String(err) })
       }
     }
+
+    log.info(`[imageTool:convert] ${results.filter(r => r.success).length}/${results.length} 성공`)
     return results
   })
 }
