@@ -68,13 +68,14 @@ const FanCard = memo(function FanCard({
 
   const midIndex = (total - 1) / 2
   const distFromCenter = Math.abs(index - midIndex)
+  const t = midIndex > 0 ? distFromCenter / midIndex : 0  // 0=center, 1=edge
 
-  // Scale: center=1.12, edges shrink
-  const baseScale = Math.max(0.62, 1.12 - distFromCenter * 0.038)
+  // Scale: center=1.72, edges shrink quadratically to 0.40
+  const baseScale = Math.max(0.40, 1.72 - 1.32 * t * t)
   const activeScale = hovered ? baseScale * 1.08 : baseScale
 
-  // Opacity: center=1.0, edges fade
-  const baseOpacity = Math.max(0.28, 1.0 - distFromCenter * 0.068)
+  // Opacity: center=1.0, edges fade to 0.18
+  const baseOpacity = Math.max(0.18, 1.0 - 0.82 * Math.pow(t, 1.4))
 
   const hoverRadius = hovered ? radius + 36 : radius
   const { x, y } = cardPosition(angleDeg, hoverRadius, arcCenterX, arcCenterY)
@@ -359,7 +360,7 @@ export default function SpiralMenu({
       {/* Rotation controls */}
       <div style={{
         position: 'fixed',
-        bottom: 100,
+        bottom: 156,
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 22,
@@ -440,7 +441,7 @@ export default function SpiralMenu({
       {/* Hint text */}
       <div style={{
         position: 'fixed',
-        bottom: 84,
+        bottom: 140,
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 22,
