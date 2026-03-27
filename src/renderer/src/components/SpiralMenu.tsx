@@ -63,23 +63,25 @@ const FanCard = memo(function FanCard({
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), index * staggerMs + 30)
+    const t = setTimeout(() => setMounted(true), index * staggerMs + 20)
     return () => clearTimeout(t)
   }, [index, staggerMs])
 
   const midIndex = (total - 1) / 2
   const distFromCenter = Math.abs(index - midIndex)
-  const t = midIndex > 0 ? distFromCenter / midIndex : 0  // 0=center, 1=edge
+  const tNorm = midIndex > 0 ? distFromCenter / midIndex : 0  // 0=center, 1=edge
 
-  // Scale: center=2.4, edges shrink quadratically to 0.36
-  const baseScale = Math.max(0.36, 2.4 - 2.04 * t * t)
-  const activeScale = hovered ? baseScale * 1.08 : baseScale
+  // Scale: center=2.4, quadratic falloff to 0.36 at edges
+  const baseScale = Math.max(0.36, 2.4 - 2.04 * tNorm * tNorm)
+  const activeScale = hovered ? baseScale * 1.06 : baseScale
 
   // Opacity: center=1.0, edges fade to 0.18
-  const baseOpacity = Math.max(0.18, 1.0 - 0.82 * Math.pow(t, 1.4))
+  const baseOpacity = Math.max(0.18, 1.0 - 0.82 * Math.pow(tNorm, 1.4))
 
-  const hoverRadius = hovered ? radius + 36 : radius
-  const { x, y } = cardPosition(angleDeg, hoverRadius, arcCenterX, arcCenterY)
+  // Only center ± 1 show icon + label; others are color-only silhouettes
+  const showContent = distFromCenter <= 1
+
+  const { x, y } = cardPosition(angleDeg, radius, arcCenterX, arcCenterY)
 
   return (
     <div
@@ -92,29 +94,25 @@ const FanCard = memo(function FanCard({
         top: y - CARD_H / 2,
         width: CARD_W,
         height: CARD_H,
-        transform: `rotate(${angleDeg}deg) scale(${activeScale})`,
+        // 카드는 항상 똑바로 서있음 (회전 없음)
+        transform: `scale(${activeScale})`,
         transformOrigin: 'center center',
         cursor: 'pointer',
         borderRadius: 10,
-        background: hovered
-          ? `linear-gradient(175deg, #2e2518, #201c10)`
-          : isCenter
-            ? `linear-gradient(175deg, #2a2318, #1e1a10)`
-            : `linear-gradient(175deg, #1e1a12, #151208)`,
-        border: `2px solid ${hovered ? tool.color + 'ff' : tool.color + (isCenter ? 'dd' : '55')}`,
+        background: isCenter
+          ? `linear-gradient(175deg, #2a2318, #1e1a10)`
+          : `linear-gradient(175deg, #1e1a12, #151208)`,
+        border: `2px solid ${tool.color + (isCenter ? 'dd' : hovered ? 'cc' : '44')}`,
         boxShadow: hovered
-          ? `0 0 32px ${tool.color}88, 0 16px 48px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.08)`
+          ? `0 0 28px ${tool.color}77, 0 12px 36px rgba(0,0,0,0.8)`
           : isCenter
-            ? `0 0 22px ${tool.color}66, 0 10px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05)`
-            : isRecommended
-              ? `0 0 14px ${tool.color}55, 0 6px 20px rgba(0,0,0,0.6)`
-              : `0 4px 14px rgba(0,0,0,0.55)`,
+            ? `0 0 20px ${tool.color}55, 0 8px 24px rgba(0,0,0,0.7)`
+            : `0 2px 10px rgba(0,0,0,0.5)`,
+        // 위치·크기·투명도만 트랜지션 (border/shadow 제외로 성능 향상)
         transition: `left ${animDuration}ms cubic-bezier(0.22,1,0.36,1),
                      top ${animDuration}ms cubic-bezier(0.22,1,0.36,1),
-                     transform ${animDuration * 0.7}ms cubic-bezier(0.22,1,0.36,1),
-                     opacity ${animDuration * 0.6}ms ease,
-                     border-color ${animDuration * 0.5}ms ease,
-                     box-shadow ${animDuration * 0.5}ms ease`,
+                     transform ${animDuration * 0.65}ms cubic-bezier(0.22,1,0.36,1),
+                     opacity ${animDuration * 0.5}ms ease`,
         opacity: mounted ? (hovered ? 1 : baseOpacity) : 0,
         zIndex: hovered ? 25 : isCenter ? 16 : 12,
         display: 'flex',
@@ -122,69 +120,68 @@ const FanCard = memo(function FanCard({
         alignItems: 'stretch',
         userSelect: 'none',
         overflow: 'hidden',
+        willChange: 'transform, opacity',
       }}
     >
-      {/* Color header strip */}
+      {/* Top color strip */}
       <div style={{
-        background: hovered || isCenter ? tool.color : `linear-gradient(90deg, ${tool.color}cc, ${tool.color}66)`,
-        height: isCenter ? 6 : 4,
+        background: `linear-gradient(90deg, ${tool.color}, ${tool.color}aa)`,
+        height: isCenter ? 6 : 3,
         flexShrink: 0,
-        transition: `height ${animDuration * 0.4}ms ease, background ${animDuration * 0.4}ms ease`,
       }} />
 
-      {/* Counter-rotated content */}
-      <div style={{
-        flex: 1,
-        transform: `rotate(${-angleDeg}deg)`,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        padding: '10px 8px 12px',
-      }}>
-        {isRecommended && (
-          <div style={{
-            position: 'absolute',
-            top: 10, right: 8,
-            fontSize: 9, fontWeight: 700,
-            color: '#fbbf24',
-            background: 'rgba(251,191,36,0.15)',
-            border: '1px solid rgba(251,191,36,0.4)',
-            borderRadius: 4,
-            padding: '1px 5px',
-            letterSpacing: '0.04em',
-          }}>AI</div>
-        )}
-
-        <span style={{
-          fontSize: hovered || isCenter ? 34 : 26,
-          lineHeight: 1,
-          transition: `font-size ${animDuration * 0.4}ms ease`,
-          filter: (hovered || isCenter) ? `drop-shadow(0 2px 8px ${tool.color}99)` : undefined,
+      {/* Content: only center ±1 */}
+      {showContent ? (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+          padding: '10px 8px 12px',
+          position: 'relative',
         }}>
-          {tool.icon}
-        </span>
-
-        <span style={{
-          fontSize: isCenter ? 12 : 10.5,
-          fontWeight: isCenter || hovered ? 700 : 600,
-          color: hovered ? '#ffffff' : isCenter ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.65)',
-          textAlign: 'center',
-          lineHeight: 1.35,
-          wordBreak: 'keep-all',
-          transition: `color ${animDuration * 0.4}ms ease, font-size ${animDuration * 0.4}ms ease`,
-        }}>
-          {tool.label}
-        </span>
-      </div>
+          {isRecommended && (
+            <div style={{
+              position: 'absolute', top: 8, right: 7,
+              fontSize: 9, fontWeight: 700, color: '#fbbf24',
+              background: 'rgba(251,191,36,0.15)',
+              border: '1px solid rgba(251,191,36,0.4)',
+              borderRadius: 4, padding: '1px 5px',
+            }}>AI</div>
+          )}
+          <span style={{
+            fontSize: isCenter ? 34 : 26,
+            lineHeight: 1,
+            filter: isCenter ? `drop-shadow(0 2px 8px ${tool.color}99)` : undefined,
+          }}>
+            {tool.icon}
+          </span>
+          <span style={{
+            fontSize: isCenter ? 12 : 10.5,
+            fontWeight: 700,
+            color: isCenter ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.72)',
+            textAlign: 'center',
+            lineHeight: 1.35,
+            wordBreak: 'keep-all',
+          }}>
+            {tool.label}
+          </span>
+        </div>
+      ) : (
+        // 나머지 카드: 색상만 표시
+        <div style={{
+          flex: 1,
+          background: `linear-gradient(175deg, ${tool.color}18, ${tool.color}06)`,
+        }} />
+      )}
 
       {/* Bottom color tint */}
       <div style={{
-        height: 18,
-        background: `linear-gradient(to top, ${tool.color}${isCenter ? '28' : '14'}, transparent)`,
+        height: 14,
+        background: `linear-gradient(to top, ${tool.color}22, transparent)`,
         flexShrink: 0,
-        transition: 'background 0.3s ease',
       }} />
     </div>
   )
