@@ -128,7 +128,7 @@ const FanCard = memo(function FanCard({
               : `0 4px 14px rgba(0,0,0,0.55)`,
         transition: `all ${animDuration * 0.75}ms cubic-bezier(0.22,1,0.36,1)`,
         opacity: mounted ? 1 : 0,
-        zIndex: hovered ? 30 : isCenterCard ? 5 : 1,
+        zIndex: hovered ? 25 : isCenterCard ? 14 : 12,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
@@ -341,7 +341,7 @@ export default function SpiralMenu({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 20,
+          zIndex: 15,
           pointerEvents: 'none',
         }}
       >
