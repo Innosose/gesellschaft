@@ -22,9 +22,9 @@ const STAGGER_MS: Record<string, number> = { slow: 40, normal: 22, fast: 9 }
 // ─── Fan geometry ──────────────────────────────────────────────────────────────
 // Arc center is off-screen below the viewport.
 // Cards are placed along the arc and rotated to face outward from the center.
-const CARD_W  = 108   // px
-const CARD_H  = 152   // px
-const TOTAL_ARC_DEG = 148  // total spread in degrees (left edge to right edge)
+const CARD_W  = 104   // px
+const CARD_H  = 156   // px  — tall like a book spine
+const TOTAL_ARC_DEG = 150  // total spread in degrees (left edge to right edge)
 
 function getArcParams(vw: number, vh: number, scale: number) {
   const radius    = Math.min(vh * 0.62 * scale, 820)
@@ -85,14 +85,17 @@ const FanCard = memo(function FanCard({
   const midIndex = (total - 1) / 2
   const distFromCenter = Math.abs(index - midIndex)
   const isCenterCard = distFromCenter < 1.5
-  const featureScale = isCenterCard ? 1.06 : 1 - distFromCenter * 0.012
+  // Edge cards scale down slightly for depth
+  const baseScale = Math.max(0.82, 1 - distFromCenter * 0.018)
+  const activeScale = hovered ? baseScale * 1.1 : baseScale
 
   // Hover: extend outward along the radius
-  const hoverRadius = hovered ? radius + 30 : radius
+  const hoverRadius = hovered ? radius + 34 : radius
   const { x, y } = cardPosition(angleDeg, hoverRadius, arcCenterX, arcCenterY)
 
-  // Cards farther from center are slightly dimmer
-  const dimFactor = Math.max(0.55, 1 - distFromCenter * 0.04)
+  // Derive a solid background from tool color
+  // Mix tool.color with very dark mahogany
+  const solidBg = tool.color
 
   return (
     <div
@@ -105,84 +108,86 @@ const FanCard = memo(function FanCard({
         top: y - CARD_H / 2,
         width: CARD_W,
         height: CARD_H,
-        transform: `rotate(${angleDeg}deg) scale(${hovered ? featureScale * 1.08 : featureScale})`,
+        transform: `rotate(${angleDeg}deg) scale(${activeScale})`,
         transformOrigin: 'center center',
         cursor: 'pointer',
-        borderRadius: 12,
+        borderRadius: 10,
+        // Fully opaque dark card with tool-color tinted background
         background: hovered
-          ? `linear-gradient(160deg, ${tool.color}30, ${tool.color}14)`
-          : `linear-gradient(170deg, ${tool.color}22, ${tool.color}08)`,
-        border: `1.5px solid ${hovered ? tool.color + 'cc' : tool.color + (isCenterCard ? '66' : '3a')}`,
+          ? `linear-gradient(175deg, #2a2218, #1e1810)`
+          : isCenterCard
+            ? `linear-gradient(175deg, #242018, #1a1610)`
+            : `linear-gradient(175deg, #1e1a12, #151208)`,
+        border: `2px solid ${hovered ? solidBg + 'ff' : solidBg + (isCenterCard ? 'cc' : '66')}`,
         boxShadow: hovered
-          ? `0 0 32px ${tool.color}55, 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 ${tool.color}33`
+          ? `0 0 28px ${solidBg}88, 0 16px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08)`
           : isRecommended
-            ? `0 0 18px ${tool.color}77, 0 4px 20px rgba(0,0,0,0.4)`
+            ? `0 0 16px ${solidBg}66, 0 6px 20px rgba(0,0,0,0.6)`
             : isCenterCard
-              ? `0 0 14px ${tool.color}33, 0 6px 24px rgba(0,0,0,0.45)`
-              : `0 4px 18px rgba(0,0,0,0.35)`,
-        backdropFilter: hovered ? 'blur(6px)' : undefined,
-        transition: `all ${animDuration * 0.8}ms cubic-bezier(0.22,1,0.36,1)`,
-        opacity: mounted ? dimFactor : 0,
+              ? `0 0 10px ${solidBg}44, 0 8px 24px rgba(0,0,0,0.6)`
+              : `0 4px 14px rgba(0,0,0,0.55)`,
+        transition: `all ${animDuration * 0.75}ms cubic-bezier(0.22,1,0.36,1)`,
+        opacity: mounted ? 1 : 0,
         zIndex: hovered ? 30 : isCenterCard ? 5 : 1,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 0,
+        alignItems: 'stretch',
         userSelect: 'none',
         overflow: 'hidden',
       }}
     >
-      {/* Recommended indicator */}
-      {isRecommended && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: '#fbbf24',
-            boxShadow: '0 0 8px #fbbf24aa',
-          }}
-        />
-      )}
-
-      {/* Color accent bar at top */}
+      {/* Solid color header strip — like a book cover label */}
       <div
         style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 3,
           background: hovered
-            ? `linear-gradient(90deg, ${tool.color}aa, ${tool.color}55)`
-            : `linear-gradient(90deg, ${tool.color}66, ${tool.color}22)`,
-          borderRadius: '12px 12px 0 0',
-          transition: `background ${animDuration * 0.6}ms ease`,
+            ? solidBg
+            : `linear-gradient(90deg, ${solidBg}ee, ${solidBg}99)`,
+          height: 5,
+          flexShrink: 0,
+          transition: `background ${animDuration * 0.5}ms ease`,
         }}
       />
 
-      {/* Card content — counter-rotated so text is always upright */}
+      {/* Card body — counter-rotated so text is always upright */}
       <div
         style={{
+          flex: 1,
           transform: `rotate(${-angleDeg}deg)`,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: 10,
-          padding: '0 8px',
-          width: '100%',
+          padding: '10px 8px 12px',
         }}
       >
+        {/* AI recommended badge */}
+        {isRecommended && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 8,
+              fontSize: 9,
+              fontWeight: 700,
+              color: '#fbbf24',
+              background: 'rgba(251,191,36,0.15)',
+              border: '1px solid rgba(251,191,36,0.4)',
+              borderRadius: 4,
+              padding: '1px 5px',
+              letterSpacing: '0.04em',
+            }}
+          >
+            AI
+          </div>
+        )}
+
         <span
           style={{
-            fontSize: hovered ? 34 : 30,
+            fontSize: hovered || isCenterCard ? 34 : 28,
             lineHeight: 1,
-            transition: `font-size ${animDuration * 0.5}ms ease`,
-            filter: hovered ? `drop-shadow(0 0 8px ${tool.color}88)` : undefined,
+            transition: `font-size ${animDuration * 0.4}ms ease`,
+            filter: hovered ? `drop-shadow(0 2px 6px ${solidBg}99)` : undefined,
           }}
         >
           {tool.icon}
@@ -191,17 +196,26 @@ const FanCard = memo(function FanCard({
         <span
           style={{
             fontSize: 11,
-            fontWeight: hovered || isCenterCard ? 700 : 500,
-            color: hovered ? '#fff' : `rgba(255,255,255,${isCenterCard ? 0.85 : 0.68})`,
+            fontWeight: isCenterCard || hovered ? 700 : 600,
+            color: hovered ? '#ffffff' : isCenterCard ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.75)',
             textAlign: 'center',
             lineHeight: 1.35,
             wordBreak: 'keep-all',
-            transition: `color ${animDuration * 0.5}ms ease`,
+            transition: `color ${animDuration * 0.4}ms ease`,
           }}
         >
           {tool.label}
         </span>
       </div>
+
+      {/* Bottom color tint */}
+      <div
+        style={{
+          height: 20,
+          background: `linear-gradient(to top, ${solidBg}18, transparent)`,
+          flexShrink: 0,
+        }}
+      />
     </div>
   )
 })

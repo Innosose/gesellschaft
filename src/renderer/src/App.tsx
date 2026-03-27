@@ -22,6 +22,7 @@ export default function App(): React.ReactElement {
   const [recommended, setRecommended] = useState<string[]>([])
   const [scanning, setScanning] = useState(false)
   const [toolSearch, setToolSearch] = useState('')
+  const [scanMsg, setScanMsg] = useState('')
 
   // 설정 초기 로드
   useEffect(() => { loadFromAPI() }, [loadFromAPI])
@@ -49,18 +50,35 @@ export default function App(): React.ReactElement {
     b: parseInt(hubColor.slice(5, 7), 16),
   }), [hubColor])
 
+  const showScanMsg = useCallback((msg: string) => {
+    setScanMsg(msg)
+    setTimeout(() => setScanMsg(''), 3500)
+  }, [])
+
   const handleScan = useCallback(async () => {
     setScanning(true)
+    setScanMsg('')
     try {
       const result = await window.api.screen.captureAndAnalyze()
-      if (result.success && result.recommendations.length > 0) {
+      if (result.success) {
         setRecommended(result.recommendations)
         setUiState('menu')
+        if (result.recommendations.length === 0) {
+          showScanMsg('화면에서 추천 기능을 찾지 못했습니다.')
+        }
+      } else {
+        setUiState('menu')
+        const msg = result.error?.includes('API 키')
+          ? '⚙ AI 어시스턴트 설정에서 API 키를 등록해주세요.'
+          : `분석 실패: ${result.error ?? '알 수 없는 오류'}`
+        showScanMsg(msg)
       }
+    } catch {
+      showScanMsg('화면 분석 중 오류가 발생했습니다.')
     } finally {
       setScanning(false)
     }
-  }, [])
+  }, [showScanMsg])
 
   const handleHide = useCallback(() => {
     window.api.window.hide()
@@ -258,6 +276,34 @@ export default function App(): React.ReactElement {
           >
             {scanning ? '⟳ 분석중...' : '✦ AI 화면 분석'}
           </button>
+        </div>
+      )}
+
+      {/* AI 스캔 결과 토스트 */}
+      {scanMsg && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 58,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 200,
+            padding: '9px 20px',
+            borderRadius: 22,
+            background: 'rgba(22,14,6,0.97)',
+            border: '1px solid rgba(210,148,50,0.5)',
+            color: 'rgba(255,215,130,0.96)',
+            fontSize: 12,
+            fontWeight: 500,
+            backdropFilter: 'blur(14px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.65)',
+            animation: 'popIn 0.2s cubic-bezier(0.22,1,0.36,1) both',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            letterSpacing: '0.01em',
+          }}
+        >
+          {scanMsg}
         </div>
       )}
 
