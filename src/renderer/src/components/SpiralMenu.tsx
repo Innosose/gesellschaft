@@ -70,8 +70,8 @@ const FanCard = memo(function FanCard({
   const distFromCenter = Math.abs(index - midIndex)
   const t = midIndex > 0 ? distFromCenter / midIndex : 0  // 0=center, 1=edge
 
-  // Scale: center=1.72, edges shrink quadratically to 0.40
-  const baseScale = Math.max(0.40, 1.72 - 1.32 * t * t)
+  // Scale: center=2.4, edges shrink quadratically to 0.36
+  const baseScale = Math.max(0.36, 2.4 - 2.04 * t * t)
   const activeScale = hovered ? baseScale * 1.08 : baseScale
 
   // Opacity: center=1.0, edges fade to 0.18
