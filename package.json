@@ -4,7 +4,7 @@
   "description": "게젤샤프트 — 바탕화면 AI 어시스턴트",
   "main": "out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "electron-vite dev -- --no-sandbox",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder --win",
