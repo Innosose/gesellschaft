@@ -21,13 +21,12 @@ const STAGGER_MS: Record<string, number> = { slow: 40, normal: 22, fast: 9 }
 
 const CARD_W = 104
 const CARD_H = 156
-const TOTAL_ARC_DEG = 110
-const VISIBLE_COUNT = 5  // 한 번에 보이는 카드 수 (겹침 방지)
+const TOTAL_ARC_DEG = 160
+const VISIBLE_COUNT = 9
 
 function getArcParams(vw: number, vh: number, scale: number) {
-  const radius = Math.min(vh * 0.62 * scale, 820)
+  const radius = Math.min(vh * 0.66 * scale, 880)
   const arcCenterX = vw / 2
-  // 중앙 카드가 화면 정중앙에 위치하도록: arcCenterY - radius = vh/2
   const arcCenterY = vh / 2 + radius
   return { radius, arcCenterX, arcCenterY }
 }
@@ -40,7 +39,7 @@ function cardPosition(angleDeg: number, radius: number, arcCenterX: number, arcC
   }
 }
 
-// ─── Single Fan Card ────────────────────────────────────────────────────────────
+// ─── Single Fan Card ─────────────────────────────────────────────────────────
 interface FanCardProps {
   tool: Tool
   angleDeg: number
@@ -70,16 +69,16 @@ const FanCard = memo(function FanCard({
 
   const midIndex = (total - 1) / 2
   const distFromCenter = Math.abs(index - midIndex)
-  const tNorm = midIndex > 0 ? distFromCenter / midIndex : 0  // 0=center, 1=edge
+  const tNorm = midIndex > 0 ? distFromCenter / midIndex : 0
 
-  // Scale: center=2.0, 선형 감소 → 0.42 (겹치지 않는 비율)
-  const baseScale = Math.max(0.42, 2.0 - 1.58 * tNorm)
-  const activeScale = hovered ? baseScale * 1.06 : baseScale
+  // 지수 감소: 중앙=1.65, 가장자리≈0.46 — 9장 간격에서 겹치지 않는 비율
+  const baseScale = 0.38 + 1.27 * Math.exp(-2.8 * tNorm)
+  const activeScale = hovered ? baseScale * 1.07 : baseScale
 
-  // Opacity: center=1.0, edges fade to 0.30
-  const baseOpacity = Math.max(0.30, 1.0 - 0.70 * tNorm)
+  // 투명도
+  const baseOpacity = Math.max(0.25, 1.0 - 0.75 * tNorm)
 
-  // Only center ± 1 show icon + label; others are color-only silhouettes
+  // 중앙 ±1만 콘텐츠 표시
   const showContent = distFromCenter <= 1
 
   const { x, y } = cardPosition(angleDeg, radius, arcCenterX, arcCenterY)
@@ -95,7 +94,6 @@ const FanCard = memo(function FanCard({
         top: y - CARD_H / 2,
         width: CARD_W,
         height: CARD_H,
-        // 카드는 항상 똑바로 서있음 (회전 없음)
         transform: `scale(${activeScale})`,
         transformOrigin: 'center center',
         cursor: 'pointer',
@@ -103,13 +101,12 @@ const FanCard = memo(function FanCard({
         background: isCenter
           ? `linear-gradient(175deg, #2a2318, #1e1a10)`
           : `linear-gradient(175deg, #1e1a12, #151208)`,
-        border: `2px solid ${tool.color + (isCenter ? 'dd' : hovered ? 'cc' : '44')}`,
+        border: `2px solid ${tool.color + (isCenter ? 'dd' : hovered ? 'bb' : '44')}`,
         boxShadow: hovered
           ? `0 0 28px ${tool.color}77, 0 12px 36px rgba(0,0,0,0.8)`
           : isCenter
             ? `0 0 20px ${tool.color}55, 0 8px 24px rgba(0,0,0,0.7)`
             : `0 2px 10px rgba(0,0,0,0.5)`,
-        // 위치·크기·투명도만 트랜지션 (border/shadow 제외로 성능 향상)
         transition: `left ${animDuration}ms cubic-bezier(0.22,1,0.36,1),
                      top ${animDuration}ms cubic-bezier(0.22,1,0.36,1),
                      transform ${animDuration * 0.65}ms cubic-bezier(0.22,1,0.36,1),
@@ -131,7 +128,6 @@ const FanCard = memo(function FanCard({
         flexShrink: 0,
       }} />
 
-      {/* Content: only center ±1 */}
       {showContent ? (
         <div style={{
           flex: 1,
@@ -171,14 +167,12 @@ const FanCard = memo(function FanCard({
           </span>
         </div>
       ) : (
-        // 나머지 카드: 색상만 표시
         <div style={{
           flex: 1,
           background: `linear-gradient(175deg, ${tool.color}18, ${tool.color}06)`,
         }} />
       )}
 
-      {/* Bottom color tint */}
       <div style={{
         height: 14,
         background: `linear-gradient(to top, ${tool.color}22, transparent)`,
@@ -188,12 +182,134 @@ const FanCard = memo(function FanCard({
   )
 })
 
-// ─── Grid Card (filter mode) ────────────────────────────────────────────────────
+// ─── Overview Grid ────────────────────────────────────────────────────────────
+const OverviewGrid = memo(function OverviewGrid({
+  tools, recommended, animDuration, onSelect, onClose,
+}: {
+  tools: Tool[]
+  recommended: string[]
+  animDuration: number
+  onSelect: (id: string) => void
+  onClose: () => void
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0,
+        zIndex: 40,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        animation: 'fadeIn 0.18s ease both',
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: 'min(680px, 92vw)',
+          maxHeight: '78vh',
+          overflowY: 'auto',
+          background: 'rgba(14,10,6,0.97)',
+          backdropFilter: 'blur(28px)',
+          borderRadius: 18,
+          border: '1px solid rgba(210,148,50,0.22)',
+          boxShadow: '0 32px 100px rgba(0,0,0,0.8)',
+          padding: '18px 16px 20px',
+          animation: 'popIn 0.2s cubic-bezier(0.22,1,0.36,1) both',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: 14, paddingBottom: 10,
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,210,120,0.85)', letterSpacing: '0.04em' }}>
+            전체 기능 ({tools.length})
+          </span>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.35)', fontSize: 16, padding: '2px 6px',
+              borderRadius: 6, transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.7)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)' }}
+          >✕</button>
+        </div>
+
+        {/* Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, 1fr)',
+          gap: 8,
+        }}>
+          {tools.map(tool => (
+            <OverviewCard
+              key={tool.id}
+              tool={tool}
+              isRecommended={recommended.includes(tool.id)}
+              animDuration={animDuration}
+              onSelect={() => onSelect(tool.id)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+})
+
+const OverviewCard = memo(function OverviewCard({
+  tool, isRecommended, animDuration, onSelect,
+}: { tool: Tool; isRecommended: boolean; animDuration: number; onSelect: () => void }) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <button
+      onClick={onSelect}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        gap: 5, padding: '10px 6px 9px',
+        borderRadius: 10, cursor: 'pointer',
+        background: hovered ? `linear-gradient(160deg, ${tool.color}28, ${tool.color}10)` : 'rgba(255,255,255,0.04)',
+        border: `1.5px solid ${hovered ? tool.color + 'bb' : isRecommended ? tool.color + '55' : 'rgba(255,255,255,0.09)'}`,
+        boxShadow: hovered ? `0 0 18px ${tool.color}44` : 'none',
+        transition: `all ${animDuration * 0.5}ms ease`,
+        position: 'relative', overflow: 'hidden',
+      }}
+    >
+      {/* top strip */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+        background: `linear-gradient(90deg, ${tool.color}, ${tool.color}77)`,
+      }} />
+      <span style={{ fontSize: 22, lineHeight: 1, marginTop: 2 }}>{tool.icon}</span>
+      <span style={{
+        fontSize: 10, fontWeight: 600, textAlign: 'center', lineHeight: 1.3,
+        color: hovered ? '#fff' : 'rgba(255,255,255,0.72)',
+        wordBreak: 'keep-all',
+      }}>
+        {tool.label}
+      </span>
+      {isRecommended && (
+        <div style={{
+          position: 'absolute', top: 6, right: 5,
+          fontSize: 8, fontWeight: 700, color: '#fbbf24',
+          background: 'rgba(251,191,36,0.15)',
+          border: '1px solid rgba(251,191,36,0.35)',
+          borderRadius: 3, padding: '0px 3px',
+        }}>AI</div>
+      )}
+    </button>
+  )
+})
+
+// ─── Search Grid Card ─────────────────────────────────────────────────────────
 const GridCard = memo(function GridCard({
   tool, isRecommended, animDuration, onSelect,
-}: {
-  tool: Tool; isRecommended: boolean; animDuration: number; onSelect: () => void
-}) {
+}: { tool: Tool; isRecommended: boolean; animDuration: number; onSelect: () => void }) {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -222,13 +338,14 @@ const GridCard = memo(function GridCard({
   )
 })
 
-// ─── Main SpiralMenu ────────────────────────────────────────────────────────────
+// ─── Main SpiralMenu ──────────────────────────────────────────────────────────
 export default function SpiralMenu({
   tools, recommended, spiralScale, animSpeed, filterQuery, onSelectTool,
 }: SpiralMenuProps): React.ReactElement {
   const [vw, setVw] = useState(window.innerWidth)
   const [vh, setVh] = useState(window.innerHeight)
   const [centerIdx, setCenterIdx] = useState(0)
+  const [showOverview, setShowOverview] = useState(false)
   const wheelCooldown = useRef(false)
 
   useEffect(() => {
@@ -253,7 +370,7 @@ export default function SpiralMenu({
     return tools.filter(t => t.label.toLowerCase().includes(q) || t.id.toLowerCase().includes(q))
   }, [tools, filterQuery])
 
-  // Rotate: centerIdx 기준으로 VISIBLE_COUNT개만 보여줌 (겹침 방지)
+  // VISIBLE_COUNT개만 표시 (겹침 방지)
   const displayTools = useMemo(() => {
     if (isSearching) return filteredTools
     const N = tools.length
@@ -267,20 +384,18 @@ export default function SpiralMenu({
     setCenterIdx(i => (i + dir + tools.length) % tools.length)
   }, [tools.length])
 
-  // Keyboard: arrow keys rotate the fan
   useEffect(() => {
-    if (isSearching) return
+    if (isSearching || showOverview) return
     const handler = (e: KeyboardEvent): void => {
       if (e.key === 'ArrowLeft') rotate(-1)
       else if (e.key === 'ArrowRight') rotate(1)
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [rotate, isSearching])
+  }, [rotate, isSearching, showOverview])
 
-  // Mouse wheel: throttled rotation
   useEffect(() => {
-    if (isSearching) return
+    if (isSearching || showOverview) return
     const handler = (e: WheelEvent): void => {
       if (wheelCooldown.current) return
       wheelCooldown.current = true
@@ -289,7 +404,7 @@ export default function SpiralMenu({
     }
     window.addEventListener('wheel', handler, { passive: true })
     return () => window.removeEventListener('wheel', handler)
-  }, [rotate, isSearching])
+  }, [rotate, isSearching, showOverview])
 
   const fanAngles = useMemo(() => {
     const N = displayTools.length
@@ -301,10 +416,9 @@ export default function SpiralMenu({
   }, [displayTools])
 
   const handleSelect = useCallback((id: string) => onSelectTool(id), [onSelectTool])
-
   const centerToolLabel = displayTools[Math.floor(displayTools.length / 2)]?.label ?? ''
 
-  // ── Filter / search mode ─────────────────────────────────────────────────────
+  // ── Search mode ───────────────────────────────────────────────────────────
   if (isSearching) {
     return (
       <div style={{
@@ -337,7 +451,7 @@ export default function SpiralMenu({
     )
   }
 
-  // ── Fan mode ─────────────────────────────────────────────────────────────────
+  // ── Fan mode ──────────────────────────────────────────────────────────────
   return (
     <>
       {displayTools.map((tool, i) => (
@@ -358,7 +472,7 @@ export default function SpiralMenu({
         />
       ))}
 
-      {/* Rotation controls */}
+      {/* Rotation controls + overview button */}
       <div style={{
         position: 'fixed',
         bottom: 156,
@@ -367,37 +481,14 @@ export default function SpiralMenu({
         zIndex: 22,
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
+        gap: 10,
         pointerEvents: 'auto',
         animation: 'fadeScaleIn 0.3s ease 0.2s both',
       }}>
-        <button
-          onClick={() => rotate(-1)}
-          style={{
-            width: 38, height: 38, borderRadius: '50%',
-            border: '1px solid rgba(210,148,50,0.35)',
-            background: 'rgba(18,12,6,0.88)',
-            color: 'rgba(255,200,100,0.8)',
-            fontSize: 18, cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.15s ease',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-          onMouseEnter={e => {
-            const el = e.currentTarget as HTMLButtonElement
-            el.style.background = 'rgba(210,148,50,0.2)'
-            el.style.borderColor = 'rgba(210,148,50,0.7)'
-            el.style.color = '#ffd080'
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget as HTMLButtonElement
-            el.style.background = 'rgba(18,12,6,0.88)'
-            el.style.borderColor = 'rgba(210,148,50,0.35)'
-            el.style.color = 'rgba(255,200,100,0.8)'
-          }}
-        >‹</button>
+        {/* 이전 */}
+        <NavBtn onClick={() => rotate(-1)} label="‹" />
 
-        {/* Center label */}
+        {/* 현재 도구명 */}
         <div style={{
           fontSize: 12, fontWeight: 600,
           color: 'rgba(255,210,120,0.85)',
@@ -406,53 +497,64 @@ export default function SpiralMenu({
           borderRadius: 20,
           padding: '5px 16px',
           backdropFilter: 'blur(10px)',
-          minWidth: 120, textAlign: 'center',
+          minWidth: 110, textAlign: 'center',
           letterSpacing: '0.02em',
         }}>
           {centerToolLabel}
         </div>
 
+        {/* 다음 */}
+        <NavBtn onClick={() => rotate(1)} label="›" />
+
+        {/* 한눈에 보기 */}
         <button
-          onClick={() => rotate(1)}
+          onClick={() => setShowOverview(true)}
+          title="전체 기능 보기"
           style={{
-            width: 38, height: 38, borderRadius: '50%',
-            border: '1px solid rgba(210,148,50,0.35)',
+            width: 34, height: 34, borderRadius: 8,
+            border: '1px solid rgba(210,148,50,0.30)',
             background: 'rgba(18,12,6,0.88)',
-            color: 'rgba(255,200,100,0.8)',
-            fontSize: 18, cursor: 'pointer',
+            color: 'rgba(255,200,100,0.65)',
+            fontSize: 16, cursor: 'pointer',
             backdropFilter: 'blur(10px)',
             transition: 'all 0.15s ease',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginLeft: 4,
           }}
           onMouseEnter={e => {
             const el = e.currentTarget as HTMLButtonElement
-            el.style.background = 'rgba(210,148,50,0.2)'
-            el.style.borderColor = 'rgba(210,148,50,0.7)'
+            el.style.background = 'rgba(210,148,50,0.18)'
+            el.style.borderColor = 'rgba(210,148,50,0.65)'
             el.style.color = '#ffd080'
           }}
           onMouseLeave={e => {
             const el = e.currentTarget as HTMLButtonElement
             el.style.background = 'rgba(18,12,6,0.88)'
-            el.style.borderColor = 'rgba(210,148,50,0.35)'
-            el.style.color = 'rgba(255,200,100,0.8)'
+            el.style.borderColor = 'rgba(210,148,50,0.30)'
+            el.style.color = 'rgba(255,200,100,0.65)'
           }}
-        >›</button>
+        >⊞</button>
       </div>
 
-      {/* Hint text */}
+      {/* Hint */}
       <div style={{
-        position: 'fixed',
-        bottom: 140,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 22,
-        fontSize: 10,
-        color: 'rgba(255,200,100,0.3)',
-        pointerEvents: 'none',
-        letterSpacing: '0.04em',
+        position: 'fixed', bottom: 140, left: '50%', transform: 'translateX(-50%)',
+        zIndex: 22, fontSize: 10, color: 'rgba(255,200,100,0.3)',
+        pointerEvents: 'none', letterSpacing: '0.04em',
       }}>
         ← → 키 또는 스크롤로 회전
       </div>
+
+      {/* Overview modal */}
+      {showOverview && (
+        <OverviewGrid
+          tools={tools}
+          recommended={recommended}
+          animDuration={animDuration}
+          onSelect={(id) => { setShowOverview(false); handleSelect(id) }}
+          onClose={() => setShowOverview(false)}
+        />
+      )}
 
       <style>{`
         @keyframes fadeScaleIn {
@@ -461,5 +563,38 @@ export default function SpiralMenu({
         }
       `}</style>
     </>
+  )
+}
+
+// ─── 공통 NavBtn ──────────────────────────────────────────────────────────────
+function NavBtn({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: 34, height: 34, borderRadius: '50%',
+        border: '1px solid rgba(210,148,50,0.35)',
+        background: 'rgba(18,12,6,0.88)',
+        color: 'rgba(255,200,100,0.8)',
+        fontSize: 18, cursor: 'pointer',
+        backdropFilter: 'blur(10px)',
+        transition: 'all 0.15s ease',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLButtonElement
+        el.style.background = 'rgba(210,148,50,0.2)'
+        el.style.borderColor = 'rgba(210,148,50,0.7)'
+        el.style.color = '#ffd080'
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLButtonElement
+        el.style.background = 'rgba(18,12,6,0.88)'
+        el.style.borderColor = 'rgba(210,148,50,0.35)'
+        el.style.color = 'rgba(255,200,100,0.8)'
+      }}
+    >
+      {label}
+    </button>
   )
 }
