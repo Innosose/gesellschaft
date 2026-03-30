@@ -81,6 +81,11 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
   }
 
   const deleteNote = async (id: string): Promise<void> => {
+    // Cancel any pending auto-save for this note before deleting
+    if (selected?.id === id && saveTimer.current) {
+      clearTimeout(saveTimer.current)
+      saveTimer.current = null
+    }
     const updated = await window.api.quickNotes.delete(id)
     setNotes(updated)
     if (selected?.id === id) {

@@ -44,7 +44,7 @@ function exportChat(messages: ChatMessage[]): void {
   a.href = url
   a.download = `ai-chat-${Date.now()}.txt`
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), 100)
 }
 
 function CodeBlock({ code }: { code: string }): React.ReactElement {
@@ -55,7 +55,7 @@ function CodeBlock({ code }: { code: string }): React.ReactElement {
         <code style={{ fontFamily: 'ui-monospace, monospace' }}>{code}</code>
       </pre>
       <button
-        onClick={() => { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+        onClick={() => { navigator.clipboard.writeText(code).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
         style={{ position: 'absolute', top: 4, right: 4, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: copied ? '#1e7e34' : 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
       >{copied ? '✓' : '복사'}</button>
     </div>

@@ -48,7 +48,11 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
   const toggle = async (id: string): Promise<void> => {
     const updated = await window.api.todo.toggle(id)
     setTodos(updated)
-    setManualOrder(prev => prev.filter(x => updated.find(t => t.id === x && !t.done)))
+    const pendingIds = updated.filter(t => !t.done).map(t => t.id)
+    setManualOrder(prev => [
+      ...prev.filter(x => pendingIds.includes(x)),            // keep existing order for still-pending items
+      ...pendingIds.filter(pid => !prev.includes(pid))         // append newly re-opened items at end
+    ])
   }
 
   const remove = async (id: string): Promise<void> => {
