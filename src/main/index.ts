@@ -43,7 +43,7 @@ function createWindow(): void {
     movable: false,
     skipTaskbar: false,
     ...(process.platform === 'linux' ? {
-      icon: join(__dirname, '../../resources/icon.png'),
+      icon: join(__dirname, '../../resources/icon_256.png'),
       type: 'splash',          // removes window decorations on Linux WMs that ignore frame:false
     } : {}),
     webPreferences: {
