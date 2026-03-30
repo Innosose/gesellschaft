@@ -37,7 +37,7 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
     window.api.quickNotes.get().then(n => {
       setNotes(n)
       if (n.length > 0) selectNote(n[0])
-    })
+    }).catch(() => {})
   }, [])
 
   const selectNote = (note: Note): void => {

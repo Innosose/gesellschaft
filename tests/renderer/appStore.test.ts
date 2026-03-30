@@ -15,10 +15,7 @@ const mockSettings = {
   setDisplay: jest.fn().mockResolvedValue({ success: true }),
 }
 
-Object.defineProperty(global, 'window', {
-  value: { api: { settings: mockSettings } },
-  writable: true,
-})
+Object.assign(global.window, { api: { settings: mockSettings } })
 
 // CSS variable mock
 Object.defineProperty(document.documentElement, 'style', {

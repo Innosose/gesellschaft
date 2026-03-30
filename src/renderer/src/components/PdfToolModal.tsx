@@ -18,16 +18,16 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
   const [resultPath, setResultPath] = React.useState('')
 
   React.useEffect(() => {
-    ;(window.api as any).pdfTool?.defaultOutputDir?.().then((dir: string) => {
+    window.api.pdfTool.defaultOutputDir().then(dir => {
       if (dir) {
         setMergeOutput(dir)
         setSplitOutputDir(dir)
       }
-    })
+    }).catch(() => {})
   }, [])
 
   const handleAddFiles = async (): Promise<void> => {
-    const files: string[] = await (window.api as any).pdfTool.openFiles()
+    const files = await window.api.pdfTool.openFiles()
     if (files && files.length > 0) {
       setMergeFiles(prev => [...prev, ...files.filter(f => !prev.includes(f))])
     }
@@ -48,7 +48,7 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
   }
 
   const handleBrowseOutput = async (): Promise<void> => {
-    const dir: string = await (window.api as any).pdfTool.openOutputDir()
+    const dir = await window.api.pdfTool.openOutputDir()
     if (dir) setMergeOutput(dir)
   }
 
@@ -66,22 +66,23 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
     setStatus('processing')
     setErrorMsg('')
     try {
-      const result: string = await (window.api as any).pdfTool.merge(mergeFiles, mergeOutput)
-      setResultPath(result)
+      const result = await window.api.pdfTool.merge(mergeFiles, mergeOutput)
+      if (!result.success) throw new Error(result.error ?? '병합 실패')
+      setResultPath(result.outputPath ?? mergeOutput)
       setStatus('done')
-    } catch (e: any) {
-      setErrorMsg(e?.message || '병합 중 오류가 발생했습니다.')
+    } catch (e: unknown) {
+      setErrorMsg(e instanceof Error ? e.message : '병합 중 오류가 발생했습니다.')
       setStatus('error')
     }
   }
 
   const handlePickSplitFile = async (): Promise<void> => {
-    const files: string[] = await (window.api as any).pdfTool.openFiles()
+    const files = await window.api.pdfTool.openFiles()
     if (files && files.length > 0) setSplitFile(files[0])
   }
 
   const handleBrowseSplitOutput = async (): Promise<void> => {
-    const dir: string = await (window.api as any).pdfTool.openOutputDir()
+    const dir = await window.api.pdfTool.openOutputDir()
     if (dir) setSplitOutputDir(dir)
   }
 
@@ -100,11 +101,12 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
     setErrorMsg('')
     setSplitResults([])
     try {
-      const results: string[] = await (window.api as any).pdfTool.split(splitFile, splitOutputDir)
-      setSplitResults(results)
+      const result = await window.api.pdfTool.split(splitFile, splitOutputDir)
+      if (!result.success) throw new Error(result.error ?? '분할 실패')
+      setSplitResults(result.files ?? [])
       setStatus('done')
-    } catch (e: any) {
-      setErrorMsg(e?.message || '분할 중 오류가 발생했습니다.')
+    } catch (e: unknown) {
+      setErrorMsg(e instanceof Error ? e.message : '분할 중 오류가 발생했습니다.')
       setStatus('error')
     }
   }

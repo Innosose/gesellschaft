@@ -39,7 +39,7 @@ export default function ReminderModal({ onClose, asPanel }: { onClose: () => voi
   const [time, setTime] = useState('09:00')
 
   useEffect(() => {
-    window.api.reminders.get().then(setReminders)
+    window.api.reminders.get().then(setReminders).catch(() => {})
   }, [])
 
   const upcoming = reminders

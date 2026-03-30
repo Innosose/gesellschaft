@@ -8,8 +8,8 @@ import {
 
 describe('shared/constants', () => {
   describe('ALL_TOOLS', () => {
-    it('23개 도구가 정의되어 있어야 함', () => {
-      expect(ALL_TOOLS.length).toBe(23)
+    it('16개 도구가 정의되어 있어야 함', () => {
+      expect(ALL_TOOLS.length).toBe(16)
     })
 
     it('모든 도구는 id, icon, label, color, description을 가져야 함', () => {

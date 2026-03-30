@@ -5,7 +5,7 @@ import os from 'os'
 import mime from 'mime-types'
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
-import { WINDOWS_RESERVED_NAMES } from '../shared/constants'
+import { isValidFileName } from '../shared/utils'
 
 export interface FileEntry {
   name: string
@@ -19,20 +19,6 @@ export interface FileEntry {
   tags?: string[]
 }
 
-/** Windows/Linux 모두 안전한 파일명인지 검사 */
-function isValidFileName(name: string): { valid: boolean; reason?: string } {
-  if (!name || name.trim() === '') return { valid: false, reason: '빈 파일명' }
-  if (name.includes('/') || name.includes('\\')) return { valid: false, reason: '경로 구분자 포함' }
-  if (name === '.' || name === '..') return { valid: false, reason: '예약된 경로 이름' }
-  // Windows 예약 파일명 (확장자 무시, 대소문자 무관)
-  const baseName = name.split('.')[0].toUpperCase()
-  if (WINDOWS_RESERVED_NAMES.has(baseName)) return { valid: false, reason: `Windows 예약 파일명: ${baseName}` }
-  // Windows 금지 문자: < > : " | ? *
-  if (/[<>:"|?*]/.test(name)) return { valid: false, reason: 'Windows 금지 문자 포함' }
-  // 끝이 공백이나 마침표이면 안 됨 (Windows)
-  if (/[. ]$/.test(name)) return { valid: false, reason: '파일명 끝에 공백 또는 마침표 불가' }
-  return { valid: true }
-}
 
 export function registerFileSystemHandlers(): void {
   // 디렉토리 목록 읽기

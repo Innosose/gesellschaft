@@ -52,6 +52,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [config, setConfig] = useState<AiConfig | null>(null)
+  const [configLoading, setConfigLoading] = useState(false)
   const [presetModels, setPresetModels] = useState<Record<string, string[]>>({})
   const [ollamaModels, setOllamaModels] = useState<string[]>([])
   const [draft, setDraft] = useState<Partial<AiConfig & { apiKeyRaw?: string }>>({})
@@ -63,12 +64,13 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   // Load config and presets
   useEffect(() => {
     if (!effectiveOpen) return
+    setConfigLoading(true)
     window.api.ai.getConfig().then(cfg => {
       setConfig(cfg)
       setDraft({ ...cfg })
     }).catch(() => {
       setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 설정을 불러오지 못했습니다. 앱을 재시작해주세요.' }])
-    })
+    }).finally(() => setConfigLoading(false))
     window.api.ai.getPresetModels().then(setPresetModels).catch(() => {})
   }, [effectiveOpen])
 
@@ -330,7 +332,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
         )}
 
         {/* Settings Tab */}
-        {tab === 'settings' && config && (
+        {tab === 'settings' && configLoading && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+            설정 로딩 중...
+          </div>
+        )}
+        {tab === 'settings' && !configLoading && config && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
@@ -614,7 +621,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
         )}
 
         {/* Settings Tab */}
-        {tab === 'settings' && config && (
+        {tab === 'settings' && configLoading && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--win-text-muted)', fontSize: 12 }}>
+            설정 로딩 중...
+          </div>
+        )}
+        {tab === 'settings' && !configLoading && config && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 

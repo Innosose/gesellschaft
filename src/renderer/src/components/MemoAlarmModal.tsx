@@ -74,7 +74,7 @@ export default function MemoAlarmModal({ onClose, asPanel }: MemoAlarmModalProps
     window.api.quickNotes.get().then(n => {
       setNotes(n)
       if (n.length > 0) selectNote(n[0])
-    })
+    }).catch(() => {})
   }, [])
 
   const selectNote = (note: Note): void => {
@@ -133,7 +133,7 @@ export default function MemoAlarmModal({ onClose, asPanel }: MemoAlarmModalProps
   const [remTime, setRemTime] = useState('09:00')
 
   useEffect(() => {
-    window.api.reminders.get().then(setReminders)
+    window.api.reminders.get().then(setReminders).catch(() => {})
   }, [])
 
   const upcomingReminders = reminders
