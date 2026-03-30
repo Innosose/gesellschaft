@@ -29,11 +29,14 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   const handleDropFiles = (e: React.DragEvent<HTMLDivElement>): void => {
     e.preventDefault()
     setDragOver(false)
-    const dropped = Array.from(e.dataTransfer.files)
+    const candidates = Array.from(e.dataTransfer.files)
       .filter(f => /\.(jpe?g|png|bmp|webp|gif|tiff?)$/i.test(f.name))
       .map(f => ({ path: (f as File & { path?: string }).path ?? f.name, name: f.name, status: 'waiting' as const }))
-      .filter(f => f.path && !files.some(ex => ex.path === f.path))
-    if (dropped.length > 0) { setFiles(prev => [...prev, ...dropped]); setDone(false) }
+      .filter(c => c.path)
+    if (candidates.length === 0) return
+    // Dedup inside functional updater so the check always uses the latest state
+    setFiles(prev => [...prev, ...candidates.filter(c => !prev.some(ex => ex.path === c.path))])
+    setDone(false)
   }
 
   React.useEffect(() => {
@@ -45,10 +48,13 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   const handleAddFiles = async (): Promise<void> => {
     const picked = await window.api.imageTool.openFiles()
     if (!picked || picked.length === 0) return
-    const newFiles: ImageFile[] = picked
-      .filter(p => !files.some(f => f.path === p))
-      .map(p => ({ path: p, name: p.split(/[\\/]/).pop() || p, status: 'waiting' }))
-    setFiles(prev => [...prev, ...newFiles])
+    // Dedup inside functional updater so the check always uses the latest state
+    setFiles(prev => {
+      const toAdd = picked
+        .filter(p => !prev.some(f => f.path === p))
+        .map(p => ({ path: p, name: p.split(/[\\/]/).pop() || p, status: 'waiting' as const }))
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev
+    })
     setDone(false)
   }
 

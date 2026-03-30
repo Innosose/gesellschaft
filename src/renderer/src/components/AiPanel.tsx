@@ -201,17 +201,23 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   }
 
   const handleSaveConfig = async (): Promise<void> => {
-    await window.api.ai.setConfig(draft as Record<string, unknown>)
-    const updated = await window.api.ai.getConfig()
-    setConfig(updated)
-    setDraft({ ...updated })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    try {
+      await window.api.ai.setConfig(draft as Record<string, unknown>)
+      const updated = await window.api.ai.getConfig()
+      setConfig(updated)
+      setDraft({ ...updated })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch { /* silently ignore — button stays in unsaved state */ }
   }
 
   const loadOllamaModels = async (): Promise<void> => {
-    const models = await window.api.ai.getOllamaModels()
-    setOllamaModels(models)
+    try {
+      const models = await window.api.ai.getOllamaModels()
+      setOllamaModels(models)
+    } catch {
+      setOllamaModels([])
+    }
   }
 
   const provider = (draft.provider ?? config?.provider) as string

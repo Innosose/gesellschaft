@@ -10,14 +10,19 @@ interface TodoItem {
   createdAt: number
 }
 
+function localDateStr(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function isOverdue(dueDate?: string): boolean {
   if (!dueDate) return false
-  return new Date(dueDate) < new Date(new Date().toDateString())
+  // Append T00:00:00 so the string is parsed as local time, not UTC
+  return new Date(dueDate + 'T00:00:00') < new Date(new Date().toDateString())
 }
 
 function isDueToday(dueDate?: string): boolean {
   if (!dueDate) return false
-  return dueDate === new Date().toISOString().slice(0, 10)
+  return dueDate === localDateStr()
 }
 
 export default function TodoModal({ onClose, asPanel }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {

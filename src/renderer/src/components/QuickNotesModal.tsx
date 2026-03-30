@@ -33,15 +33,19 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
   const [savedMsg, setSavedMsg] = useState(false)
   const [saveError, setSaveError] = useState(false)
   const saveTimer = useRef<NodeJS.Timeout | null>(null)
+  const selectedIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     window.api.quickNotes.get().then(n => {
       setNotes(n)
       if (n.length > 0) selectNote(n[0])
     }).catch(() => {})
+    // Clear pending auto-save on unmount to prevent state updates after component is gone
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
   }, [])
 
   const selectNote = (note: Note): void => {
+    selectedIdRef.current = note.id
     setSelected(note)
     setTitle(note.title)
     setContent(note.content)
@@ -51,25 +55,26 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
 
   const autoSave = (updTitle: string, updContent: string, updColor: string): void => {
     if (!selected) return
+    const noteId = selected.id  // capture now; closure may outlive the current selection
     setDirty(true)
     setSaveError(false)
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
       try {
-        const updated = await window.api.quickNotes.save({
-          id: selected.id,
-          title: updTitle,
-          content: updContent,
-          color: updColor
-        })
+        const updated = await window.api.quickNotes.save({ id: noteId, title: updTitle, content: updContent, color: updColor })
         setNotes(updated)
-        setDirty(false)
-        setSavedMsg(true)
-        setTimeout(() => setSavedMsg(false), 1500)
+        // Only update visual state if the user is still looking at the note that was saved
+        if (selectedIdRef.current === noteId) {
+          setDirty(false)
+          setSavedMsg(true)
+          setTimeout(() => setSavedMsg(false), 1500)
+        }
       } catch {
-        setDirty(false)
-        setSaveError(true)
-        setTimeout(() => setSaveError(false), 3000)
+        if (selectedIdRef.current === noteId) {
+          setDirty(false)
+          setSaveError(true)
+          setTimeout(() => setSaveError(false), 3000)
+        }
       }
     }, 800)
   }

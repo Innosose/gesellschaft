@@ -64,6 +64,8 @@ export default function SearchModal({
     try { return JSON.parse(localStorage.getItem(RECENT_SEARCH_KEY) ?? '[]') } catch { return [] }
   })
   const [showRecent, setShowRecent] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
+  const searchAborted = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const sortedResults = useMemo(() => {
@@ -103,6 +105,8 @@ export default function SearchModal({
     setResults([])
     setProgress(0)
     setSelectedFile(null)
+    setHasSearched(true)
+    searchAborted.current = false
 
     const options = {
       query: opts.query,
@@ -128,13 +132,14 @@ export default function SearchModal({
 
     try {
       const res = await window.api.search.files(options)
-      if (res.success) setResults(res.data)
+      if (!searchAborted.current && res.success) setResults(res.data)
     } finally {
       setSearching(false)
     }
   }
 
   const cancel = (): void => {
+    searchAborted.current = true
     window.api.search.cancel()
     setSearching(false)
   }
@@ -293,9 +298,9 @@ export default function SearchModal({
               ))}
             </div>
             <div className="max-h-48 overflow-y-auto">
-              {sortedResults.map((r, i) => (
+              {sortedResults.map((r) => (
                 <div
-                  key={i}
+                  key={r.path}
                   className="flex items-center gap-2 px-3 py-1.5 cursor-pointer group"
                   style={{
                     background: selectedFile?.path === r.path ? 'var(--win-accent-dim)' : 'var(--win-surface)',
@@ -350,7 +355,7 @@ export default function SearchModal({
           </div>
         )}
 
-        {!searching && results.length === 0 && opts.query && (
+        {hasSearched && !searching && results.length === 0 && opts.query && (
           <div className="text-center text-sm py-4" style={{ color: 'var(--win-text-muted)' }}>검색 결과가 없습니다.</div>
         )}
       </div>

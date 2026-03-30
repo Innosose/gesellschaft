@@ -82,6 +82,7 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
   }
 
   const handleMerge = async (): Promise<void> => {
+    if (status === 'processing') return
     if (mergeFiles.length < 2) {
       setErrorMsg('PDF 파일을 2개 이상 추가해주세요.')
       setStatus('error')
@@ -116,6 +117,7 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
   }
 
   const handleSplit = async (): Promise<void> => {
+    if (status === 'processing') return
     if (!splitFile) {
       setErrorMsg('PDF 파일을 선택해주세요.')
       setStatus('error')

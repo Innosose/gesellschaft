@@ -72,7 +72,13 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
 
     const from = sourceLang === '자동 감지' ? '(자동 감지)' : sourceLang
     const prompt = `다음 텍스트를 ${from}에서 ${targetLang}로 번역해줘. 번역문만 출력하고 설명은 하지 마:\n\n${sourceText}`
-    await window.api.ai.chat([{ role: 'user', content: prompt }])
+    try {
+      await window.api.ai.chat([{ role: 'user', content: prompt }])
+    } catch (e: unknown) {
+      streamRef.current = ''
+      setTranslating(false)
+      setResultText(`⚠️ 오류: ${e instanceof Error ? e.message : '전송 실패'}`)
+    }
   }
 
   const handleSwap = (): void => {
@@ -87,13 +93,16 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
 
   const handleCopy = async (): Promise<void> => {
     if (!resultText) return
-    await navigator.clipboard.writeText(resultText)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await navigator.clipboard.writeText(resultText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   const handleCancel = (): void => {
     window.api.ai.cancel()
+    streamRef.current = ''
     setTranslating(false)
   }
 
