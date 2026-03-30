@@ -111,7 +111,7 @@ export default function App(): React.ReactElement {
       } else {
         setUiState('menu')
         const msg = result.error?.includes('API 키')
-          ? '⚙ AI 어시스턴트 설정에서 API 키를 등록해주세요.'
+          ? '⚙ 설정 > AI 탭에서 API 키를 등록해주세요.'
           : `분석 실패: ${result.error ?? '알 수 없는 오류'}`
         addNotification(msg, 'error')
       }

@@ -507,6 +507,9 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                 {saved ? '✓ 저장됨' : '설정 저장'}
               </button>
             </div>
+            <div style={{ marginTop: 10, fontSize: 10, color: 'rgba(255,255,255,0.45)', textAlign: 'center' }}>
+              ⚙ 설정 패널 &gt; AI 탭에서도 동일하게 설정할 수 있습니다.
+            </div>
           </div>
         )}
 
@@ -814,6 +817,9 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
               >
                 {saved ? '✓ 저장됨' : '설정 저장'}
               </button>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 10, color: 'var(--win-text-muted)', textAlign: 'center' }}>
+              ⚙ 설정 패널 &gt; AI 탭에서도 동일하게 설정할 수 있습니다.
             </div>
           </div>
         )}

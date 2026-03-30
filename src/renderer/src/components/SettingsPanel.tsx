@@ -2,6 +2,14 @@ import React, { useEffect, useRef, useState } from 'react'
 import { rgba, THEMES } from '../utils/color'
 import { useAppStore } from '../store/appStore'
 
+interface AiConfig {
+  provider: string
+  apiKey: string
+  model: string
+  systemPrompt: string
+  ollamaUrl: string
+}
+
 // e.code → Electron accelerator key mapping (layout-independent, works with Korean IME)
 const CODE_MAP: Record<string, string> = {
   'Space': 'Space', 'Enter': 'Return', 'Escape': 'Escape', 'Tab': 'Tab',
@@ -96,12 +104,13 @@ function StatusMsg({ ok, msg }: { ok: boolean; msg: string }): React.ReactElemen
   )
 }
 
-type PanelTab = 'theme' | 'display' | 'shortcut'
+type PanelTab = 'theme' | 'display' | 'shortcut' | 'ai'
 
 const TABS: { id: PanelTab; icon: string; label: string }[] = [
   { id: 'theme',    icon: '🎨', label: '테마' },
   { id: 'display',  icon: '🖥',  label: '화면' },
   { id: 'shortcut', icon: '⌨️', label: '단축키' },
+  { id: 'ai',       icon: '🤖', label: 'AI' },
 ]
 
 export default function SettingsPanel(): React.ReactElement {
@@ -127,10 +136,25 @@ export default function SettingsPanel(): React.ReactElement {
   const [savingShortcut, setSavingShortcut] = useState(false)
   const recorderRef = useRef<HTMLDivElement>(null)
 
+  // ── AI state ──
+  const [aiConfig, setAiConfig] = useState<AiConfig | null>(null)
+  const [aiDraft, setAiDraft] = useState<Partial<AiConfig & { apiKeyRaw?: string }>>({})
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiSaved, setAiSaved] = useState(false)
+  const [aiPresetModels, setAiPresetModels] = useState<Record<string, string[]>>({})
+  const [aiOllamaModels, setAiOllamaModels] = useState<string[]>([])
+
   useEffect(() => {
     window.api.settings.getShortcut().then(s => { setCurrentShortcut(s); setPendingShortcut(s) })
     window.api.appCtrl.getLoginItem().then(setLoginItem)
   }, [])
+
+  useEffect(() => {
+    if (tab !== 'ai' || aiConfig !== null) return
+    setAiLoading(true)
+    window.api.ai.getConfig().then(cfg => { setAiConfig(cfg); setAiDraft({ ...cfg }) }).finally(() => setAiLoading(false))
+    window.api.ai.getPresetModels().then(setAiPresetModels).catch(() => {})
+  }, [tab, aiConfig])
 
   // Shortcut key recorder
   useEffect(() => {
@@ -170,6 +194,22 @@ export default function SettingsPanel(): React.ReactElement {
   }
 
   const shortcutChanged = pendingShortcut !== currentShortcut && pendingShortcut !== ''
+
+  const handleSaveAiConfig = async (): Promise<void> => {
+    try {
+      await window.api.ai.setConfig(aiDraft as Record<string, unknown>)
+      const updated = await window.api.ai.getConfig()
+      setAiConfig(updated); setAiDraft({ ...updated })
+      setAiSaved(true); setTimeout(() => setAiSaved(false), 2000)
+    } catch { /* ignore */ }
+  }
+
+  const loadOllamaModels = async (): Promise<void> => {
+    try { setAiOllamaModels(await window.api.ai.getOllamaModels()) } catch { setAiOllamaModels([]) }
+  }
+
+  const aiProvider = (aiDraft.provider ?? aiConfig?.provider ?? '') as string
+  const aiModels = aiProvider === 'ollama' ? aiOllamaModels : (aiPresetModels[aiProvider] ?? [])
 
   return (
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -475,6 +515,98 @@ export default function SettingsPanel(): React.ReactElement {
                 {savingShortcut ? '저장 중...' : '저장'}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ════ AI TAB ════ */}
+        {tab === 'ai' && (
+          <div>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginBottom: 22, lineHeight: 1.6 }}>
+              AI 채팅 및 화면 분석에 사용할 제공자와 모델을 설정합니다.
+            </p>
+            {aiLoading && (
+              <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, textAlign: 'center', paddingTop: 40 }}>불러오는 중...</div>
+            )}
+            {!aiLoading && aiConfig && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', marginBottom: 6 }}>AI 제공자</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {(['openai', 'anthropic', 'ollama'] as const).map(p => (
+                      <button key={p}
+                        onClick={() => setAiDraft(d => ({ ...d, provider: p, model: '' }))}
+                        style={{
+                          flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                          border: aiProvider === p ? `2px solid ${hubColor}` : '2px solid rgba(255,255,255,0.1)',
+                          background: aiProvider === p ? rgba(hubColor, 0.15) : 'rgba(255,255,255,0.07)',
+                          color: aiProvider === p ? hubColor : 'rgba(255,255,255,0.65)',
+                          transition: 'all 0.15s ease',
+                        }}>
+                        {p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic' : 'Ollama'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)' }}>모델</span>
+                    {aiProvider === 'ollama' && (
+                      <button onClick={loadOllamaModels} style={{ fontSize: 10, color: rgba(hubColor, 0.85), background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        새로고침
+                      </button>
+                    )}
+                  </div>
+                  {aiModels.length > 0 ? (
+                    <select value={aiDraft.model ?? ''} onChange={e => setAiDraft(d => ({ ...d, model: e.target.value }))}
+                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8 }}>
+                      {aiModels.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  ) : (
+                    <input value={aiDraft.model ?? ''} onChange={e => setAiDraft(d => ({ ...d, model: e.target.value }))}
+                      placeholder={aiProvider === 'openai' ? 'gpt-4o' : aiProvider === 'anthropic' ? 'claude-sonnet-4-5' : '모델명 입력...'}
+                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, boxSizing: 'border-box' }} />
+                  )}
+                </div>
+                {aiProvider !== 'ollama' && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', marginBottom: 6 }}>API 키</div>
+                    <input type="password" value={aiDraft.apiKeyRaw ?? ''}
+                      onChange={e => setAiDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
+                      placeholder={aiConfig.apiKey ? `현재: ••••${aiConfig.apiKey.slice(-4)}` : 'API 키를 입력하세요...'}
+                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, boxSizing: 'border-box' }} />
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.52)', marginTop: 4 }}>
+                      비워두면 기존 키가 유지됩니다.
+                      {aiProvider === 'openai' && ' OpenAI 대시보드에서 발급하세요.'}
+                      {aiProvider === 'anthropic' && ' Anthropic Console에서 발급하세요.'}
+                    </div>
+                  </div>
+                )}
+                {aiProvider === 'ollama' && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', marginBottom: 6 }}>Ollama 서버 URL</div>
+                    <input value={aiDraft.ollamaUrl ?? ''} onChange={e => setAiDraft(d => ({ ...d, ollamaUrl: e.target.value }))}
+                      placeholder="http://localhost:11434"
+                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, boxSizing: 'border-box' }} />
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', marginBottom: 6 }}>시스템 프롬프트</div>
+                  <textarea value={aiDraft.systemPrompt ?? ''} onChange={e => setAiDraft(d => ({ ...d, systemPrompt: e.target.value }))}
+                    rows={4} placeholder="AI의 역할이나 응답 방식을 지정합니다. 비워두면 기본값 사용."
+                    style={{ width: '100%', fontSize: 12, resize: 'vertical', padding: '8px 10px', lineHeight: 1.5, fontFamily: 'inherit', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={handleSaveAiConfig} style={{
+                    padding: '8px 22px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    background: aiSaved ? 'rgba(34,197,94,0.25)' : rgba(hubColor, 0.88),
+                    color: aiSaved ? 'rgba(134,239,172,0.9)' : 'white',
+                    transition: 'all 0.2s ease',
+                  }}>
+                    {aiSaved ? '✓ 저장됨' : '저장'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
