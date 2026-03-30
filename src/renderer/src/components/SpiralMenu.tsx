@@ -105,7 +105,7 @@ const FanCard = memo(function FanCard({
   const activeScale = hovered ? baseScale * 1.07 : baseScale
   const baseOpacity = Math.max(0.25, 1.0 - 0.75 * tNorm)
   const blurPx = tNorm * 1.8                               // 9. depth blur
-  const showContent = distFromCenter <= 1
+  const showContent = true
   const stepsToCenter = slotIndex - Math.floor(total / 2)
 
   const angleDeg = (() => {
@@ -177,13 +177,15 @@ const FanCard = memo(function FanCard({
             }}>AI</div>
           )}
           <span style={{
-            fontSize: isCenter ? 34 : 26, lineHeight: 1,
+            fontSize: isCenter ? 32 : Math.max(16, 28 - distFromCenter * 3),
+            lineHeight: 1,
             filter: isCenter ? `drop-shadow(0 2px 8px ${tool.color}99)` : undefined,
           }}>{tool.icon}</span>
           <span style={{
-            fontSize: isCenter ? 12 : 10.5, fontWeight: 700,
-            color: isCenter ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.72)',
-            textAlign: 'center', lineHeight: 1.35, wordBreak: 'keep-all',
+            fontSize: isCenter ? 12 : Math.max(9, 11 - distFromCenter * 0.5),
+            fontWeight: 700,
+            color: isCenter ? 'rgba(255,255,255,0.95)' : `rgba(255,255,255,${Math.max(0.5, 0.85 - distFromCenter * 0.1)})`,
+            textAlign: 'center', lineHeight: 1.3, wordBreak: 'keep-all',
           }}>{tool.label}</span>
         </div>
       ) : (
