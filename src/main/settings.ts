@@ -63,9 +63,13 @@ export function registerSettingsHandlers(): void {
 
   ipcMain.handle('settings:setShortcut', (_: Electron.IpcMainInvokeEvent, newShortcut: string) => {
     if (!newShortcut || !toggleFn) return { success: false, error: '잘못된 단축키' }
+    const prev = currentShortcut
+    globalShortcut.unregister(prev)
     const ok = globalShortcut.register(newShortcut, toggleFn)
-    if (!ok) return { success: false, error: '이미 사용 중인 단축키입니다.' }
-    globalShortcut.unregister(currentShortcut)
+    if (!ok) {
+      globalShortcut.register(prev, toggleFn)  // restore old on failure
+      return { success: false, error: '이미 사용 중인 단축키입니다.' }
+    }
     currentShortcut = newShortcut
     save({ ...load(), shortcut: currentShortcut })
     return { success: true, shortcut: currentShortcut }

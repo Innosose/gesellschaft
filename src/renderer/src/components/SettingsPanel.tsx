@@ -2,12 +2,12 @@ import React, { useEffect, useRef, useState } from 'react'
 import { rgba, THEMES } from '../utils/color'
 import { useAppStore } from '../store/appStore'
 
-// Key → Electron accelerator mapping
-const KEY_MAP: Record<string, string> = {
-  ' ': 'Space', 'Enter': 'Return', 'ArrowLeft': 'Left', 'ArrowRight': 'Right',
-  'ArrowUp': 'Up', 'ArrowDown': 'Down', 'Escape': 'Escape', 'Tab': 'Tab',
+// e.code → Electron accelerator key mapping (layout-independent, works with Korean IME)
+const CODE_MAP: Record<string, string> = {
+  'Space': 'Space', 'Enter': 'Return', 'Escape': 'Escape', 'Tab': 'Tab',
   'Backspace': 'Backspace', 'Delete': 'Delete', 'Insert': 'Insert',
   'Home': 'Home', 'End': 'End', 'PageUp': 'PageUp', 'PageDown': 'PageDown',
+  'ArrowLeft': 'Left', 'ArrowRight': 'Right', 'ArrowUp': 'Up', 'ArrowDown': 'Down',
 }
 const MODIFIER_KEYS = new Set(['Control', 'Alt', 'Shift', 'Meta'])
 
@@ -19,7 +19,19 @@ function keyEventToAccelerator(e: KeyboardEvent): string | null {
   if (e.shiftKey) parts.push('Shift')
   if (e.metaKey) parts.push('Meta')
   if (parts.length === 0) return null
-  const key = KEY_MAP[e.key] ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key)
+  const code = e.code
+  let key: string
+  if (CODE_MAP[code]) {
+    key = CODE_MAP[code]
+  } else if (/^Key[A-Z]$/.test(code)) {
+    key = code.slice(3)           // 'KeyG' → 'G'
+  } else if (/^Digit[0-9]$/.test(code)) {
+    key = code.slice(5)           // 'Digit1' → '1'
+  } else if (/^F\d+$/.test(code)) {
+    key = code                    // 'F1' → 'F1'
+  } else {
+    key = e.key.length === 1 ? e.key.toUpperCase() : e.key  // fallback
+  }
   parts.push(key)
   return parts.join('+')
 }
