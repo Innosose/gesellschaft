@@ -110,7 +110,7 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
     padding: '6px 10px',
     borderRadius: 8,
     border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.06)',
+    background: 'rgba(255,255,255,0.09)',
     color: 'rgba(255,255,255,0.85)',
     fontSize: 12,
     fontWeight: 600,
@@ -136,7 +136,7 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
               width: 32, height: 32, borderRadius: 8,
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
-              color: sourceLang === '자동 감지' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.7)',
+              color: sourceLang === '자동 감지' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.8)',
               cursor: sourceLang === '자동 감지' ? 'not-allowed' : 'pointer',
               fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
@@ -161,7 +161,7 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
                 padding: '6px 20px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: sourceText.trim() ? 'pointer' : 'not-allowed',
                 border: '1px solid rgba(41,128,185,0.5)',
                 background: sourceText.trim() ? 'rgba(41,128,185,0.2)' : 'rgba(255,255,255,0.04)',
-                color: sourceText.trim() ? 'rgba(96,165,250,0.95)' : 'rgba(255,255,255,0.25)',
+                color: sourceText.trim() ? 'rgba(96,165,250,0.95)' : 'rgba(255,255,255,0.42)',
                 transition: 'all 0.15s ease',
               }}
             >번역</button>
@@ -169,15 +169,15 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
           <button
             onClick={() => setShowHistory(h => !h)}
             title="번역 기록"
-            style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${showHistory ? 'rgba(41,128,185,0.5)' : 'rgba(255,255,255,0.1)'}`, background: showHistory ? 'rgba(41,128,185,0.15)' : 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', fontSize: 14, cursor: 'pointer' }}
+            style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${showHistory ? 'rgba(41,128,185,0.5)' : 'rgba(255,255,255,0.16)'}`, background: showHistory ? 'rgba(41,128,185,0.15)' : 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.75)', fontSize: 14, cursor: 'pointer' }}
           >📋</button>
         </div>
 
         {/* History Panel */}
         {showHistory && (
-          <div style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', padding: '8px 0', maxHeight: 180, overflowY: 'auto', flexShrink: 0 }}>
+          <div style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)', padding: '8px 0', maxHeight: 180, overflowY: 'auto', flexShrink: 0 }}>
             {history.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 12, padding: '16px 0' }}>번역 기록이 없습니다</div>
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 12, padding: '16px 0' }}>번역 기록이 없습니다</div>
             ) : history.map((h, i) => (
               <div
                 key={i}
@@ -187,8 +187,8 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
                 onClick={() => { setSourceLang(h.from === '(자동 감지)' ? '자동 감지' : h.from); setTargetLang(h.to); setSourceText(h.source); setResultText(h.result); setShowHistory(false) }}
               >
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{h.from} → {h.to}</span>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginLeft: 'auto' }}>{new Date(h.ts).toLocaleDateString('ko-KR')}</span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.62)' }}>{h.from} → {h.to}</span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginLeft: 'auto' }}>{new Date(h.ts).toLocaleDateString('ko-KR')}</span>
                 </div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.source}</div>
                 <div style={{ fontSize: 11, color: 'rgba(96,165,250,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.result}</div>
@@ -202,8 +202,8 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
           {/* Source */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>원문</span>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{sourceText.length}자</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>원문</span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.48)' }}>{sourceText.length}자</span>
             </div>
             <textarea
               value={sourceText}
@@ -213,31 +213,31 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
               style={{
                 flex: 1, resize: 'none', outline: 'none',
                 padding: '12px 14px', borderRadius: 10, fontSize: 13, lineHeight: 1.7,
-                border: '1px solid rgba(255,255,255,0.09)',
-                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                background: 'rgba(255,255,255,0.06)',
                 color: 'rgba(255,255,255,0.88)',
                 fontFamily: 'inherit',
                 transition: 'border-color 0.15s ease',
               }}
               onFocus={e => { e.currentTarget.style.borderColor = 'rgba(41,128,185,0.45)' }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
             />
           </div>
 
           {/* Divider */}
-          <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', flexShrink: 0, borderRadius: 1 }} />
+          <div style={{ width: 1, background: 'rgba(255,255,255,0.14)', flexShrink: 0, borderRadius: 1 }} />
 
           {/* Result */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>번역</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>번역</span>
               <button
                 onClick={handleCopy}
                 disabled={!resultText}
                 style={{
                   padding: '2px 10px', borderRadius: 6, fontSize: 11, cursor: resultText ? 'pointer' : 'not-allowed',
                   border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
-                  color: copied ? 'rgba(74,222,128,0.9)' : 'rgba(255,255,255,0.45)',
+                  color: copied ? 'rgba(74,222,128,0.9)' : 'rgba(255,255,255,0.65)',
                   transition: 'all 0.15s ease',
                 }}
               >{copied ? '✓ 복사됨' : '복사'}</button>
@@ -245,15 +245,15 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
             <div
               style={{
                 flex: 1, padding: '12px 14px', borderRadius: 10, fontSize: 13, lineHeight: 1.7,
-                border: '1px solid rgba(255,255,255,0.07)',
-                background: 'rgba(41,128,185,0.04)',
+                border: '1px solid rgba(255,255,255,0.13)',
+                background: 'rgba(41,128,185,0.08)',
                 color: 'rgba(255,255,255,0.88)',
                 overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                 position: 'relative',
               }}
             >
               {translating && !resultText && (
-                <span style={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontSize: 12 }}>번역 중...</span>
+                <span style={{ color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', fontSize: 12 }}>번역 중...</span>
               )}
               {resultText}
               {translating && resultText && (

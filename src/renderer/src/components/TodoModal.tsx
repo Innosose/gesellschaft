@@ -290,14 +290,14 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
 
           {tab === 'done' && done.map(item => (
             <div key={item.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg group" style={{ border: '1px solid var(--win-bg)' }}>
-              <span className="text-xs" style={{ color: 'var(--win-border)' }}>✓</span>
+              <span className="text-xs" style={{ color: 'var(--win-text-muted)' }}>✓</span>
               <span className="flex-1 text-xs line-through truncate" style={{ color: 'var(--win-text-muted)' }}>{item.text}</span>
-              {item.dueDate && <span className="text-[10px]" style={{ color: 'var(--win-border)' }}>{item.dueDate}</span>}
+              {item.dueDate && <span className="text-[10px]" style={{ color: 'var(--win-text-muted)' }}>{item.dueDate}</span>}
               <button
                 className="opacity-0 group-hover:opacity-100 text-xs"
-                style={{ color: 'var(--win-border)' }}
+                style={{ color: 'var(--win-text-muted)' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-danger)' }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-border)' }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)' }}
                 onClick={() => remove(item.id)}
               >✕</button>
             </div>

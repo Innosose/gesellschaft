@@ -236,8 +236,8 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           alignItems: 'center',
           gap: 0,
           padding: '0 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          background: 'rgba(255,255,255,0.02)',
+          borderBottom: '1px solid rgba(255,255,255,0.14)',
+          background: 'rgba(255,255,255,0.04)',
           flexShrink: 0,
         }}>
           {(['chat', 'history', 'settings'] as const).map(t => (
@@ -249,7 +249,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                 borderRadius: 14,
                 border: tab === t ? '1px solid rgba(139,92,246,0.4)' : '1px solid transparent',
                 background: tab === t ? 'rgba(139,92,246,0.2)' : 'transparent',
-                color: tab === t ? 'rgba(196,181,253,0.9)' : 'rgba(255,255,255,0.4)',
+                color: tab === t ? 'rgba(196,181,253,0.9)' : 'rgba(255,255,255,0.65)',
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', marginRight: 6,
                 transition: 'all 0.15s ease',
               }}
@@ -264,7 +264,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           <>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {messages.length === 0 && (
-                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 40 }}>
+                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.62)', fontSize: 12, marginTop: 40 }}>
                   <div style={{ fontSize: 32, marginBottom: 10 }}>🤖</div>
                   <div>무엇이든 질문해보세요</div>
                   <div style={{ marginTop: 6, fontSize: 11 }}>Shift+Enter로 줄바꿈</div>
@@ -316,15 +316,15 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
               <div style={{ padding: '0 14px 6px', display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => { saveToHistory(messages); setHistory(loadHistory()); }}
-                  style={{ fontSize: 11, color: 'rgba(139,92,246,0.7)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                  style={{ fontSize: 11, color: 'rgba(139,92,246,0.9)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 >💾 저장</button>
                 <button
                   onClick={() => exportChat(messages)}
-                  style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                  style={{ fontSize: 11, color: 'rgba(255,255,255,0.58)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 >↓ 내보내기</button>
                 <button
                   onClick={() => setMessages([])}
-                  style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                  style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 >초기화</button>
               </div>
             )}
@@ -366,7 +366,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     style={{
                       height: 54, width: 50, borderRadius: 6, border: 'none', cursor: input.trim() ? 'pointer' : 'default',
                       background: input.trim() ? 'rgba(139,92,246,0.8)' : 'rgba(255,255,255,0.05)',
-                      color: input.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
+                      color: input.trim() ? '#fff' : 'rgba(255,255,255,0.48)',
                       fontSize: 18, flexShrink: 0,
                       transition: 'background 0.12s ease',
                     }}
@@ -381,7 +381,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
         {tab === 'history' && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {history.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 40 }}>
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.58)', fontSize: 12, marginTop: 40 }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
                 <div>저장된 대화가 없습니다</div>
                 <div style={{ fontSize: 11, marginTop: 4 }}>채팅 창에서 💾 저장 버튼을 누르세요</div>
@@ -398,15 +398,15 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.title}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.52)', marginTop: 2 }}>
                     {new Date(conv.savedAt).toLocaleDateString('ko-KR')} · {conv.messages.length}개 메시지
                   </div>
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); deleteFromHistory(conv.id); setHistory(loadHistory()) }}
-                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: 12, padding: '2px 4px' }}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)', cursor: 'pointer', fontSize: 12, padding: '2px 4px' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.25)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.45)' }}
                 >✕</button>
               </div>
             ))}
@@ -415,7 +415,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
 
         {/* Settings Tab */}
         {tab === 'settings' && configLoading && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.62)', fontSize: 12 }}>
             설정 로딩 중...
           </div>
         )}
@@ -424,11 +424,11 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
               <div>
-                <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 5 }}>AI 제공자</label>
+                <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.68)', display: 'block', marginBottom: 5 }}>AI 제공자</label>
                 <select
                   value={draft.provider ?? ''}
                   onChange={e => setDraft(d => ({ ...d, provider: e.target.value, model: '' }))}
-                  style={{ width: '100%', height: 30, fontSize: 12, padding: '0 8px', background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}
+                  style={{ width: '100%', height: 30, fontSize: 12, padding: '0 8px', background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 6 }}
                 >
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
@@ -437,7 +437,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
               </div>
 
               <div>
-                <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 5 }}>
+                <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.68)', display: 'block', marginBottom: 5 }}>
                   모델
                   {provider === 'ollama' && (
                     <button onClick={loadOllamaModels} style={{ marginLeft: 8, fontSize: 10, color: 'rgba(139,92,246,0.8)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
@@ -449,7 +449,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                   <select
                     value={draft.model ?? ''}
                     onChange={e => setDraft(d => ({ ...d, model: e.target.value }))}
-                    style={{ width: '100%', height: 30, fontSize: 12, padding: '0 8px', background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}
+                    style={{ width: '100%', height: 30, fontSize: 12, padding: '0 8px', background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 6 }}
                   >
                     {models.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
@@ -458,22 +458,22 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     value={draft.model ?? ''}
                     onChange={e => setDraft(d => ({ ...d, model: e.target.value }))}
                     placeholder="모델명 입력..."
-                    style={{ width: '100%', height: 30, fontSize: 12, background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '0 8px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: 30, fontSize: 12, background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 6, padding: '0 8px', boxSizing: 'border-box' }}
                   />
                 )}
               </div>
 
               {provider !== 'ollama' && (
                 <div>
-                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 5 }}>API 키</label>
+                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.68)', display: 'block', marginBottom: 5 }}>API 키</label>
                   <input
                     type="password"
                     value={draft.apiKeyRaw ?? ''}
                     onChange={e => setDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
                     placeholder={config.apiKey ? `현재: ••••${config.apiKey.slice(-4)}` : '키 입력...'}
-                    style={{ width: '100%', height: 30, fontSize: 12, background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '0 8px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: 30, fontSize: 12, background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 6, padding: '0 8px', boxSizing: 'border-box' }}
                   />
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.52)', marginTop: 3 }}>
                     비워두면 기존 키 유지
                   </div>
                 </div>
@@ -481,22 +481,22 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
 
               {provider === 'ollama' && (
                 <div>
-                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 5 }}>Ollama URL</label>
+                  <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.68)', display: 'block', marginBottom: 5 }}>Ollama URL</label>
                   <input
                     value={draft.ollamaUrl ?? ''}
                     onChange={e => setDraft(d => ({ ...d, ollamaUrl: e.target.value }))}
-                    style={{ width: '100%', height: 30, fontSize: 12, background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '0 8px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: 30, fontSize: 12, background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 6, padding: '0 8px', boxSizing: 'border-box' }}
                   />
                 </div>
               )}
 
               <div>
-                <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 5 }}>시스템 프롬프트</label>
+                <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.68)', display: 'block', marginBottom: 5 }}>시스템 프롬프트</label>
                 <textarea
                   value={draft.systemPrompt ?? ''}
                   onChange={e => setDraft(d => ({ ...d, systemPrompt: e.target.value }))}
                   rows={4}
-                  style={{ width: '100%', fontSize: 12, resize: 'vertical', padding: '6px 10px', lineHeight: 1.5, fontFamily: 'inherit', background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, boxSizing: 'border-box' }}
+                  style={{ width: '100%', fontSize: 12, resize: 'vertical', padding: '6px 10px', lineHeight: 1.5, fontFamily: 'inherit', background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 6, boxSizing: 'border-box' }}
                 />
               </div>
 

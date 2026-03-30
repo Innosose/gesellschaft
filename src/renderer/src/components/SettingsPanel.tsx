@@ -46,8 +46,8 @@ function Slider({
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{label}</span>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontFamily: 'monospace' }}>{format(value)}</span>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.78)', fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontFamily: 'monospace' }}>{format(value)}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
@@ -55,8 +55,8 @@ function Slider({
         style={{ width: '100%', accentColor: 'var(--gs-accent, #8b5cf6)', cursor: 'pointer', height: 4 }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)' }}>{format(min)}</span>
-        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)' }}>{format(max)}</span>
+        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)' }}>{format(min)}</span>
+        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)' }}>{format(max)}</span>
       </div>
     </div>
   )
@@ -75,7 +75,7 @@ function KeyBadge({ keys, color, inline }: { keys: string; color: string; inline
           }}>
             {k}
           </span>
-          {i < parts.length - 1 && <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: 10 }}>+</span>}
+          {i < parts.length - 1 && <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>+</span>}
         </React.Fragment>
       ))}
     </div>
@@ -186,7 +186,7 @@ export default function SettingsPanel(): React.ReactElement {
         <div style={{
           fontSize: 10,
           fontWeight: 700,
-          color: 'rgba(255,255,255,0.50)',
+          color: 'rgba(255,255,255,0.65)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           padding: '0 20px',
@@ -210,7 +210,7 @@ export default function SettingsPanel(): React.ReactElement {
                 border: 'none',
                 borderRight: isActive ? `2px solid ${hubColor}` : '2px solid transparent',
                 background: isActive ? rgba(hubColor, 0.12) : 'none',
-                color: isActive ? hubColor : 'rgba(255,255,255,0.45)',
+                color: isActive ? hubColor : 'rgba(255,255,255,0.65)',
                 textAlign: 'left',
                 transition: 'all 0.15s ease',
               }}
@@ -228,7 +228,7 @@ export default function SettingsPanel(): React.ReactElement {
         {/* ════ THEME TAB ════ */}
         {tab === 'theme' && (
           <div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 18, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginBottom: 18, lineHeight: 1.6 }}>
               허브 및 전체 UI 강조 색상을 선택합니다.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 20 }}>
@@ -250,7 +250,7 @@ export default function SettingsPanel(): React.ReactElement {
                       background: `radial-gradient(circle at 35% 35%, ${theme.color}, ${rgba(theme.color, 0.5)})`,
                       boxShadow: isSel ? `0 0 12px ${rgba(theme.color, 0.6)}` : '0 2px 6px rgba(0,0,0,0.4)',
                     }} />
-                    <span style={{ fontSize: 9, color: isSel ? theme.color : 'rgba(255,255,255,0.4)', fontWeight: 700 }}>
+                    <span style={{ fontSize: 10, color: isSel ? theme.color : 'rgba(255,255,255,0.65)', fontWeight: 700 }}>
                       {theme.name}
                     </span>
                   </button>
@@ -260,11 +260,11 @@ export default function SettingsPanel(): React.ReactElement {
 
             {/* Custom picker */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', marginBottom: 18 }}>
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', flex: 1 }}>커스텀 색상</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', flex: 1 }}>커스텀 색상</span>
               <input type="color" value={customColor} onChange={e => setCustomColor(e.target.value)}
                 onBlur={() => handleThemeSelect(customColor)}
                 style={{ width: 36, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', cursor: 'pointer', padding: 2 }} />
-              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.5)', width: 72 }}>{customColor.toUpperCase()}</span>
+              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.72)', width: 72 }}>{customColor.toUpperCase()}</span>
               <button onClick={() => handleThemeSelect(customColor)}
                 style={{ padding: '5px 12px', borderRadius: 6, border: `1px solid ${rgba(hubColor, 0.4)}`, background: rgba(hubColor, 0.12), color: rgba(hubColor, 0.95), fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
                 적용
@@ -273,7 +273,7 @@ export default function SettingsPanel(): React.ReactElement {
 
             {/* Preview */}
             <div style={{ padding: '14px 18px', borderRadius: 10, border: `1px solid ${rgba(selectedColor, 0.18)}`, background: rgba(selectedColor, 0.04) }}>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>미리보기</p>
+              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.72)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>미리보기</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: '50%',
@@ -298,7 +298,7 @@ export default function SettingsPanel(): React.ReactElement {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: selectedColor, marginBottom: 4 }}>게젤샤프트</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>바탕화면 AI 어시스턴트</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.60)' }}>바탕화면 AI 어시스턴트</div>
                 </div>
                 <div style={{ padding: '5px 12px', borderRadius: 14, border: `1px solid ${rgba(selectedColor, 0.4)}`, background: rgba(selectedColor, 0.1), fontSize: 10, fontWeight: 700, color: selectedColor }}>
                   ✦ AI 추천
@@ -311,7 +311,7 @@ export default function SettingsPanel(): React.ReactElement {
         {/* ════ DISPLAY TAB ════ */}
         {tab === 'display' && (
           <div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 22, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginBottom: 22, lineHeight: 1.6 }}>
               허브 크기, 오버레이 투명도, 나선 간격, 애니메이션 속도를 조절합니다.
             </p>
 
@@ -339,7 +339,7 @@ export default function SettingsPanel(): React.ReactElement {
 
             {/* Animation speed */}
             <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500, marginBottom: 10 }}>애니메이션 속도</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.78)', fontWeight: 500, marginBottom: 10 }}>애니메이션 속도</div>
               <div style={{ display: 'flex', gap: 8 }}>
                 {(['slow', 'normal', 'fast'] as const).map(s => (
                   <button key={s} onClick={() => { setLocalAnim(s); saveDisplay({ animSpeed: s }) }}
@@ -347,7 +347,7 @@ export default function SettingsPanel(): React.ReactElement {
                       flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                       border: localAnim === s ? `2px solid ${hubColor}` : '2px solid rgba(255,255,255,0.1)',
                       background: localAnim === s ? rgba(hubColor, 0.15) : 'rgba(255,255,255,0.07)',
-                      color: localAnim === s ? hubColor : 'rgba(255,255,255,0.5)',
+                      color: localAnim === s ? hubColor : 'rgba(255,255,255,0.65)',
                       transition: 'all 0.15s ease',
                     }}>
                     {s === 'slow' ? '천천히' : s === 'normal' ? '보통' : '빠르게'}
@@ -358,11 +358,11 @@ export default function SettingsPanel(): React.ReactElement {
 
             {/* Startup settings */}
             <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 12 }}>기본 설정</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.76)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 12 }}>기본 설정</div>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                 <div>
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>Windows 시작 시 자동 실행</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.62)', marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
                 </div>
                 <button
                   onClick={async () => {
@@ -419,17 +419,17 @@ export default function SettingsPanel(): React.ReactElement {
         {/* ════ SHORTCUT TAB ════ */}
         {tab === 'shortcut' && (
           <div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 18, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginBottom: 18, lineHeight: 1.6 }}>
               오버레이를 표시/숨기는 글로벌 단축키입니다. Ctrl, Alt, Shift 중 하나 이상 + 키 조합이 필요합니다.
             </p>
 
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>현재 단축키</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.60)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>현재 단축키</div>
               <KeyBadge keys={currentShortcut} color={hubColor} />
             </div>
 
             <div style={{ marginBottom: shortcutStatus ? 14 : 18 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>새 단축키</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.60)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>새 단축키</div>
               <div
                 ref={recorderRef} tabIndex={0}
                 onClick={() => { setRecording(true); setShortcutStatus(null) }}
@@ -447,12 +447,12 @@ export default function SettingsPanel(): React.ReactElement {
                   ? <span style={{ fontSize: 12, color: rgba(hubColor, 0.8), fontStyle: 'italic' }}>키 조합을 입력하세요...</span>
                   : <KeyBadge keys={pendingShortcut || currentShortcut} color={hubColor} inline />
                 }
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', flexShrink: 0 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.48)', flexShrink: 0 }}>
                   {recording ? '입력 대기 중' : '클릭하여 변경'}
                 </span>
               </div>
               {recording && (
-                <button onClick={() => setRecording(false)} style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <button onClick={() => setRecording(false)} style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.52)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   취소
                 </button>
               )}
@@ -467,7 +467,7 @@ export default function SettingsPanel(): React.ReactElement {
                 style={{
                   padding: '8px 22px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600,
                   background: (savingShortcut || recording || !shortcutChanged) ? rgba(hubColor, 0.22) : rgba(hubColor, 0.88),
-                  color: (savingShortcut || recording || !shortcutChanged) ? 'rgba(255,255,255,0.3)' : 'white',
+                  color: (savingShortcut || recording || !shortcutChanged) ? 'rgba(255,255,255,0.48)' : 'white',
                   cursor: (savingShortcut || recording || !shortcutChanged) ? 'default' : 'pointer',
                   transition: 'background 0.12s ease',
                 }}

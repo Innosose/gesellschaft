@@ -73,7 +73,7 @@ export default function ClipboardModal({ onClose, asPanel }: { onClose: () => vo
           <div className="text-center py-10" style={{ color: 'var(--win-text-muted)' }}>
             <div className="text-4xl mb-2">📋</div>
             <div className="text-sm">{history.length === 0 ? '복사한 내용이 없습니다.' : '검색 결과가 없습니다.'}</div>
-            <div className="text-xs mt-1" style={{ color: 'var(--win-border)' }}>텍스트를 복사하면 자동으로 기록됩니다.</div>
+            <div className="text-xs mt-1" style={{ color: 'var(--win-text-muted)' }}>텍스트를 복사하면 자동으로 기록됩니다.</div>
           </div>
         )}
 
@@ -146,7 +146,7 @@ export default function ClipboardModal({ onClose, asPanel }: { onClose: () => vo
           })}
         </div>
 
-        <div className="text-xs text-right" style={{ color: 'var(--win-border)' }}>{history.length}개 항목 저장됨</div>
+        <div className="text-xs text-right" style={{ color: 'var(--win-text-muted)' }}>{history.length}개 항목 저장됨</div>
       </div>
     </Modal>
   )

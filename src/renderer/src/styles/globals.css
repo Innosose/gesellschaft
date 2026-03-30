@@ -10,15 +10,15 @@
   --win-surface:      #1f1f1f;
   --win-surface-2:    #272727;
   --win-surface-3:    #313131;
-  --win-border:       rgba(255, 255, 255, 0.12);
-  --win-border-focus: rgba(255, 255, 255, 0.22);
+  --win-border:       rgba(255, 255, 255, 0.16);
+  --win-border-focus: rgba(255, 255, 255, 0.28);
   --win-accent:       #0078d4;
   --win-accent-2:     #1a86d8;
   --win-accent-dim:   rgba(0, 120, 212, 0.16);
   --win-accent-glow:  rgba(0, 120, 212, 0.4);
   --win-text:         #eeeeee;
-  --win-text-sub:     #b4b4b4;
-  --win-text-muted:   #888888;
+  --win-text-sub:     #c0c0c0;
+  --win-text-muted:   #a0a0a0;
   --win-danger:       #d13438;
   --win-success:      #6ccb5f;
   --win-warning:      #ffd84d;
@@ -262,8 +262,8 @@ input, button, select, textarea { -webkit-app-region: no-drag; }
     transition: border-color 0.12s ease, box-shadow 0.12s ease;
     border-radius: var(--win-radius);
   }
-  .overlay-input::placeholder { color: rgba(255,255,255,0.28); }
-  .overlay-input:hover { border-color: rgba(255,255,255,0.22); }
+  .overlay-input::placeholder { color: rgba(255,255,255,0.42); }
+  .overlay-input:hover { border-color: rgba(255,255,255,0.28); }
   .overlay-input:focus {
     border-color: var(--panel-accent, #8b5cf6);
     box-shadow: 0 0 0 2px rgba(139,92,246,0.2);

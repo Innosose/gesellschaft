@@ -239,7 +239,7 @@ export default function App(): React.ReactElement {
                 top: '50%',
                 transform: 'translateY(-50%)',
                 fontSize: 14,
-                color: 'rgba(140,110,70,0.65)',
+                color: 'rgba(180,145,90,0.82)',
                 pointerEvents: 'none',
                 userSelect: 'none',
               }}
@@ -279,7 +279,7 @@ export default function App(): React.ReactElement {
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  color: 'rgba(120,90,50,0.55)',
+                  color: 'rgba(160,120,65,0.75)',
                   cursor: 'pointer',
                   fontSize: 14,
                   lineHeight: 1,
@@ -416,9 +416,9 @@ export default function App(): React.ReactElement {
           width: 28,
           height: 28,
           borderRadius: '50%',
-          border: '1px solid rgba(255,255,255,0.1)',
-          background: 'rgba(255,255,255,0.04)',
-          color: 'rgba(255,255,255,0.25)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          background: 'rgba(255,255,255,0.07)',
+          color: 'rgba(255,255,255,0.50)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -434,9 +434,9 @@ export default function App(): React.ReactElement {
           ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139,92,246,0.4)'
         }}
         onMouseLeave={e => {
-          ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.25)'
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
+          ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'
+          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.50)'
+          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'
         }}
       >
         ⚙
@@ -453,9 +453,9 @@ export default function App(): React.ReactElement {
           width: 28,
           height: 28,
           borderRadius: '50%',
-          border: '1px solid rgba(255,255,255,0.1)',
-          background: 'rgba(255,255,255,0.04)',
-          color: 'rgba(255,255,255,0.25)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          background: 'rgba(255,255,255,0.07)',
+          color: 'rgba(255,255,255,0.50)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -471,9 +471,9 @@ export default function App(): React.ReactElement {
           ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.5)'
         }}
         onMouseLeave={e => {
-          ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.25)'
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)'
+          ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'
+          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.50)'
+          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'
         }}
       >
         ✕
