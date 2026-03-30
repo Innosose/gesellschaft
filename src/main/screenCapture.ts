@@ -3,6 +3,33 @@ import log, { logIpcError } from './logger'
 import { TOOL_DESCRIPTIONS } from '../shared/constants'
 import { load as loadConfig } from './aiAssistant'
 
+const VALID_IDS = new Set(Object.keys(TOOL_DESCRIPTIONS))
+const API_TIMEOUT_MS = 30_000
+
+function parseRecommendations(text: string): string[] {
+  try {
+    const match = text.match(/\[[\s\S]*?\]/)
+    if (!match) return []
+    const parsed = JSON.parse(match[0])
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((x): x is string => typeof x === 'string')
+      .filter(id => VALID_IDS.has(id))
+      .slice(0, 3)
+  } catch {
+    return []
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`API 응답 시간 초과 (${ms / 1000}초)`)), ms)
+    ),
+  ])
+}
+
 export function registerScreenCaptureHandlers(): void {
   ipcMain.handle('screen:captureAndAnalyze', async () => {
     log.debug('[screen:captureAndAnalyze] 캡처 시작')
@@ -14,9 +41,16 @@ export function registerScreenCaptureHandlers(): void {
       if (!sources.length) return { success: false, error: '화면을 찾을 수 없습니다.', recommendations: [] }
 
       const screenshot = sources[0].thumbnail.toDataURL()
+      if (!screenshot || screenshot === 'data:,') {
+        return { success: false, error: '화면 캡처에 실패했습니다.', recommendations: [] }
+      }
+
       const cfg = loadConfig()
 
-      if (!cfg.apiKey && cfg.provider !== 'ollama') {
+      if (cfg.provider === 'ollama') {
+        return { success: false, error: '화면 분석은 OpenAI 또는 Anthropic 프로바이더에서만 지원됩니다.', recommendations: [] }
+      }
+      if (!cfg.apiKey) {
         return { success: false, error: 'API 키를 먼저 설정해주세요.', recommendations: [] }
       }
 
@@ -39,40 +73,52 @@ ${toolList}
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const OpenAI = require('openai').default
         const client = new OpenAI({ apiKey: cfg.apiKey })
-        const response = await client.chat.completions.create({
-          model: 'gpt-4o',
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image_url', image_url: { url: screenshot } },
-              { type: 'text', text: prompt },
-            ],
-          }],
-          max_tokens: 120,
-        })
-        const text = response.choices[0]?.message?.content || '[]'
-        const match = text.match(/\[[\s\S]*?\]/)
-        recommendations = match ? JSON.parse(match[0]) : []
+        const response = await withTimeout(
+          client.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image_url', image_url: { url: screenshot } },
+                { type: 'text', text: prompt },
+              ],
+            }],
+            max_tokens: 120,
+          }),
+          API_TIMEOUT_MS
+        )
+        const text = response.choices[0]?.message?.content ?? ''
+        recommendations = parseRecommendations(text)
 
       } else if (cfg.provider === 'anthropic') {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const Anthropic = require('@anthropic-ai/sdk').default
         const client = new Anthropic({ apiKey: cfg.apiKey })
+
+        // data URL 헤더에서 실제 MIME 타입 추출 (e.g. "data:image/png;base64,...")
+        const headerMatch = screenshot.match(/^data:([^;]+);base64,/)
+        const mediaType = (headerMatch?.[1] ?? 'image/png') as 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp'
         const base64 = screenshot.split(',')[1]
-        const response = await client.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 120,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: 'image/png', data: base64 } },
-              { type: 'text', text: prompt },
-            ],
-          }],
-        })
-        const text = (response.content[0] as { text: string }).text || '[]'
-        const match = text.match(/\[[\s\S]*?\]/)
-        recommendations = match ? JSON.parse(match[0]) : []
+        if (!base64) {
+          return { success: false, error: '스크린샷 인코딩에 실패했습니다.', recommendations: [] }
+        }
+
+        const response = await withTimeout(
+          client.messages.create({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 120,
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+                { type: 'text', text: prompt },
+              ],
+            }],
+          }),
+          API_TIMEOUT_MS
+        )
+        const text = (response.content[0] as { text?: string }).text ?? ''
+        recommendations = parseRecommendations(text)
       }
 
       log.info(`[screen:captureAndAnalyze] 추천: ${JSON.stringify(recommendations)}`)
