@@ -55,8 +55,8 @@ function Slider({
         style={{ width: '100%', accentColor: 'var(--gs-accent, #8b5cf6)', cursor: 'pointer', height: 4 }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)' }}>{format(min)}</span>
-        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)' }}>{format(max)}</span>
+        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)' }}>{format(min)}</span>
+        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)' }}>{format(max)}</span>
       </div>
     </div>
   )
@@ -177,8 +177,8 @@ export default function SettingsPanel(): React.ReactElement {
       <div style={{
         width: 180,
         flexShrink: 0,
-        borderRight: '1px solid rgba(255,255,255,0.07)',
-        background: 'rgba(255,255,255,0.02)',
+        borderRight: '1px solid rgba(255,255,255,0.14)',
+        background: 'rgba(255,255,255,0.03)',
         padding: '20px 0',
         display: 'flex',
         flexDirection: 'column',
@@ -186,7 +186,7 @@ export default function SettingsPanel(): React.ReactElement {
         <div style={{
           fontSize: 10,
           fontWeight: 700,
-          color: 'rgba(255,255,255,0.25)',
+          color: 'rgba(255,255,255,0.50)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           padding: '0 20px',
@@ -240,7 +240,7 @@ export default function SettingsPanel(): React.ReactElement {
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
                       padding: '10px 4px', borderRadius: 10, cursor: 'pointer',
                       border: isSel ? `2px solid ${theme.color}` : '2px solid rgba(255,255,255,0.07)',
-                      background: isSel ? rgba(theme.color, 0.12) : 'rgba(255,255,255,0.03)',
+                      background: isSel ? rgba(theme.color, 0.12) : 'rgba(255,255,255,0.07)',
                       transition: 'all 0.15s ease',
                       boxShadow: isSel ? `0 0 18px ${rgba(theme.color, 0.28)}` : 'none',
                     }}
@@ -273,7 +273,7 @@ export default function SettingsPanel(): React.ReactElement {
 
             {/* Preview */}
             <div style={{ padding: '14px 18px', borderRadius: 10, border: `1px solid ${rgba(selectedColor, 0.18)}`, background: rgba(selectedColor, 0.04) }}>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>미리보기</p>
+              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>미리보기</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: '50%',
@@ -346,7 +346,7 @@ export default function SettingsPanel(): React.ReactElement {
                     style={{
                       flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                       border: localAnim === s ? `2px solid ${hubColor}` : '2px solid rgba(255,255,255,0.1)',
-                      background: localAnim === s ? rgba(hubColor, 0.15) : 'rgba(255,255,255,0.03)',
+                      background: localAnim === s ? rgba(hubColor, 0.15) : 'rgba(255,255,255,0.07)',
                       color: localAnim === s ? hubColor : 'rgba(255,255,255,0.5)',
                       transition: 'all 0.15s ease',
                     }}>
@@ -357,12 +357,12 @@ export default function SettingsPanel(): React.ReactElement {
             </div>
 
             {/* Startup settings */}
-            <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 12 }}>기본 설정</div>
+            <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 12 }}>기본 설정</div>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                 <div>
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>Windows 시작 시 자동 실행</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
                 </div>
                 <button
                   onClick={async () => {

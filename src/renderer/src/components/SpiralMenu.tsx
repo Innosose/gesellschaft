@@ -102,7 +102,7 @@ const FanCard = memo(function FanCard({
 
   const baseScale = 0.38 + 1.27 * Math.exp(-2.8 * tNorm)
   const activeScale = hovered ? baseScale * 1.07 : baseScale
-  const baseOpacity = Math.max(0.25, 1.0 - 0.75 * tNorm)
+  const baseOpacity = Math.max(0.42, 1.0 - 0.58 * tNorm)
   const blurPx = tNorm * 4.5                               // 9. depth blur
   const showContent = true
   const stepsToCenter = slotIndex - Math.floor(total / 2)
@@ -264,7 +264,7 @@ const OverviewGrid = memo(function OverviewGrid({
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 14, paddingBottom: 10,
-          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          borderBottom: '1px solid rgba(255,255,255,0.14)',
         }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,210,120,0.85)', letterSpacing: '0.04em' }}>
             전체 기능 ({tools.length})
@@ -333,8 +333,8 @@ const OverviewCard = memo(function OverviewCard({
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         gap: 5, padding: '10px 6px 9px', borderRadius: 10, cursor: 'pointer',
-        background: hovered ? `linear-gradient(160deg, ${tool.color}28, ${tool.color}10)` : 'rgba(255,255,255,0.04)',
-        border: `1.5px solid ${hovered ? tool.color + 'bb' : isRecommended ? tool.color + '55' : 'rgba(255,255,255,0.09)'}`,
+        background: hovered ? `linear-gradient(160deg, ${tool.color}28, ${tool.color}10)` : 'rgba(255,255,255,0.08)',
+        border: `1.5px solid ${hovered ? tool.color + 'bb' : isRecommended ? tool.color + '55' : 'rgba(255,255,255,0.18)'}`,
         boxShadow: hovered ? `0 0 18px ${tool.color}44` : 'none',
         transition: `all ${animDuration * 0.5}ms ease`,
         position: 'relative', overflow: 'hidden',
@@ -596,7 +596,7 @@ export default function SpiralMenu({
 
         {/* 힌트: 컨트롤 바로 아래 통합 */}
         <div style={{
-          fontSize: 10, color: 'rgba(255,200,100,0.28)',
+          fontSize: 10, color: 'rgba(255,200,100,0.55)',
           letterSpacing: '0.04em', pointerEvents: 'none',
         }}>
           ← → 키 · 스크롤 · 클릭으로 회전
