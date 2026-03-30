@@ -98,6 +98,9 @@ function createWindow(): void {
     return result.canceled ? null : result.filePaths[0]
   })
 
+  // Screen capture + AI analysis (needs mainWindow to hide/show around screenshot)
+  registerScreenCaptureHandlers(mainWindow)
+
   // Global shortcut — loaded from settings (default: Ctrl+Shift+G)
   initShortcut(() => {
     if (mainWindow.isVisible()) {
@@ -133,7 +136,6 @@ app.whenReady().then(() => {
   registerImageToolHandlers()
   registerExcelToolHandlers()
   registerAiAssistantHandlers()
-  registerScreenCaptureHandlers()
   registerSettingsHandlers()
   registerSnippetsHandlers()
   registerEmailTemplatesHandlers()

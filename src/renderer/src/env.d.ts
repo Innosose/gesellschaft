@@ -172,7 +172,7 @@ declare global {
         setDisplay: (patch: Record<string, unknown>) => Promise<{ success: boolean }>
       }
       screen: {
-        captureAndAnalyze: () => Promise<{ success: boolean; recommendations: string[]; error?: string }>
+        captureAndAnalyze: () => Promise<{ success: boolean; recommendations: string[]; reasons: Record<string, string>; error?: string }>
       }
       ai: {
         getConfig: () => Promise<{ provider: string; apiKey: string; model: string; systemPrompt: string; ollamaUrl: string }>

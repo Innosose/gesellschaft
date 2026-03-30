@@ -28,6 +28,7 @@ export default function App(): React.ReactElement {
   const [uiState, setUiState] = useState<UIState>('hub')
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
   const [recommended, setRecommended] = useState<string[]>([])
+  const [reasons, setReasons] = useState<Record<string, string>>({})
   const [scanning, setScanning] = useState(false)
   const [toolSearch, setToolSearch] = useState('')
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -86,6 +87,7 @@ export default function App(): React.ReactElement {
       const result = await window.api.screen.captureAndAnalyze()
       if (result.success) {
         setRecommended(result.recommendations)
+        setReasons(result.reasons ?? {})
         setUiState('menu')
         if (result.recommendations.length === 0) {
           addNotification('화면에서 추천 기능을 찾지 못했습니다.', 'info')
@@ -190,6 +192,7 @@ export default function App(): React.ReactElement {
         <SpiralMenu
           tools={ALL_TOOLS}
           recommended={recommended}
+          reasons={reasons}
           spiralScale={spiralScale}
           animSpeed={animSpeed}
           filterQuery={toolSearch}

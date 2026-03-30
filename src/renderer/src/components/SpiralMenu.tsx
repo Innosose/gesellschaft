@@ -10,6 +10,7 @@ interface Tool {
 interface SpiralMenuProps {
   tools: Tool[]
   recommended: string[]
+  reasons?: Record<string, string>
   spiralScale: number
   animSpeed: 'slow' | 'normal' | 'fast'
   filterQuery: string
@@ -64,6 +65,7 @@ interface FanCardProps {
   arcCenterX: number
   arcCenterY: number
   isRecommended: boolean
+  reason?: string
   isCenter: boolean
   animDuration: number
   staggerMs: number
@@ -73,7 +75,7 @@ interface FanCardProps {
 
 const FanCard = memo(function FanCard({
   tool, slotIndex, total, radius, arcCenterX, arcCenterY,
-  isRecommended, isCenter, animDuration, staggerMs, onSelect, onRotateTo,
+  isRecommended, reason, isCenter, animDuration, staggerMs, onSelect, onRotateTo,
 }: FanCardProps) {
   const [hovered, setHovered] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -167,13 +169,25 @@ const FanCard = memo(function FanCard({
           transition: `opacity ${contentFade ? 30 : 120}ms ease`,
         }}>
           {isRecommended && (
-            <div style={{
-              position: 'absolute', top: 8, right: 7,
-              fontSize: 9, fontWeight: 700, color: '#fbbf24',
-              background: 'rgba(251,191,36,0.15)',
-              border: '1px solid rgba(251,191,36,0.4)',
-              borderRadius: 4, padding: '1px 5px',
-            }}>AI</div>
+            <div style={{ position: 'absolute', top: 8, right: 7 }}>
+              <div style={{
+                fontSize: 9, fontWeight: 700, color: '#fbbf24',
+                background: 'rgba(251,191,36,0.15)',
+                border: '1px solid rgba(251,191,36,0.4)',
+                borderRadius: 4, padding: '1px 5px',
+              }}>AI</div>
+              {hovered && reason && (
+                <div style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: 4,
+                  fontSize: 9, color: 'rgba(255,255,255,0.9)',
+                  background: 'rgba(20,16,8,0.92)',
+                  border: '1px solid rgba(251,191,36,0.35)',
+                  borderRadius: 4, padding: '3px 6px',
+                  whiteSpace: 'nowrap', zIndex: 50,
+                  pointerEvents: 'none',
+                }}>{reason}</div>
+              )}
+            </div>
           )}
           <span style={{
             fontSize: isCenter ? 32 : Math.max(16, 28 - distFromCenter * 3),
@@ -420,7 +434,7 @@ function NavBtn({ onClick, label }: { onClick: () => void; label: string }) {
 
 // ─── Main SpiralMenu ──────────────────────────────────────────────────────────
 export default function SpiralMenu({
-  tools, recommended, spiralScale, animSpeed, filterQuery, onSelectTool,
+  tools, recommended, reasons, spiralScale, animSpeed, filterQuery, onSelectTool,
 }: SpiralMenuProps): React.ReactElement {
   const [vw, setVw] = useState(window.innerWidth)
   const [vh, setVh] = useState(window.innerHeight)
@@ -539,6 +553,7 @@ export default function SpiralMenu({
           arcCenterX={arcCenterX}
           arcCenterY={arcCenterY}
           isRecommended={recommended.includes(tool.id)}
+          reason={reasons?.[tool.id]}
           isCenter={i === Math.floor(slotTools.length / 2)}
           animDuration={animDuration}
           staggerMs={staggerMs}
