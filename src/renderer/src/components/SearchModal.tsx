@@ -68,8 +68,8 @@ export default function SearchModal({
 
   useEffect(() => {
     if (!selectedFile) return
-    window.api.notes.get(selectedFile.path).then(setFileNote)
-    window.api.tags.get(selectedFile.path).then(setFileTags)
+    window.api.notes.get(selectedFile.path).then(setFileNote).catch(() => {})
+    window.api.tags.get(selectedFile.path).then(setFileTags).catch(() => {})
   }, [selectedFile?.path])
 
   const doSearch = async (): Promise<void> => {

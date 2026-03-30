@@ -66,8 +66,10 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
     window.api.ai.getConfig().then(cfg => {
       setConfig(cfg)
       setDraft({ ...cfg })
+    }).catch(() => {
+      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 설정을 불러오지 못했습니다. 앱을 재시작해주세요.' }])
     })
-    window.api.ai.getPresetModels().then(setPresetModels)
+    window.api.ai.getPresetModels().then(setPresetModels).catch(() => {})
   }, [effectiveOpen])
 
   // Register streaming listeners once

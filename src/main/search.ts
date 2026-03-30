@@ -28,6 +28,17 @@ export interface SearchResult {
 
 export function registerSearchHandlers(): void {
   ipcMain.handle('search:files', async (event, options: SearchOptions) => {
+    // rootPath 유효성 검사 — 경로가 실제 존재하는 디렉터리인지 확인
+    const normalizedRoot = path.resolve(options.rootPath ?? '')
+    try {
+      const stat = fs.statSync(normalizedRoot)
+      if (!stat.isDirectory()) {
+        return { success: false, error: '유효하지 않은 경로입니다.' }
+      }
+    } catch {
+      return { success: false, error: '경로를 찾을 수 없습니다.' }
+    }
+
     const results: SearchResult[] = []
     let cancelled = false
 
@@ -37,7 +48,7 @@ export function registerSearchHandlers(): void {
 
     const LIMIT = 5000
     try {
-      await walkSearch(options.rootPath, options, results, () => {
+      await walkSearch(normalizedRoot, options, results, () => {
         if (results.length % 50 === 0) {
           event.sender.send('search:progress', results.length)
         }

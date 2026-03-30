@@ -28,7 +28,7 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
   const [dueDate, setDueDate] = useState('')
 
   useEffect(() => {
-    window.api.todo.get().then(setTodos)
+    window.api.todo.get().then(setTodos).catch(() => {})
   }, [])
 
   const add = async (): Promise<void> => {

@@ -52,7 +52,7 @@ function load(): AiConfig {
   try {
     const raw: AiConfig & { _enc?: boolean } = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(CONFIG_PATH(), 'utf8')) }
     if (raw._enc && raw.apiKey && safeStorage.isEncryptionAvailable()) {
-      try { raw.apiKey = safeStorage.decryptString(Buffer.from(raw.apiKey, 'base64')) } catch { raw.apiKey = '' }
+      try { raw.apiKey = safeStorage.decryptString(Buffer.from(raw.apiKey, 'base64')) } catch (e) { raw.apiKey = ''; log.warn('[ai:load] API 키 복호화 실패 — 키가 초기화됩니다', e) }
     }
     delete raw._enc
     return raw
@@ -163,6 +163,15 @@ export function registerAiAssistantHandlers(): void {
     const { signal } = abort
     const batcher = createChunkBatcher(event.sender, signal)
 
+    const TIMEOUT_MS = 60_000
+    const timeoutId = setTimeout(() => {
+      if (abort) {
+        abort.abort()
+        if (!event.sender.isDestroyed()) event.sender.send('ai:error', 'AI 응답 시간이 초과되었습니다 (60초).')
+        log.warn('[ai:chat] 타임아웃으로 스트림 종료')
+      }
+    }, TIMEOUT_MS)
+
     const withSystem = cfg.systemPrompt
       ? [{ role: 'system' as const, content: cfg.systemPrompt }, ...messages]
       : messages
@@ -239,6 +248,7 @@ export function registerAiAssistantHandlers(): void {
         logIpcError('ai:chat', e, { provider: cfg.provider })
       }
     } finally {
+      clearTimeout(timeoutId)
       abort = null
     }
   })

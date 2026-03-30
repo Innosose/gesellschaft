@@ -26,13 +26,13 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   const [done, setDone] = React.useState(false)
 
   React.useEffect(() => {
-    ;(window.api as any).imageTool?.defaultOutputDir?.().then((dir: string) => {
+    window.api.imageTool.defaultOutputDir().then(dir => {
       if (dir) setOutputDir(dir)
-    })
+    }).catch(() => {})
   }, [])
 
   const handleAddFiles = async (): Promise<void> => {
-    const picked: string[] = await (window.api as any).imageTool.openFiles()
+    const picked = await window.api.imageTool.openFiles()
     if (!picked || picked.length === 0) return
     const newFiles: ImageFile[] = picked
       .filter(p => !files.some(f => f.path === p))
@@ -46,7 +46,7 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   }
 
   const handleBrowseOutput = async (): Promise<void> => {
-    const dir: string = await (window.api as any).imageTool.openOutputDir?.()
+    const dir = await window.api.imageTool.openOutputDir()
     if (dir) setOutputDir(dir)
   }
 
@@ -54,23 +54,27 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
     if (files.length === 0) return
     setConverting(true)
     setDone(false)
-    const updatedFiles = [...files]
 
-    for (let i = 0; i < updatedFiles.length; i++) {
-      const f = updatedFiles[i]
-      try {
-        await (window.api as any).imageTool.convert({
-          inputPath: f.path,
-          outputDir,
-          format,
-          quality: format === 'jpg' ? quality : undefined,
-          resize: resize ? { width: width ? parseInt(width) : undefined, height: height ? parseInt(height) : undefined, keepRatio } : undefined,
-        })
-        updatedFiles[i] = { ...f, status: 'done' }
-      } catch (e: any) {
-        updatedFiles[i] = { ...f, status: 'error', errorMsg: e?.message || '오류' }
-      }
-      setFiles([...updatedFiles])
+    const jobs = files.map(f => ({
+      filePath: f.path,
+      outputDir,
+      format,
+      quality,
+      width: resize && width ? parseInt(width) : 0,
+      height: resize && height ? parseInt(height) : 0,
+      keepAspect: keepRatio,
+    }))
+
+    try {
+      const results = await window.api.imageTool.convert(jobs)
+      setFiles(prev => prev.map((f, i) => ({
+        ...f,
+        status: results[i]?.success ? 'done' : 'error',
+        errorMsg: results[i]?.error,
+      })))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '변환 오류'
+      setFiles(prev => prev.map(f => ({ ...f, status: 'error', errorMsg: msg })))
     }
 
     setConverting(false)

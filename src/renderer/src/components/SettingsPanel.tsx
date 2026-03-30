@@ -356,7 +356,8 @@ export default function SettingsPanel(): React.ReactElement {
                   onClick={async () => {
                     const next = !loginItem
                     setLoginItem(next)
-                    await window.api.appCtrl.setLoginItem(next)
+                    const result = await window.api.appCtrl.setLoginItem(next).catch(() => null)
+                    if (!result?.success) setLoginItem(!next)
                   }}
                   style={{
                     width: 44, height: 24, borderRadius: 12, border: 'none',

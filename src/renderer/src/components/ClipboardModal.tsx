@@ -7,7 +7,7 @@ export default function ClipboardModal({ onClose, asPanel }: { onClose: () => vo
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    window.api.clipboard.getHistory().then(setHistory)
+    window.api.clipboard.getHistory().then(setHistory).catch(() => {})
     const unsub = window.api.clipboard.onUpdated(setHistory)
     return unsub
   }, [])
@@ -63,7 +63,7 @@ export default function ClipboardModal({ onClose, asPanel }: { onClose: () => vo
 
             return (
               <div
-                key={i}
+                key={`${i}-${item.slice(0, 40)}`}
                 className="group flex items-start gap-2 p-2.5 rounded-lg cursor-pointer transition-colors"
                 style={{ background: 'var(--win-bg)', border: '1px solid var(--win-surface)' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--win-border)' }}
