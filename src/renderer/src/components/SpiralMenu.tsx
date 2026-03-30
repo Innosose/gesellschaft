@@ -104,7 +104,7 @@ const FanCard = memo(function FanCard({
   const baseScale = 0.38 + 1.27 * Math.exp(-2.8 * tNorm)
   const activeScale = hovered ? baseScale * 1.07 : baseScale
   const baseOpacity = Math.max(0.25, 1.0 - 0.75 * tNorm)
-  const blurPx = tNorm * 1.8                               // 9. depth blur
+  const blurPx = tNorm * 4.5                               // 9. depth blur
   const showContent = true
   const stepsToCenter = slotIndex - Math.floor(total / 2)
 
@@ -141,7 +141,7 @@ const FanCard = memo(function FanCard({
             : `0 2px 10px rgba(0,0,0,0.5)`,
         // 1. 중앙 카드 pulse: animation은 아래 style에서
         animation: isCenter ? 'centerPulse 2.8s ease-in-out infinite' : undefined,
-        filter: blurPx > 0.3 ? `blur(${blurPx}px)` : undefined,  // 9. depth blur
+        filter: blurPx > 0.1 ? `blur(${blurPx}px)` : undefined,  // 9. depth blur
         transition: `transform ${animDuration * 0.65}ms cubic-bezier(0.22,1,0.36,1),
                      opacity ${animDuration * 0.5}ms ease,
                      filter ${animDuration * 0.4}ms ease`,
