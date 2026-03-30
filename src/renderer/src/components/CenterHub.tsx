@@ -83,9 +83,9 @@ export default function CenterHub({
           <div
             style={{
               position: 'absolute',
-              inset: -22,
+              inset: -28,
               borderRadius: '50%',
-              background: `radial-gradient(circle, ${rgba(hubColor, 0.13)} 0%, transparent 70%)`,
+              background: `radial-gradient(circle, ${rgba(hubColor, 0.28)} 0%, ${rgba(hubColor, 0.08)} 50%, transparent 70%)`,
               animation: 'hubGlow 3s ease-in-out infinite',
               pointerEvents: 'none',
             }}
@@ -100,13 +100,13 @@ export default function CenterHub({
             width: actualSize,
             height: actualSize,
             borderRadius: '50%',
-            border: `${isOpen ? 1.5 : 2}px solid ${rgba(hubColor, isOpen ? 0.45 : 0.55)}`,
+            border: `${isOpen ? 1.5 : 2.5}px solid ${rgba(hubColor, isOpen ? 0.50 : 0.75)}`,
             background: isOpen
-              ? `radial-gradient(circle at 40% 35%, ${rgba(hubColor, 0.12)}, rgba(10,8,22,0.88))`
-              : `radial-gradient(circle at 40% 35%, ${rgba(hubColor, 0.24)}, rgba(10,8,22,0.96))`,
+              ? `radial-gradient(circle at 40% 35%, ${rgba(hubColor, 0.15)}, rgba(10,8,22,0.88))`
+              : `radial-gradient(circle at 40% 35%, ${rgba(hubColor, 0.42)}, rgba(10,8,22,0.96))`,
             boxShadow: isOpen
-              ? `0 0 20px ${rgba(hubColor, 0.2)}`
-              : `0 0 45px ${rgba(hubColor, 0.3)}, inset 0 1px 0 rgba(255,255,255,0.07)`,
+              ? `0 0 22px ${rgba(hubColor, 0.25)}`
+              : `0 0 55px ${rgba(hubColor, 0.55)}, 0 0 18px ${rgba(hubColor, 0.3)}, inset 0 1px 0 rgba(255,255,255,0.1)`,
             cursor: 'pointer',
             transition: 'all 0.42s cubic-bezier(0.34,1.15,0.64,1)',
             display: 'flex',
@@ -125,7 +125,7 @@ export default function CenterHub({
                 fontSize: Math.max(6, Math.round(hubSize * 0.058)),
                 fontWeight: 800,
                 letterSpacing: '0.18em',
-                color: rgba(hubColor, 0.6),
+                color: rgba(hubColor, 0.85),
                 textTransform: 'uppercase',
                 userSelect: 'none',
                 marginLeft: '0.18em',

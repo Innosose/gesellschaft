@@ -127,8 +127,8 @@ input, button, select, textarea { -webkit-app-region: no-drag; }
 
 /* ── Overlay / Spiral UI ── */
 @keyframes hubGlow {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50%       { opacity: 1;   transform: scale(1.15); }
+  0%, 100% { opacity: 0.65; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.2); }
 }
 
 @keyframes hubSpin {
