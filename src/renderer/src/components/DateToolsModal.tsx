@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Modal } from './SearchModal'
 
 // ── DateCalc types & helpers ───────────────────────────────────────────────────
@@ -78,6 +78,104 @@ function dateStr(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+// ── Timezone helpers ───────────────────────────────────────────────────────────
+
+interface TzCity {
+  flag: string
+  city: string
+  country: string
+  tz: string
+}
+
+const DEFAULT_CITIES: TzCity[] = [
+  { flag: '🇰🇷', city: '서울',        country: '대한민국', tz: 'Asia/Seoul' },
+  { flag: '🇯🇵', city: '도쿄',        country: '일본',     tz: 'Asia/Tokyo' },
+  { flag: '🇨🇳', city: '베이징',      country: '중국',     tz: 'Asia/Shanghai' },
+  { flag: '🇸🇬', city: '싱가포르',    country: '싱가포르', tz: 'Asia/Singapore' },
+  { flag: '🇦🇪', city: '두바이',      country: 'UAE',      tz: 'Asia/Dubai' },
+  { flag: '🇩🇪', city: '베를린',      country: '독일',     tz: 'Europe/Berlin' },
+  { flag: '🇬🇧', city: '런던',        country: '영국',     tz: 'Europe/London' },
+  { flag: '🇺🇸', city: '뉴욕',        country: '미국',     tz: 'America/New_York' },
+  { flag: '🇺🇸', city: '로스앤젤레스', country: '미국',    tz: 'America/Los_Angeles' },
+  { flag: '🇦🇺', city: '시드니',      country: '호주',     tz: 'Australia/Sydney' },
+]
+
+function formatTzTime(tz: string, now: Date): { time: string; date: string; offset: string; isToday: boolean } {
+  const fmt = (opts: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('ko-KR', { timeZone: tz, ...opts }).format(now)
+
+  const time   = fmt({ hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  const date   = fmt({ month: 'short', day: 'numeric', weekday: 'short' })
+  const localDate = new Intl.DateTimeFormat('ko-KR', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+  const hereDate  = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+
+  const offsetMs = (() => {
+    try {
+      const utcStr = now.toLocaleString('en-US', { timeZone: 'UTC' })
+      const tzStr  = now.toLocaleString('en-US', { timeZone: tz })
+      return (new Date(tzStr).getTime() - new Date(utcStr).getTime())
+    } catch { return 0 }
+  })()
+  const h = Math.floor(Math.abs(offsetMs) / 3600000)
+  const m = Math.floor((Math.abs(offsetMs) % 3600000) / 60000)
+  const sign = offsetMs >= 0 ? '+' : '-'
+  const offset = `UTC${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+
+  return { time, date, offset, isToday: localDate === hereDate }
+}
+
+function TimezoneTab(): React.ReactElement {
+  const [now, setNow] = useState(() => new Date())
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => setNow(new Date()), 1000)
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', flex: 1 }}>
+      {DEFAULT_CITIES.map(c => {
+        const { time, date, offset, isToday } = formatTzTime(c.tz, now)
+        const isSeoul = c.tz === 'Asia/Seoul'
+        return (
+          <div
+            key={c.tz}
+            style={{
+              display: 'flex', alignItems: 'center', padding: '9px 14px', borderRadius: 8,
+              background: isSeoul ? 'rgba(167,139,250,0.10)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${isSeoul ? 'rgba(167,139,250,0.35)' : 'rgba(255,255,255,0.08)'}`,
+            }}
+          >
+            <span style={{ fontSize: 20, marginRight: 10, lineHeight: 1 }}>{c.flag}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--win-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {c.city}
+                <span style={{ fontSize: 10, color: 'var(--win-text-muted)', fontWeight: 400 }}>{c.country}</span>
+                {!isToday && (
+                  <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 4, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.35)', color: '#fbbf24' }}>
+                    +1일
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--win-text-muted)', marginTop: 1 }}>
+                {date} · {offset}
+              </div>
+            </div>
+            <span style={{
+              fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+              color: isSeoul ? '#a78bfa' : 'var(--win-text-sub)',
+              letterSpacing: '0.03em', fontFamily: 'monospace',
+            }}>
+              {time}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 interface DateToolsModalProps {
@@ -86,7 +184,7 @@ interface DateToolsModalProps {
 }
 
 export default function DateToolsModal({ onClose, asPanel }: DateToolsModalProps): React.ReactElement {
-  const [tab, setTab] = useState<'dateCalc' | 'annualLeave'>('dateCalc')
+  const [tab, setTab] = useState<'dateCalc' | 'annualLeave' | 'timezone'>('dateCalc')
 
   // ── DateCalc state ────────────────────────────────────────────────────────
   const [dateCalcTab, setDateCalcTab] = useState<DateCalcTab>('dday')
@@ -185,13 +283,13 @@ export default function DateToolsModal({ onClose, asPanel }: DateToolsModalProps
     <Modal title="날짜 도구" onClose={onClose} asPanel={asPanel}>
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
-        {(['dateCalc', 'annualLeave'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
+        {([['dateCalc', '날짜 계산'], ['annualLeave', '연차 계산'], ['timezone', '타임존']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} style={{
             padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            background: tab === t ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: tab === t ? '#fff' : 'rgba(255,255,255,0.45)',
+            background: tab === id ? 'rgba(255,255,255,0.12)' : 'transparent',
+            color: tab === id ? '#fff' : 'rgba(255,255,255,0.45)',
             transition: 'all 0.15s',
-          }}>{t === 'dateCalc' ? '날짜 계산' : '연차 계산'}</button>
+          }}>{label}</button>
         ))}
       </div>
 
@@ -539,6 +637,9 @@ export default function DateToolsModal({ onClose, asPanel }: DateToolsModalProps
           </div>
         </div>
       )}
+
+      {/* ── 타임존 탭 ── */}
+      {tab === 'timezone' && <TimezoneTab />}
     </Modal>
   )
 }
