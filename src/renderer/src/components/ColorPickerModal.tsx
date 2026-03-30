@@ -79,7 +79,7 @@ interface ColorPickerModalProps {
   asPanel?: boolean
 }
 
-export default function ColorPickerModal({ onClose, asPanel }: ColorPickerModalProps): React.ReactElement {
+export function ColorPickerContent(): React.ReactElement {
   const [hue, setHue] = React.useState(210)
   const [sat, setSat] = React.useState(80)
   const [lig, setLig] = React.useState(50)
@@ -91,7 +91,7 @@ export default function ColorPickerModal({ onClose, asPanel }: ColorPickerModalP
 
   const [r, g, b] = hslToRgb(hue, sat, lig)
   const hex = rgbToHex(r, g, b)
-  const [, sv, sv2] = rgbToHsv(r, g, b)
+  const [, hsvS, hsvV] = rgbToHsv(r, g, b)
   const a01 = alpha / 100
 
   const formats = {
@@ -99,7 +99,7 @@ export default function ColorPickerModal({ onClose, asPanel }: ColorPickerModalP
     'RGB': `rgb(${r}, ${g}, ${b})`,
     'RGBA': `rgba(${r}, ${g}, ${b}, ${a01.toFixed(2)})`,
     'HSL': `hsl(${hue}, ${sat}%, ${lig}%)`,
-    'HSV': `hsv(${hue}, ${sv}%, ${sv2}%)`,
+    'HSV (디자인툴)': `hsv(${hue}, ${hsvS}%, ${hsvV}%)`,
   }
 
   const setColor = (hex: string): void => {
@@ -152,7 +152,7 @@ export default function ColorPickerModal({ onClose, asPanel }: ColorPickerModalP
   const slCursorY = `${100 - lig}%`
 
   return (
-    <Modal title="색상 피커" onClose={onClose} asPanel={asPanel}>
+    <>
       <div style={{ display: 'flex', gap: 20, height: '100%' }}>
         {/* 왼쪽: 피커 컨트롤 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: 260, flexShrink: 0 }}>
@@ -333,6 +333,14 @@ export default function ColorPickerModal({ onClose, asPanel }: ColorPickerModalP
           )}
         </div>
       </div>
+    </>
+  )
+}
+
+export default function ColorPickerModal({ onClose, asPanel }: ColorPickerModalProps): React.ReactElement {
+  return (
+    <Modal title="색상 피커" onClose={onClose} asPanel={asPanel}>
+      <ColorPickerContent />
     </Modal>
   )
 }

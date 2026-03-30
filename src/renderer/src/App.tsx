@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import CenterHub from './components/CenterHub'
 import SpiralMenu from './components/SpiralMenu'
 import ToolPanel from './components/ToolPanel'
+import { useAppStore } from './store/appStore'
+import { ALL_TOOLS } from '../../shared/constants'
 
 interface Tool {
   id: string
@@ -10,60 +12,49 @@ interface Tool {
   color: string
 }
 
-const ALL_TOOLS: Tool[] = [
-  { id: 'search',        icon: '🔍', label: '고급 검색',        color: '#0078d4' },
-  { id: 'cadConvert',    icon: '📐', label: 'CAD → PDF',         color: '#8764b8' },
-  { id: 'pdfTool',       icon: '📄', label: 'PDF 병합 / 분할',   color: '#e74c3c' },
-  { id: 'imageConvert',  icon: '🖼️', label: '이미지 변환',       color: '#9b59b6' },
-  { id: 'excelTool',     icon: '📊', label: 'Excel / CSV',       color: '#27ae60' },
-  { id: 'bulkRename',    icon: '✏️', label: '일괄 이름 변경',    color: '#038387' },
-  { id: 'folderCompare', icon: '📂', label: '폴더 비교',         color: '#ca5010' },
-  { id: 'todo',          icon: '✅', label: '할일 목록',         color: '#498205' },
-  { id: 'reminder',      icon: '🔔', label: '업무 리마인더',     color: '#c19c00' },
-  { id: 'notes',         icon: '📝', label: '빠른 메모',         color: '#0099bc' },
-  { id: 'snippets',      icon: '💾', label: '스니펫 관리',       color: '#16a085' },
-  { id: 'emailTemplate', icon: '✉️', label: '이메일 템플릿',     color: '#8e44ad' },
-  { id: 'clipboard',     icon: '📋', label: '클립보드 기록',     color: '#107c41' },
-  { id: 'vatCalc',       icon: '🧮', label: '부가세 계산',       color: '#1abc9c' },
-  { id: 'dateCalc',      icon: '📅', label: '날짜 계산기',       color: '#3498db' },
-  { id: 'exchangeRate',  icon: '💱', label: '환율 계산',         color: '#c0392b' },
-  { id: 'unitConverter', icon: '📏', label: '단위 변환',         color: '#d35400' },
-  { id: 'translate',     icon: '🌐', label: '번역기',            color: '#2980b9' },
-  { id: 'textTools',     icon: '🔤', label: '텍스트 도구',       color: '#7a7574' },
-  { id: 'qrCode',        icon: '🔳', label: 'QR 코드 생성',     color: '#34495e' },
-  { id: 'colorPicker',   icon: '🎨', label: '색상 피커',         color: '#e67e22' },
-  { id: 'ocr',           icon: '🔍', label: '이미지 OCR',        color: '#7f8c8d' },
-  { id: 'ai',            icon: '✦',  label: 'AI 어시스턴트',     color: '#a78bfa' },
-]
-
 type UIState = 'hub' | 'menu' | 'tool'
 
+interface Notification {
+  id: number
+  message: string
+  type: 'info' | 'error' | 'success'
+}
+
+let notifIdCounter = 0
+
 export default function App(): React.ReactElement {
+  const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, loadFromAPI } = useAppStore()
+
   const [uiState, setUiState] = useState<UIState>('hub')
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
   const [recommended, setRecommended] = useState<string[]>([])
   const [scanning, setScanning] = useState(false)
-  const [hubColor, setHubColor] = useState('#8b5cf6')
   const [toolSearch, setToolSearch] = useState('')
-  const [hubSize, setHubSize] = useState(114)
-  const [overlayOpacity, setOverlayOpacity] = useState(0.88)
-  const [spiralScale, setSpiralScale] = useState(1.0)
-  const [animSpeed, setAnimSpeed] = useState<'slow' | 'normal' | 'fast'>('normal')
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const dismissTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
 
-  // Sync --gs-accent CSS variable whenever hubColor changes (used by range sliders etc.)
-  useEffect(() => {
-    document.documentElement.style.setProperty('--gs-accent', hubColor)
-  }, [hubColor])
+  // 설정 초기 로드
+  useEffect(() => { loadFromAPI() }, [loadFromAPI])
 
-  // Load all settings on mount
+  const addNotification = useCallback((message: string, type: Notification['type'] = 'info') => {
+    const id = ++notifIdCounter
+    setNotifications(prev => [...prev, { id, message, type }])
+    const timer = setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      dismissTimers.current.delete(id)
+    }, 4000)
+    dismissTimers.current.set(id, timer)
+  }, [])
+
+  const dismissNotification = useCallback((id: number) => {
+    const timer = dismissTimers.current.get(id)
+    if (timer) { clearTimeout(timer); dismissTimers.current.delete(id) }
+    setNotifications(prev => prev.filter(n => n.id !== id))
+  }, [])
+
+  // Cleanup timers on unmount
   useEffect(() => {
-    window.api.settings.getTheme().then(color => { if (color) setHubColor(color) })
-    window.api.settings.getDisplay().then(d => {
-      if (d.hubSize) setHubSize(d.hubSize)
-      if (d.overlayOpacity) setOverlayOpacity(d.overlayOpacity)
-      if (d.spiralScale) setSpiralScale(d.spiralScale)
-      if (d.animSpeed) setAnimSpeed(d.animSpeed as 'slow' | 'normal' | 'fast')
-    })
+    return () => { dismissTimers.current.forEach(t => clearTimeout(t)) }
   }, [])
 
   const handleHubClick = useCallback(() => {
@@ -82,13 +73,6 @@ export default function App(): React.ReactElement {
     setToolSearch('')
   }, [])
 
-  const handleDisplayChange = useCallback((patch: Record<string, unknown>) => {
-    if (patch.hubSize !== undefined) setHubSize(patch.hubSize as number)
-    if (patch.overlayOpacity !== undefined) setOverlayOpacity(patch.overlayOpacity as number)
-    if (patch.spiralScale !== undefined) setSpiralScale(patch.spiralScale as number)
-    if (patch.animSpeed !== undefined) setAnimSpeed(patch.animSpeed as 'slow' | 'normal' | 'fast')
-  }, [])
-
   // Memoize hub color RGB components for search bar background
   const hubRgb = useMemo(() => ({
     r: parseInt(hubColor.slice(1, 3), 16),
@@ -100,14 +84,27 @@ export default function App(): React.ReactElement {
     setScanning(true)
     try {
       const result = await window.api.screen.captureAndAnalyze()
-      if (result.success && result.recommendations.length > 0) {
+      if (result.success) {
         setRecommended(result.recommendations)
         setUiState('menu')
+        if (result.recommendations.length === 0) {
+          addNotification('화면에서 추천 기능을 찾지 못했습니다.', 'info')
+        } else {
+          addNotification(`${result.recommendations.length}개 기능을 추천합니다.`, 'success')
+        }
+      } else {
+        setUiState('menu')
+        const msg = result.error?.includes('API 키')
+          ? '⚙ AI 어시스턴트 설정에서 API 키를 등록해주세요.'
+          : `분석 실패: ${result.error ?? '알 수 없는 오류'}`
+        addNotification(msg, 'error')
       }
+    } catch {
+      addNotification('화면 분석 중 오류가 발생했습니다.', 'error')
     } finally {
       setScanning(false)
     }
-  }, [])
+  }, [addNotification])
 
   const handleHide = useCallback(() => {
     window.api.window.hide()
@@ -119,13 +116,12 @@ export default function App(): React.ReactElement {
       window.api.window.setIgnoreMouseEvents(false)
       return
     }
-    // hub 상태: 투명 영역은 클릭 통과, 버튼 위에서는 캡처
     window.api.window.setIgnoreMouseEvents(true, { forward: true })
     let lastCall = 0
     let lastHit = false
     const onMove = (e: MouseEvent): void => {
       const now = Date.now()
-      if (now - lastCall < 16) return   // throttle ~60fps
+      if (now - lastCall < 16) return
       lastCall = now
       const el = document.elementFromPoint(e.clientX, e.clientY)
       const hit = el?.closest('button, input, a, [data-interactive]') != null
@@ -153,6 +149,11 @@ export default function App(): React.ReactElement {
     return () => window.removeEventListener('keydown', handler)
   }, [uiState, handleBack])
 
+  const notifColors: Record<Notification['type'], { bg: string; border: string; color: string; dot: string }> = {
+    info:    { bg: 'rgba(18,14,34,0.97)',  border: 'rgba(139,92,246,0.45)',  color: 'rgba(196,181,253,0.95)', dot: '#8b5cf6' },
+    error:   { bg: 'rgba(22,8,8,0.97)',    border: 'rgba(220,38,38,0.45)',   color: 'rgba(252,165,165,0.95)', dot: '#ef4444' },
+    success: { bg: 'rgba(6,18,12,0.97)',   border: 'rgba(34,197,94,0.40)',   color: 'rgba(134,239,172,0.95)', dot: '#22c55e' },
+  }
   return (
     <div
       style={{
@@ -213,12 +214,7 @@ export default function App(): React.ReactElement {
             animation: 'slideUp 0.32s cubic-bezier(0.25,1,0.5,1) 0.15s both',
           }}
         >
-          <div
-            style={{
-              position: 'relative',
-              pointerEvents: 'auto',
-            }}
-          >
+          <div style={{ position: 'relative', pointerEvents: 'auto' }}>
             <span
               style={{
                 position: 'absolute',
@@ -226,7 +222,7 @@ export default function App(): React.ReactElement {
                 top: '50%',
                 transform: 'translateY(-50%)',
                 fontSize: 14,
-                color: `rgba(140,110,70,0.65)`,
+                color: 'rgba(140,110,70,0.65)',
                 pointerEvents: 'none',
                 userSelect: 'none',
               }}
@@ -278,7 +274,7 @@ export default function App(): React.ReactElement {
             )}
           </div>
 
-          {/* AI 추천 버튼 — 메뉴가 열렸을 때 검색 아래 표시 */}
+          {/* AI 추천 버튼 */}
           <button
             onClick={handleScan}
             disabled={scanning}
@@ -314,22 +310,79 @@ export default function App(): React.ReactElement {
         </div>
       )}
 
-      {/* Tool Panel */}
+      {/* Notification stack — top right (8. 버튼과 겹치지 않도록 top 조정) */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 52,
+          right: 90,
+          zIndex: 300,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          alignItems: 'flex-end',
+          pointerEvents: 'none',
+        }}
+      >
+        {notifications.map(n => {
+          const c = notifColors[n.type]
+          return (
+            <div
+              key={n.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px 8px 10px',
+                borderRadius: 10,
+                background: c.bg,
+                border: `1px solid ${c.border}`,
+                color: c.color,
+                fontSize: 12,
+                fontWeight: 500,
+                backdropFilter: 'blur(16px)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
+                maxWidth: 280,
+                pointerEvents: 'auto',
+                animation: 'slideInRight 0.22s cubic-bezier(0.22,1,0.36,1) both',
+                letterSpacing: '0.01em',
+                lineHeight: 1.4,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{n.message}</span>
+              <button
+                onClick={() => dismissNotification(n.id)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: c.color,
+                  opacity: 0.45,
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  padding: '0 0 0 4px',
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Tool Panel — 10. 전환 애니메이션 */}
       {uiState === 'tool' && activeTool && (
+        <div style={{ animation: 'toolPanelIn 0.22s cubic-bezier(0.22,1,0.36,1) both', position: 'fixed', inset: 0, zIndex: 50 }}>
         <ToolPanel
           key={activeTool.id}
           toolId={activeTool.id}
           toolColor={activeTool.color}
           toolLabel={activeTool.label}
           onBack={handleBack}
-          hubColor={hubColor}
-          hubSize={hubSize}
-          overlayOpacity={overlayOpacity}
-          spiralScale={spiralScale}
-          animSpeed={animSpeed}
-          onThemeChange={setHubColor}
-          onDisplayChange={handleDisplayChange}
         />
+        </div>
       )}
 
       {/* Top-right floating controls */}
@@ -372,7 +425,7 @@ export default function App(): React.ReactElement {
         ⚙
       </button>
 
-      {/* Quit button — top right corner, subtle */}
+      {/* Quit button */}
       <button
         onClick={() => window.api.window.close()}
         title="앱 종료"

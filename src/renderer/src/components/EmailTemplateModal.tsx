@@ -9,38 +9,23 @@ interface EmailTemplate {
   updatedAt: number
 }
 
-const STORAGE_KEY = 'gs_email_templates'
-
-function loadTemplates(): EmailTemplate[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function saveTemplates(templates: EmailTemplate[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(templates))
-}
-
-function genId(): string {
-  return `tpl_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-}
-
 interface EmailTemplateModalProps {
   onClose: () => void
   asPanel?: boolean
 }
 
 export default function EmailTemplateModal({ onClose, asPanel }: EmailTemplateModalProps): React.ReactElement {
-  const [templates, setTemplates] = React.useState<EmailTemplate[]>(() => loadTemplates())
+  const [templates, setTemplates] = React.useState<EmailTemplate[]>([])
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [editName, setEditName] = React.useState('')
   const [editSubject, setEditSubject] = React.useState('')
   const [editBody, setEditBody] = React.useState('')
   const [savedMsg, setSavedMsg] = React.useState(false)
   const [copiedMsg, setCopiedMsg] = React.useState('')
+
+  React.useEffect(() => {
+    window.api.emailTemplates.get().then(setTemplates)
+  }, [])
 
   const selected = templates.find(t => t.id === selectedId) || null
 
@@ -52,38 +37,29 @@ export default function EmailTemplateModal({ onClose, asPanel }: EmailTemplateMo
     }
   }, [selectedId])
 
-  const handleNew = (): void => {
-    const t: EmailTemplate = { id: genId(), name: '새 템플릿', subject: '', body: '', updatedAt: Date.now() }
-    setTemplates(prev => {
-      const updated = [t, ...prev]
-      saveTemplates(updated)
-      return updated
-    })
-    setSelectedId(t.id)
+  const handleNew = async (): Promise<void> => {
+    const updated = await window.api.emailTemplates.save({ name: '새 템플릿', subject: '', body: '' })
+    setTemplates(updated)
+    if (updated.length > 0) setSelectedId(updated[0].id)
   }
 
-  const handleSave = (): void => {
+  const handleSave = async (): Promise<void> => {
     if (!selectedId) return
-    setTemplates(prev => {
-      const updated = prev.map(t =>
-        t.id === selectedId
-          ? { ...t, name: editName, subject: editSubject, body: editBody, updatedAt: Date.now() }
-          : t
-      )
-      saveTemplates(updated)
-      return updated
+    const updated = await window.api.emailTemplates.save({
+      id: selectedId,
+      name: editName,
+      subject: editSubject,
+      body: editBody,
     })
+    setTemplates(updated)
     setSavedMsg(true)
     setTimeout(() => setSavedMsg(false), 1500)
   }
 
-  const handleDelete = (): void => {
+  const handleDelete = async (): Promise<void> => {
     if (!selectedId) return
-    setTemplates(prev => {
-      const updated = prev.filter(t => t.id !== selectedId)
-      saveTemplates(updated)
-      return updated
-    })
+    const updated = await window.api.emailTemplates.delete(selectedId)
+    setTemplates(updated)
     setSelectedId(null)
   }
 

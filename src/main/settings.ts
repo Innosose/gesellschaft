@@ -1,9 +1,16 @@
 import { ipcMain, app, globalShortcut } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
+import {
+  DEFAULT_SHORTCUT,
+  DEFAULT_THEME_COLOR,
+  DEFAULT_HUB_SIZE,
+  DEFAULT_OVERLAY_OPACITY,
+  DEFAULT_SPIRAL_SCALE,
+  DEFAULT_ANIM_SPEED,
+} from '../shared/constants'
 
 const SETTINGS_PATH = (): string => path.join(app.getPath('userData'), 'settings.json')
-const DEFAULT_SHORTCUT = 'Ctrl+Shift+G'
 
 interface AppSettings {
   shortcut: string
@@ -15,12 +22,12 @@ interface AppSettings {
 }
 
 const DEFAULTS: AppSettings = {
-  shortcut: DEFAULT_SHORTCUT,
-  themeColor: '#8b5cf6',
-  hubSize: 114,
-  overlayOpacity: 0.88,
-  spiralScale: 1.0,
-  animSpeed: 'normal',
+  shortcut:       DEFAULT_SHORTCUT,
+  themeColor:     DEFAULT_THEME_COLOR,
+  hubSize:        DEFAULT_HUB_SIZE,
+  overlayOpacity: DEFAULT_OVERLAY_OPACITY,
+  spiralScale:    DEFAULT_SPIRAL_SCALE,
+  animSpeed:      DEFAULT_ANIM_SPEED,
 }
 
 function load(): AppSettings {
@@ -56,9 +63,13 @@ export function registerSettingsHandlers(): void {
 
   ipcMain.handle('settings:setShortcut', (_: Electron.IpcMainInvokeEvent, newShortcut: string) => {
     if (!newShortcut || !toggleFn) return { success: false, error: '잘못된 단축키' }
+    const prev = currentShortcut
+    globalShortcut.unregister(prev)
     const ok = globalShortcut.register(newShortcut, toggleFn)
-    if (!ok) return { success: false, error: '이미 사용 중인 단축키입니다.' }
-    globalShortcut.unregister(currentShortcut)
+    if (!ok) {
+      globalShortcut.register(prev, toggleFn)  // restore old on failure
+      return { success: false, error: '이미 사용 중인 단축키입니다.' }
+    }
     currentShortcut = newShortcut
     save({ ...load(), shortcut: currentShortcut })
     return { success: true, shortcut: currentShortcut }

@@ -8,7 +8,7 @@ export default function AutoOrganizeModal({ onClose }: { onClose: () => void }):
   const [lastResult, setLastResult] = useState<{ ruleId: string; count: number; errors: number } | null>(null)
 
   useEffect(() => {
-    window.api.organize.getRules().then((r: OrganizeRule[]) => setRules(r))
+    window.api.organize.getRules().then((r: OrganizeRule[]) => setRules(r)).catch(() => {})
   }, [])
 
   const saveRule = async (rule: OrganizeRule): Promise<void> => {

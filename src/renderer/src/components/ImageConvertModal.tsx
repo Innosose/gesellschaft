@@ -13,7 +13,7 @@ interface ImageConvertModalProps {
   asPanel?: boolean
 }
 
-export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModalProps): React.ReactElement {
+export function ImageConvertContent(): React.ReactElement {
   const [files, setFiles] = React.useState<ImageFile[]>([])
   const [format, setFormat] = React.useState<'jpg' | 'png' | 'bmp'>('jpg')
   const [quality, setQuality] = React.useState(85)
@@ -24,20 +24,37 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   const [outputDir, setOutputDir] = React.useState('')
   const [converting, setConverting] = React.useState(false)
   const [done, setDone] = React.useState(false)
+  const [dragOver, setDragOver] = React.useState(false)
+
+  const handleDropFiles = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault()
+    setDragOver(false)
+    const candidates = Array.from(e.dataTransfer.files)
+      .filter(f => /\.(jpe?g|png|bmp|webp|gif|tiff?)$/i.test(f.name))
+      .map(f => ({ path: (f as File & { path?: string }).path ?? f.name, name: f.name, status: 'waiting' as const }))
+      .filter(c => c.path)
+    if (candidates.length === 0) return
+    // Dedup inside functional updater so the check always uses the latest state
+    setFiles(prev => [...prev, ...candidates.filter(c => !prev.some(ex => ex.path === c.path))])
+    setDone(false)
+  }
 
   React.useEffect(() => {
-    ;(window.api as any).imageTool?.defaultOutputDir?.().then((dir: string) => {
+    window.api.imageTool.defaultOutputDir().then(dir => {
       if (dir) setOutputDir(dir)
-    })
+    }).catch(() => {})
   }, [])
 
   const handleAddFiles = async (): Promise<void> => {
-    const picked: string[] = await (window.api as any).imageTool.openFiles()
+    const picked = await window.api.imageTool.openFiles()
     if (!picked || picked.length === 0) return
-    const newFiles: ImageFile[] = picked
-      .filter(p => !files.some(f => f.path === p))
-      .map(p => ({ path: p, name: p.split(/[\\/]/).pop() || p, status: 'waiting' }))
-    setFiles(prev => [...prev, ...newFiles])
+    // Dedup inside functional updater so the check always uses the latest state
+    setFiles(prev => {
+      const toAdd = picked
+        .filter(p => !prev.some(f => f.path === p))
+        .map(p => ({ path: p, name: p.split(/[\\/]/).pop() || p, status: 'waiting' as const }))
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev
+    })
     setDone(false)
   }
 
@@ -46,7 +63,7 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   }
 
   const handleBrowseOutput = async (): Promise<void> => {
-    const dir: string = await (window.api as any).imageTool.openOutputDir?.()
+    const dir = await window.api.imageTool.openOutputDir()
     if (dir) setOutputDir(dir)
   }
 
@@ -54,23 +71,27 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
     if (files.length === 0) return
     setConverting(true)
     setDone(false)
-    const updatedFiles = [...files]
 
-    for (let i = 0; i < updatedFiles.length; i++) {
-      const f = updatedFiles[i]
-      try {
-        await (window.api as any).imageTool.convert({
-          inputPath: f.path,
-          outputDir,
-          format,
-          quality: format === 'jpg' ? quality : undefined,
-          resize: resize ? { width: width ? parseInt(width) : undefined, height: height ? parseInt(height) : undefined, keepRatio } : undefined,
-        })
-        updatedFiles[i] = { ...f, status: 'done' }
-      } catch (e: any) {
-        updatedFiles[i] = { ...f, status: 'error', errorMsg: e?.message || '오류' }
-      }
-      setFiles([...updatedFiles])
+    const jobs = files.map(f => ({
+      filePath: f.path,
+      outputDir,
+      format,
+      quality,
+      width: resize && width ? parseInt(width) : 0,
+      height: resize && height ? parseInt(height) : 0,
+      keepAspect: keepRatio,
+    }))
+
+    try {
+      const results = await window.api.imageTool.convert(jobs)
+      setFiles(prev => prev.map((f, i) => ({
+        ...f,
+        status: results[i]?.success ? 'done' : 'error',
+        errorMsg: results[i]?.error,
+      })))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '변환 오류'
+      setFiles(prev => prev.map(f => ({ ...f, status: 'error', errorMsg: msg })))
     }
 
     setConverting(false)
@@ -90,7 +111,7 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   }
 
   return (
-    <Modal title="이미지 일괄 변환 / 리사이즈" onClose={onClose} asPanel={asPanel}>
+    <>
       <div style={{ display: 'flex', gap: 16, height: '100%' }}>
         {/* 파일 목록 */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -110,15 +131,20 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
             style={{
               flex: 1,
               overflowY: 'auto',
-              border: '1px solid var(--win-border)',
+              border: `1px solid ${dragOver ? 'var(--win-accent)' : 'var(--win-border)'}`,
               borderRadius: 6,
-              background: 'var(--win-surface-2)',
+              background: dragOver ? 'var(--win-accent-dim)' : 'var(--win-surface-2)',
               minHeight: 100,
+              transition: 'border-color 0.15s, background 0.15s',
             }}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDropFiles}
           >
             {files.length === 0 ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--win-text-muted)', fontSize: 13 }}>
-                이미지 파일을 추가해주세요
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--win-text-muted)', fontSize: 13, gap: 4 }}>
+                <span style={{ fontSize: 28 }}>🖼️</span>
+                <span>이미지 파일을 드래그하거나 추가하세요</span>
               </div>
             ) : (
               files.map((f, idx) => (
@@ -276,6 +302,14 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
           </div>
         </div>
       </div>
+    </>
+  )
+}
+
+export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModalProps): React.ReactElement {
+  return (
+    <Modal title="이미지 일괄 변환 / 리사이즈" onClose={onClose} asPanel={asPanel}>
+      <ImageConvertContent />
     </Modal>
   )
 }

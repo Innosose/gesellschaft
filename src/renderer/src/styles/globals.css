@@ -105,6 +105,16 @@ input, button, select, textarea { -webkit-app-region: no-drag; }
   to   { opacity: 1; transform: scale(1); }
 }
 
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toolPanelIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 @keyframes shimmer {
   0%   { background-position: -200% center; }
   100% { background-position: 200% center; }
@@ -548,9 +558,41 @@ input[type='range']::-webkit-slider-thumb:hover {
 }
 
 .app-backdrop.active {
-  background: rgba(6, 4, 16, 0.88);
-  backdrop-filter: blur(10px) saturate(1.4);
-  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  background:
+    /* 천장 따뜻한 조명 (앰버 할로겐 느낌) */
+    radial-gradient(ellipse 70% 38% at 50% -2%, rgba(210,148,50,0.18) 0%, transparent 65%),
+    /* 좌우 벽 그림자 */
+    radial-gradient(ellipse 30% 100% at 0% 50%,   rgba(0,0,0,0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 100% at 100% 50%,  rgba(0,0,0,0.35) 0%, transparent 60%),
+    /* 바닥 아래쪽 따뜻한 반사광 */
+    radial-gradient(ellipse 60% 22% at 50% 102%, rgba(160,100,30,0.10) 0%, transparent 70%),
+    /* 책장 선반 줄 (수평 선) */
+    repeating-linear-gradient(
+      180deg,
+      transparent              0px,
+      transparent             78px,
+      rgba(40,22,6,0.55)      78px,
+      rgba(20,11,3,0.70)      82px,
+      rgba(50,28,8,0.30)      83px,
+      transparent             84px
+    ),
+    /* 책 등 세로 줄 (은은한 패턴) */
+    repeating-linear-gradient(
+      90deg,
+      transparent            0px,
+      transparent           26px,
+      rgba(255,255,255,0.02) 26px,
+      rgba(255,255,255,0.02) 27px,
+      transparent           27px,
+      transparent           38px,
+      rgba(0,0,0,0.06)      38px,
+      rgba(0,0,0,0.06)      40px,
+      transparent           40px
+    ),
+    /* 마호가니 짙은 갈색 기본 배경 */
+    linear-gradient(175deg, #1c1308 0%, #16100a 45%, #0f0c07 100%);
+  backdrop-filter: blur(3px) saturate(1.1) brightness(0.92);
+  -webkit-backdrop-filter: blur(3px) saturate(1.1) brightness(0.92);
   pointer-events: auto;
 }
 

@@ -1,8 +1,93 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import ReactMarkdown from 'react-markdown'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+}
+
+interface SavedConversation {
+  id: string
+  title: string
+  savedAt: number
+  messages: ChatMessage[]
+}
+
+const HISTORY_KEY = 'ai-conversation-history'
+
+function loadHistory(): SavedConversation[] {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') } catch { return [] }
+}
+
+function saveToHistory(messages: ChatMessage[]): void {
+  if (messages.length === 0) return
+  const title = messages[0].content.slice(0, 40) + (messages[0].content.length > 40 ? '…' : '')
+  const entry: SavedConversation = { id: Date.now().toString(), title, savedAt: Date.now(), messages }
+  const prev = loadHistory().slice(0, 19)
+  localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...prev]))
+}
+
+function deleteFromHistory(id: string): void {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(loadHistory().filter(c => c.id !== id)))
+}
+
+function exportChat(messages: ChatMessage[]): void {
+  const lines: string[] = [`# AI 대화 내보내기`, `날짜: ${new Date().toLocaleString('ko-KR')}`, '']
+  messages.forEach(m => {
+    lines.push(`## ${m.role === 'user' ? '나' : 'AI'}`)
+    lines.push(m.content)
+    lines.push('')
+  })
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `ai-chat-${Date.now()}.txt`
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 100)
+}
+
+function CodeBlock({ code }: { code: string }): React.ReactElement {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div style={{ position: 'relative', margin: '6px 0' }}>
+      <pre style={{ margin: 0, padding: '10px 12px', borderRadius: 6, overflowX: 'auto', fontSize: 11, lineHeight: 1.6, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <code style={{ fontFamily: 'ui-monospace, monospace' }}>{code}</code>
+      </pre>
+      <button
+        onClick={() => { navigator.clipboard.writeText(code).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+        style={{ position: 'absolute', top: 4, right: 4, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: copied ? '#1e7e34' : 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
+      >{copied ? '✓' : '복사'}</button>
+    </div>
+  )
+}
+
+function MarkdownMessage({ content, dark }: { content: string; dark?: boolean }): React.ReactElement {
+  const textColor = dark ? 'rgba(255,255,255,0.85)' : 'var(--win-text)'
+  const mutedColor = dark ? 'rgba(255,255,255,0.5)' : 'var(--win-text-muted)'
+  return (
+    <ReactMarkdown
+      components={{
+        p: ({ children }) => <p style={{ margin: '2px 0', lineHeight: 1.6, color: textColor }}>{children}</p>,
+        strong: ({ children }) => <strong style={{ fontWeight: 700, color: textColor }}>{children}</strong>,
+        em: ({ children }) => <em style={{ color: mutedColor }}>{children}</em>,
+        ul: ({ children }) => <ul style={{ margin: '4px 0', paddingLeft: 18, color: textColor }}>{children}</ul>,
+        ol: ({ children }) => <ol style={{ margin: '4px 0', paddingLeft: 18, color: textColor }}>{children}</ol>,
+        li: ({ children }) => <li style={{ margin: '1px 0', lineHeight: 1.6 }}>{children}</li>,
+        h1: ({ children }) => <h1 style={{ fontSize: 15, fontWeight: 700, margin: '6px 0 2px', color: textColor }}>{children}</h1>,
+        h2: ({ children }) => <h2 style={{ fontSize: 13, fontWeight: 700, margin: '5px 0 2px', color: textColor }}>{children}</h2>,
+        h3: ({ children }) => <h3 style={{ fontSize: 12, fontWeight: 600, margin: '4px 0 2px', color: textColor }}>{children}</h3>,
+        code: ({ children, className }) => {
+          const isBlock = className?.startsWith('language-') || (typeof children === 'string' && (children as string).includes('\n'))
+          if (isBlock) return <CodeBlock code={String(children).trimEnd()} />
+          return <code style={{ fontSize: 11, padding: '1px 4px', borderRadius: 3, background: dark ? 'rgba(255,255,255,0.12)' : 'var(--win-surface-3)', fontFamily: 'ui-monospace, monospace', color: textColor }}>{children}</code>
+        },
+        pre: ({ children }) => <>{children}</>,
+        blockquote: ({ children }) => <blockquote style={{ margin: '4px 0', paddingLeft: 10, borderLeft: '3px solid rgba(139,92,246,0.5)', color: mutedColor }}>{children}</blockquote>,
+        hr: () => <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '6px 0' }} />,
+      }}
+    >{content}</ReactMarkdown>
+  )
 }
 
 interface AiConfig {
@@ -21,11 +106,13 @@ interface AiPanelProps {
 
 export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps): React.ReactElement {
   const effectiveOpen = asPanel ? (open ?? true) : (open ?? false)
-  const [tab, setTab] = useState<'chat' | 'settings'>('chat')
+  const [tab, setTab] = useState<'chat' | 'history' | 'settings'>('chat')
+  const [history, setHistory] = useState<SavedConversation[]>(loadHistory)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [config, setConfig] = useState<AiConfig | null>(null)
+  const [configLoading, setConfigLoading] = useState(false)
   const [presetModels, setPresetModels] = useState<Record<string, string[]>>({})
   const [ollamaModels, setOllamaModels] = useState<string[]>([])
   const [draft, setDraft] = useState<Partial<AiConfig & { apiKeyRaw?: string }>>({})
@@ -37,11 +124,14 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   // Load config and presets
   useEffect(() => {
     if (!effectiveOpen) return
+    setConfigLoading(true)
     window.api.ai.getConfig().then(cfg => {
       setConfig(cfg)
       setDraft({ ...cfg })
-    })
-    window.api.ai.getPresetModels().then(setPresetModels)
+    }).catch(() => {
+      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 설정을 불러오지 못했습니다. 앱을 재시작해주세요.' }])
+    }).finally(() => setConfigLoading(false))
+    window.api.ai.getPresetModels().then(setPresetModels).catch(() => {})
   }, [effectiveOpen])
 
   // Register streaming listeners once
@@ -75,7 +165,9 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
 
   // Focus input when panel opens
   useEffect(() => {
-    if (effectiveOpen) setTimeout(() => inputRef.current?.focus(), 150)
+    if (!effectiveOpen) return
+    const t = setTimeout(() => inputRef.current?.focus(), 150)
+    return () => clearTimeout(t)
   }, [effectiveOpen])
 
   const send = useCallback(async () => {
@@ -86,7 +178,15 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
     setMessages(newMessages)
     setStreaming(true)
     streamingTextRef.current = ''
-    await window.api.ai.chat(newMessages)
+    try {
+      await window.api.ai.chat(newMessages)
+    } catch (e: unknown) {
+      // IPC call itself failed before streaming started — reset state so UI isn't stuck
+      streamingTextRef.current = ''
+      setStreaming(false)
+      const msg = e instanceof Error ? e.message : '전송 오류가 발생했습니다.'
+      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${msg}` }])
+    }
   }, [input, streaming, messages])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -103,17 +203,23 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   }
 
   const handleSaveConfig = async (): Promise<void> => {
-    await window.api.ai.setConfig(draft as Record<string, unknown>)
-    const updated = await window.api.ai.getConfig()
-    setConfig(updated)
-    setDraft({ ...updated })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    try {
+      await window.api.ai.setConfig(draft as Record<string, unknown>)
+      const updated = await window.api.ai.getConfig()
+      setConfig(updated)
+      setDraft({ ...updated })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch { /* silently ignore — button stays in unsaved state */ }
   }
 
   const loadOllamaModels = async (): Promise<void> => {
-    const models = await window.api.ai.getOllamaModels()
-    setOllamaModels(models)
+    try {
+      const models = await window.api.ai.getOllamaModels()
+      setOllamaModels(models)
+    } catch {
+      setOllamaModels([])
+    }
   }
 
   const provider = (draft.provider ?? config?.provider) as string
@@ -134,7 +240,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           background: 'rgba(255,255,255,0.02)',
           flexShrink: 0,
         }}>
-          {(['chat', 'settings'] as const).map(t => (
+          {(['chat', 'history', 'settings'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -144,14 +250,11 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                 border: tab === t ? '1px solid rgba(139,92,246,0.4)' : '1px solid transparent',
                 background: tab === t ? 'rgba(139,92,246,0.2)' : 'transparent',
                 color: tab === t ? 'rgba(196,181,253,0.9)' : 'rgba(255,255,255,0.4)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginRight: 6,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', marginRight: 6,
                 transition: 'all 0.15s ease',
               }}
             >
-              {t === 'chat' ? '채팅' : '설정'}
+              {t === 'chat' ? '채팅' : t === 'history' ? '기록' : '설정'}
             </button>
           ))}
         </div>
@@ -194,10 +297,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     background: msg.role === 'user' ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.05)',
                     color: 'rgba(255,255,255,0.85)',
                     border: msg.role === 'user' ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                    whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                   }}>
-                    {msg.content}
+                    {msg.role === 'user'
+                      ? <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+                      : <MarkdownMessage content={msg.content} dark />
+                    }
                     {streaming && i === messages.length - 1 && msg.role === 'assistant' && (
                       <span style={{ display: 'inline-block', width: 6, height: 12, background: 'rgba(139,92,246,0.8)', marginLeft: 2, animation: 'blink 0.8s step-end infinite', verticalAlign: 'text-bottom' }} />
                     )}
@@ -208,11 +313,19 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
             </div>
 
             {messages.length > 0 && (
-              <div style={{ padding: '0 14px 6px', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '0 14px 6px', display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => { saveToHistory(messages); setHistory(loadHistory()); }}
+                  style={{ fontSize: 11, color: 'rgba(139,92,246,0.7)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                >💾 저장</button>
+                <button
+                  onClick={() => exportChat(messages)}
+                  style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                >↓ 내보내기</button>
                 <button
                   onClick={() => setMessages([])}
                   style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
-                >대화 초기화</button>
+                >초기화</button>
               </div>
             )}
 
@@ -264,8 +377,49 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           </>
         )}
 
+        {/* History Tab */}
+        {tab === 'history' && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {history.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 40 }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
+                <div>저장된 대화가 없습니다</div>
+                <div style={{ fontSize: 11, marginTop: 4 }}>채팅 창에서 💾 저장 버튼을 누르세요</div>
+              </div>
+            ) : history.map(conv => (
+              <div key={conv.id} style={{
+                padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.12)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)' }}
+              onClick={() => { setMessages(conv.messages); setTab('chat') }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.title}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+                    {new Date(conv.savedAt).toLocaleDateString('ko-KR')} · {conv.messages.length}개 메시지
+                  </div>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); deleteFromHistory(conv.id); setHistory(loadHistory()) }}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: 12, padding: '2px 4px' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.25)' }}
+                >✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Settings Tab */}
-        {tab === 'settings' && config && (
+        {tab === 'settings' && configLoading && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+            설정 로딩 중...
+          </div>
+        )}
+        {tab === 'settings' && !configLoading && config && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
@@ -316,7 +470,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     type="password"
                     value={draft.apiKeyRaw ?? ''}
                     onChange={e => setDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
-                    placeholder={config.apiKey ? `현재: ${config.apiKey}` : '키 입력...'}
+                    placeholder={config.apiKey ? `현재: ••••${config.apiKey.slice(-4)}` : '키 입력...'}
                     style={{ width: '100%', height: 30, fontSize: 12, background: 'rgba(20,18,36,0.9)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '0 8px', boxSizing: 'border-box' }}
                   />
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>
@@ -476,10 +630,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     background: msg.role === 'user' ? 'var(--win-accent-dim)' : 'var(--win-surface-2)',
                     color: 'var(--win-text)',
                     border: '1px solid var(--win-border)',
-                    whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                   }}>
-                    {msg.content}
+                    {msg.role === 'user'
+                      ? <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+                      : <MarkdownMessage content={msg.content} />
+                    }
                     {streaming && i === messages.length - 1 && msg.role === 'assistant' && (
                       <span style={{ display: 'inline-block', width: 6, height: 12, background: 'var(--win-accent)', marginLeft: 2, animation: 'blink 0.8s step-end infinite', verticalAlign: 'text-bottom' }} />
                     )}
@@ -491,7 +647,11 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
 
             {/* Clear button */}
             {messages.length > 0 && (
-              <div style={{ padding: '0 14px 6px', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '0 14px 6px', display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => exportChat(messages)}
+                  style={{ fontSize: 11, color: 'var(--win-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                >↓ 내보내기</button>
                 <button
                   onClick={() => setMessages([])}
                   style={{ fontSize: 11, color: 'var(--win-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
@@ -549,7 +709,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
         )}
 
         {/* Settings Tab */}
-        {tab === 'settings' && config && (
+        {tab === 'settings' && configLoading && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--win-text-muted)', fontSize: 12 }}>
+            설정 로딩 중...
+          </div>
+        )}
+        {tab === 'settings' && !configLoading && config && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
@@ -607,7 +772,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     type="password"
                     value={draft.apiKeyRaw ?? ''}
                     onChange={e => setDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
-                    placeholder={config.apiKey ? `현재: ${config.apiKey}` : '키 입력...'}
+                    placeholder={config.apiKey ? `현재: ••••${config.apiKey.slice(-4)}` : '키 입력...'}
                     style={{ width: '100%', height: 30, fontSize: 12 }}
                   />
                   <div style={{ fontSize: 10, color: 'var(--win-text-muted)', marginTop: 3 }}>

@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { formatSize, formatDate, getFileIcon } from '../utils/format'
+
+const RECENT_SEARCH_KEY = 'gesellschaft-recent-searches'
 
 export interface SearchResult {
   path: string
@@ -43,7 +45,7 @@ export default function SearchModal({
     includeDirs: initialOptions?.includeDirs ?? true,
     extensions: initialOptions?.extensions?.join(',') || '',
     minSize: initialOptions?.minSize ? String(Math.round(initialOptions.minSize / 1024)) : '',
-    maxSize: initialOptions?.maxSize ? String(Math.round(initialOptions.maxSize / (1024 * 1024))) : '',
+    maxSize: initialOptions?.maxSize ? String(Math.round(initialOptions.maxSize / 1024)) : '',
     caseSensitive: initialOptions?.caseSensitive ?? false,
     regex: initialOptions?.regex ?? false,
     contentSearch: initialOptions?.contentSearch ?? false
@@ -56,7 +58,33 @@ export default function SearchModal({
   const [fileNote, setFileNote] = useState('')
   const [fileTags, setFileTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState('')
+  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [recentSearches, setRecentSearches] = useState<{ query: string; rootPath: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem(RECENT_SEARCH_KEY) ?? '[]') } catch { return [] }
+  })
+  const [showRecent, setShowRecent] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
+  const searchAborted = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const sortedResults = useMemo(() => {
+    return [...results].sort((a, b) => {
+      let cmp = 0
+      if (sortBy === 'name') cmp = a.name.localeCompare(b.name)
+      else if (sortBy === 'size') cmp = a.size - b.size
+      else cmp = a.modified - b.modified
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [results, sortBy, sortDir])
+
+  const toggleSort = (col: 'name' | 'size' | 'date'): void => {
+    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortBy(col); setSortDir('asc') }
+  }
+
+  const sortArrow = (col: 'name' | 'size' | 'date'): string =>
+    sortBy === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
 
   const title = tagMode ? '태그 & 메모 검색' : '고급 검색'
 
@@ -68,8 +96,8 @@ export default function SearchModal({
 
   useEffect(() => {
     if (!selectedFile) return
-    window.api.notes.get(selectedFile.path).then(setFileNote)
-    window.api.tags.get(selectedFile.path).then(setFileTags)
+    window.api.notes.get(selectedFile.path).then(setFileNote).catch(() => {})
+    window.api.tags.get(selectedFile.path).then(setFileTags).catch(() => {})
   }, [selectedFile?.path])
 
   const doSearch = async (): Promise<void> => {
@@ -77,6 +105,8 @@ export default function SearchModal({
     setResults([])
     setProgress(0)
     setSelectedFile(null)
+    setHasSearched(true)
+    searchAborted.current = false
 
     const options = {
       query: opts.query,
@@ -87,18 +117,29 @@ export default function SearchModal({
         ? opts.extensions.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean).map((e) => (e.startsWith('.') ? e : `.${e}`))
         : undefined,
       minSize: opts.minSize ? parseInt(opts.minSize) * 1024 : undefined,
-      maxSize: opts.maxSize ? parseInt(opts.maxSize) * 1024 * 1024 : undefined,
+      maxSize: opts.maxSize ? parseInt(opts.maxSize) * 1024 : undefined,
       caseSensitive: opts.caseSensitive,
       regex: opts.regex,
       contentSearch: opts.contentSearch
     }
 
-    const res = await window.api.search.files(options)
-    if (res.success) setResults(res.data)
-    setSearching(false)
+    if (opts.query.trim()) {
+      const entry = { query: opts.query.trim(), rootPath: opts.rootPath }
+      const updated = [entry, ...recentSearches.filter(r => r.query !== opts.query.trim())].slice(0, 5)
+      setRecentSearches(updated)
+      localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(updated))
+    }
+
+    try {
+      const res = await window.api.search.files(options)
+      if (!searchAborted.current && res.success) setResults(res.data)
+    } finally {
+      setSearching(false)
+    }
   }
 
   const cancel = (): void => {
+    searchAborted.current = true
     window.api.search.cancel()
     setSearching(false)
   }
@@ -118,7 +159,7 @@ export default function SearchModal({
           ? opts.extensions.split(',').map((e) => e.trim()).filter(Boolean)
           : undefined,
         minSize: opts.minSize ? parseInt(opts.minSize) * 1024 : undefined,
-        maxSize: opts.maxSize ? parseInt(opts.maxSize) * 1024 * 1024 : undefined,
+        maxSize: opts.maxSize ? parseInt(opts.maxSize) * 1024 : undefined,
         caseSensitive: opts.caseSensitive,
         regex: opts.regex,
         contentSearch: opts.contentSearch
@@ -168,16 +209,39 @@ export default function SearchModal({
           </button>
         </div>
 
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center relative">
           <label className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--win-text-muted)' }}>검색어</label>
-          <input
-            ref={inputRef}
-            className="win-input flex-1 text-xs"
-            placeholder="파일명 또는 내용 검색..."
-            value={opts.query}
-            onChange={(e) => setOpts({ ...opts, query: e.target.value })}
-            onKeyDown={(e) => e.key === 'Enter' && !searching && doSearch()}
-          />
+          <div className="flex-1 relative">
+            <input
+              ref={inputRef}
+              className="win-input w-full text-xs"
+              placeholder="파일명 또는 내용 검색..."
+              value={opts.query}
+              onChange={(e) => setOpts({ ...opts, query: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && !searching && doSearch()}
+              onFocus={() => setShowRecent(recentSearches.length > 0)}
+              onBlur={() => setTimeout(() => setShowRecent(false), 150)}
+            />
+            {showRecent && recentSearches.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-0.5 rounded shadow-lg z-50 overflow-hidden" style={{ background: 'var(--win-surface)', border: '1px solid var(--win-border)' }}>
+                {recentSearches.map((r, i) => (
+                  <button
+                    key={i}
+                    className="w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-[var(--win-surface-2)]"
+                    style={{ color: 'var(--win-text-sub)' }}
+                    onMouseDown={() => {
+                      setOpts(prev => ({ ...prev, query: r.query, rootPath: r.rootPath }))
+                      setShowRecent(false)
+                    }}
+                  >
+                    <span style={{ color: 'var(--win-text-muted)' }}>🕐</span>
+                    <span className="flex-1 truncate">{r.query}</span>
+                    <span className="text-[10px] truncate max-w-[120px]" style={{ color: 'var(--win-text-muted)' }}>{r.rootPath}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3 text-xs" style={{ color: 'var(--win-text-sub)' }}>
@@ -202,7 +266,7 @@ export default function SearchModal({
               <input className="win-input w-32 text-xs" type="number" placeholder="0" value={opts.minSize} onChange={(e) => setOpts({ ...opts, minSize: e.target.value })} />
             </div>
             <div className="flex gap-2 items-center">
-              <label className="w-20" style={{ color: 'var(--win-text-muted)' }}>최대 크기 (MB)</label>
+              <label className="w-20" style={{ color: 'var(--win-text-muted)' }}>최대 크기 (KB)</label>
               <input className="win-input w-32 text-xs" type="number" placeholder="∞" value={opts.maxSize} onChange={(e) => setOpts({ ...opts, maxSize: e.target.value })} />
             </div>
           </div>
@@ -224,11 +288,19 @@ export default function SearchModal({
         {/* Results */}
         {results.length > 0 && (
           <div className="rounded overflow-hidden" style={{ border: '1px solid var(--win-border)' }}>
-            <div className="px-3 py-1.5 text-xs" style={{ background: 'var(--win-surface-2)', color: 'var(--win-text-muted)', borderBottom: '1px solid var(--win-border)' }}>{results.length}개 결과</div>
+            <div className="px-3 py-1 flex items-center gap-3 text-xs select-none" style={{ background: 'var(--win-surface-2)', color: 'var(--win-text-muted)', borderBottom: '1px solid var(--win-border)' }}>
+              <span className="flex-1">{results.length}개 결과</span>
+              <span>정렬:</span>
+              {(['name', 'size', 'date'] as const).map(col => (
+                <button key={col} className="hover:text-[var(--win-text)] transition-colors" style={{ color: sortBy === col ? 'var(--win-accent)' : 'var(--win-text-muted)' }} onClick={() => toggleSort(col)}>
+                  {col === 'name' ? '이름' : col === 'size' ? '크기' : '날짜'}{sortArrow(col)}
+                </button>
+              ))}
+            </div>
             <div className="max-h-48 overflow-y-auto">
-              {results.map((r, i) => (
+              {sortedResults.map((r) => (
                 <div
-                  key={i}
+                  key={r.path}
                   className="flex items-center gap-2 px-3 py-1.5 cursor-pointer group"
                   style={{
                     background: selectedFile?.path === r.path ? 'var(--win-accent-dim)' : 'var(--win-surface)',
@@ -283,7 +355,7 @@ export default function SearchModal({
           </div>
         )}
 
-        {!searching && results.length === 0 && opts.query && (
+        {hasSearched && !searching && results.length === 0 && opts.query && (
           <div className="text-center text-sm py-4" style={{ color: 'var(--win-text-muted)' }}>검색 결과가 없습니다.</div>
         )}
       </div>

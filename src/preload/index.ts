@@ -154,11 +154,11 @@ const api = {
   // Excel Tool
   excelTool: {
     openFiles: () => ipcRenderer.invoke('excelTool:openFiles'),
-    openOutputDir: () => ipcRenderer.invoke('excelTool:openOutputDir'),
-    defaultOutputDir: () => ipcRenderer.invoke('excelTool:defaultOutputDir'),
-    readFile: (filePath: string) => ipcRenderer.invoke('excelTool:readFile', filePath),
-    exportCsv: (data: unknown[][], outputPath: string) => ipcRenderer.invoke('excelTool:exportCsv', data, outputPath),
-    exportXlsx: (sheets: Record<string, unknown[][]>, outputPath: string) => ipcRenderer.invoke('excelTool:exportXlsx', sheets, outputPath)
+    loadFile: (filePath: string) => ipcRenderer.invoke('excelTool:loadFile', filePath),
+    loadSheet: (filePath: string, sheet: string) => ipcRenderer.invoke('excelTool:loadSheet', filePath, sheet),
+    openOutputPath: (format: string) => ipcRenderer.invoke('excelTool:openOutputPath', format),
+    export: (opts: { filePath: string; sheet: string; columns: string[]; filterText: string; outputFormat: string; outputPath: string }) =>
+      ipcRenderer.invoke('excelTool:export', opts),
   },
 
   // App Settings
@@ -174,6 +174,22 @@ const api = {
   // Screen Capture + AI Analysis
   screen: {
     captureAndAnalyze: () => ipcRenderer.invoke('screen:captureAndAnalyze'),
+  },
+
+  // Snippets
+  snippets: {
+    get: () => ipcRenderer.invoke('snippets:get'),
+    save: (snippet: { id?: string; title?: string; content?: string; tags?: string[] }) =>
+      ipcRenderer.invoke('snippets:save', snippet),
+    delete: (id: string) => ipcRenderer.invoke('snippets:delete', id),
+  },
+
+  // Email Templates
+  emailTemplates: {
+    get: () => ipcRenderer.invoke('emailTemplates:get'),
+    save: (template: { id?: string; name?: string; subject?: string; body?: string }) =>
+      ipcRenderer.invoke('emailTemplates:save', template),
+    delete: (id: string) => ipcRenderer.invoke('emailTemplates:delete', id),
   },
 
   // AI Assistant

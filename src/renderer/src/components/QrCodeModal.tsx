@@ -7,7 +7,7 @@ interface QrCodeModalProps {
   asPanel?: boolean
 }
 
-export default function QrCodeModal({ onClose, asPanel }: QrCodeModalProps): React.ReactElement {
+export function QrCodeContent(): React.ReactElement {
   const [text, setText] = React.useState('')
   const [size, setSize] = React.useState(256)
   const [errorLevel, setErrorLevel] = React.useState<'L' | 'M' | 'Q' | 'H'>('M')
@@ -69,7 +69,7 @@ export default function QrCodeModal({ onClose, asPanel }: QrCodeModalProps): Rea
   }
 
   return (
-    <Modal title="QR코드 생성기" onClose={onClose} asPanel={asPanel}>
+    <>
       <div style={{ display: 'flex', gap: 20, height: '100%' }}>
         {/* 설정 패널 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: 240, flexShrink: 0 }}>
@@ -214,6 +214,14 @@ export default function QrCodeModal({ onClose, asPanel }: QrCodeModalProps): Rea
           )}
         </div>
       </div>
+    </>
+  )
+}
+
+export default function QrCodeModal({ onClose, asPanel }: QrCodeModalProps): React.ReactElement {
+  return (
+    <Modal title="QR코드 생성기" onClose={onClose} asPanel={asPanel}>
+      <QrCodeContent />
     </Modal>
   )
 }

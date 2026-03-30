@@ -35,7 +35,7 @@ export default function FolderCompareModal({
   const [comparing, setComparing] = useState(false)
   const [results, setResults] = useState<CompareEntry[]>([])
   const [filter, setFilter] = useState<FilterType>('all')
-  const [hideSame, setHideSame] = useState(true)
+  const [hideSame, setHideSame] = useState(false)
 
   const compare = async (): Promise<void> => {
     if (!pathA || !pathB) return

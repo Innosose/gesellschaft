@@ -45,7 +45,7 @@ export default function VatCalcModal({ onClose, asPanel }: VatCalcModalProps): R
       return { supply, vat, total: supply + vat }
     } else {
       const total = val
-      const supply = Math.round(total / 1.1)
+      const supply = Math.floor(total / 1.1)
       const vat = total - supply
       return { supply, vat, total }
     }

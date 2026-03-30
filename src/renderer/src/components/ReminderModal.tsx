@@ -31,15 +31,15 @@ export default function ReminderModal({ onClose, asPanel }: { onClose: () => voi
   const [fileName, setFileName] = useState('')
   const [filePath, setFilePath] = useState('')
   const [note, setNote] = useState('')
-  const [date, setDate] = useState('')
+  const [date, setDate] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.toISOString().slice(0, 10)
+  })
   const [time, setTime] = useState('09:00')
 
   useEffect(() => {
-    window.api.reminders.get().then(setReminders)
-    // 오늘 날짜를 기본값으로
-    const today = new Date()
-    today.setDate(today.getDate() + 1)
-    setDate(today.toISOString().slice(0, 10))
+    window.api.reminders.get().then(setReminders).catch(() => {})
   }, [])
 
   const upcoming = reminders

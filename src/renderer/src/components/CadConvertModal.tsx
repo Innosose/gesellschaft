@@ -15,7 +15,7 @@ export default function CadConvertModal({ onClose, asPanel }: { onClose: () => v
   const [converting, setConverting] = useState(false)
 
   useEffect(() => {
-    window.api.cadConvert.defaultOutputDir().then(setOutputDir)
+    window.api.cadConvert.defaultOutputDir().then(setOutputDir).catch(() => {})
 
     const unsub = window.api.cadConvert.onProgress((info) => {
       setFiles((prev) =>

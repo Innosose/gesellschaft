@@ -9,35 +9,21 @@ interface Snippet {
   createdAt: number
 }
 
-const STORAGE_KEY = 'gs_snippets'
-
-function loadSnippets(): Snippet[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function saveSnippets(snippets: Snippet[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(snippets))
-}
-
-function genId(): string {
-  return `snip_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-}
-
 interface SnippetsModalProps {
   onClose: () => void
   asPanel?: boolean
 }
 
 export default function SnippetsModal({ onClose, asPanel }: SnippetsModalProps): React.ReactElement {
-  const [snippets, setSnippets] = React.useState<Snippet[]>(() => loadSnippets())
+  const [snippets, setSnippets] = React.useState<Snippet[]>([])
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [search, setSearch] = React.useState('')
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
+  const saveTimer = React.useRef<NodeJS.Timeout | null>(null)
+
+  React.useEffect(() => {
+    window.api.snippets.get().then(setSnippets)
+  }, [])
 
   const selected = snippets.find(s => s.id === selectedId) || null
 
@@ -48,29 +34,22 @@ export default function SnippetsModal({ onClose, asPanel }: SnippetsModalProps):
   })
 
   const updateSnippet = (id: string, patch: Partial<Snippet>): void => {
-    setSnippets(prev => {
-      const updated = prev.map(s => s.id === id ? { ...s, ...patch } : s)
-      saveSnippets(updated)
-      return updated
-    })
+    setSnippets(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s))
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      window.api.snippets.save({ id, ...patch })
+    }, 500)
   }
 
-  const handleNew = (): void => {
-    const s: Snippet = { id: genId(), title: '새 스니펫', content: '', tags: [], createdAt: Date.now() }
-    setSnippets(prev => {
-      const updated = [s, ...prev]
-      saveSnippets(updated)
-      return updated
-    })
-    setSelectedId(s.id)
+  const handleNew = async (): Promise<void> => {
+    const updated = await window.api.snippets.save({ title: '새 상용구', content: '', tags: [] })
+    setSnippets(updated)
+    if (updated.length > 0) setSelectedId(updated[0].id)
   }
 
-  const handleDelete = (id: string): void => {
-    setSnippets(prev => {
-      const updated = prev.filter(s => s.id !== id)
-      saveSnippets(updated)
-      return updated
-    })
+  const handleDelete = async (id: string): Promise<void> => {
+    const updated = await window.api.snippets.delete(id)
+    setSnippets(updated)
     if (selectedId === id) setSelectedId(null)
   }
 
@@ -81,7 +60,7 @@ export default function SnippetsModal({ onClose, asPanel }: SnippetsModalProps):
   }
 
   return (
-    <Modal title="스니펫 관리" onClose={onClose} asPanel={asPanel}>
+    <Modal title="상용구 관리" onClose={onClose} asPanel={asPanel}>
       <div style={{ display: 'flex', gap: 0, height: '100%' }}>
         {/* 왼쪽 목록 */}
         <div
@@ -104,14 +83,14 @@ export default function SnippetsModal({ onClose, asPanel }: SnippetsModalProps):
               placeholder="검색..."
             />
             <button className="win-btn-primary" style={{ whiteSpace: 'nowrap', padding: '0 12px', fontSize: 12 }} onClick={handleNew}>
-              + 새 스니펫
+              + 새 상용구
             </button>
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
             {filtered.length === 0 ? (
               <div style={{ padding: 20, textAlign: 'center', color: 'var(--win-text-muted)', fontSize: 13 }}>
-                {snippets.length === 0 ? '스니펫이 없습니다.\n"새 스니펫" 버튼으로 추가하세요.' : '검색 결과 없음'}
+                {snippets.length === 0 ? '상용구가 없습니다.\n"새 상용구" 버튼으로 추가하세요.' : '검색 결과 없음'}
               </div>
             ) : (
               filtered.map(s => (
@@ -180,8 +159,7 @@ export default function SnippetsModal({ onClose, asPanel }: SnippetsModalProps):
                 className="win-input"
                 value={selected.title}
                 onChange={e => updateSnippet(selected.id, { title: e.target.value })}
-                onBlur={e => updateSnippet(selected.id, { title: e.target.value })}
-                placeholder="스니펫 제목..."
+                placeholder="업무 문구 제목..."
               />
 
               <div>
@@ -214,8 +192,7 @@ export default function SnippetsModal({ onClose, asPanel }: SnippetsModalProps):
                   style={{ flex: 1, resize: 'none', fontFamily: 'monospace', fontSize: 13, minHeight: 200 }}
                   value={selected.content}
                   onChange={e => updateSnippet(selected.id, { content: e.target.value })}
-                  onBlur={e => updateSnippet(selected.id, { content: e.target.value })}
-                  placeholder="스니펫 내용..."
+                  placeholder="업무 문구 내용..."
                 />
               </div>
 
@@ -225,7 +202,7 @@ export default function SnippetsModal({ onClose, asPanel }: SnippetsModalProps):
             </>
           ) : (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--win-text-muted)', fontSize: 14 }}>
-              왼쪽 목록에서 스니펫을 선택하거나<br />"새 스니펫" 버튼으로 추가하세요.
+              왼쪽 목록에서 상용구를 선택하거나<br />"새 상용구" 버튼으로 추가하세요.
             </div>
           )}
         </div>
