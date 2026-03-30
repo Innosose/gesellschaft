@@ -176,7 +176,15 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
     setMessages(newMessages)
     setStreaming(true)
     streamingTextRef.current = ''
-    await window.api.ai.chat(newMessages)
+    try {
+      await window.api.ai.chat(newMessages)
+    } catch (e: unknown) {
+      // IPC call itself failed before streaming started — reset state so UI isn't stuck
+      streamingTextRef.current = ''
+      setStreaming(false)
+      const msg = e instanceof Error ? e.message : '전송 오류가 발생했습니다.'
+      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${msg}` }])
+    }
   }, [input, streaming, messages])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {

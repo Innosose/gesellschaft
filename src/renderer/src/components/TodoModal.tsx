@@ -73,18 +73,23 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
     dragOverId.current = id
   }
   const handleDrop = (): void => {
-    if (!dragId.current || !dragOverId.current || dragId.current === dragOverId.current) return
-    setManualOrder(prev => {
-      const arr = [...prev]
-      const from = arr.indexOf(dragId.current!)
-      const to = arr.indexOf(dragOverId.current!)
-      if (from === -1 || to === -1) return prev
-      arr.splice(from, 1)
-      arr.splice(to, 0, dragId.current!)
-      return arr
-    })
+    // Capture ref values into locals BEFORE clearing refs.
+    // State updaters run lazily at render time; if we read refs inside the updater,
+    // they would already be null by then and indexOf(null) would return -1.
+    const fromId = dragId.current
+    const toId = dragOverId.current
     dragId.current = null
     dragOverId.current = null
+    if (!fromId || !toId || fromId === toId) return
+    setManualOrder(prev => {
+      const arr = [...prev]
+      const from = arr.indexOf(fromId)
+      const to = arr.indexOf(toId)
+      if (from === -1 || to === -1) return prev
+      arr.splice(from, 1)
+      arr.splice(to, 0, fromId)
+      return arr
+    })
   }
 
   const pending = todos.filter(t => !t.done)
