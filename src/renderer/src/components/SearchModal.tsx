@@ -126,9 +126,12 @@ export default function SearchModal({
       localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(updated))
     }
 
-    const res = await window.api.search.files(options)
-    if (res.success) setResults(res.data)
-    setSearching(false)
+    try {
+      const res = await window.api.search.files(options)
+      if (res.success) setResults(res.data)
+    } finally {
+      setSearching(false)
+    }
   }
 
   const cancel = (): void => {

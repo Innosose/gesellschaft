@@ -188,7 +188,7 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
                 minHeight: 80,
                 transition: 'border-color 0.15s, background 0.15s',
               }}
-              onDragOver={e => { if (!dragIdx.current !== null || e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDropOver(true) } }}
+              onDragOver={e => { e.preventDefault(); setDropOver(true) }}
               onDragLeave={() => setDropOver(false)}
               onDrop={handleFileDrop}
             >
@@ -205,8 +205,8 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
                     key={f}
                     draggable
                     onDragStart={() => handleDragStart(idx)}
-                    onDragOver={e => handleDragOver(e, idx)}
-                    onDrop={handleDrop}
+                    onDragOver={e => { e.stopPropagation(); handleDragOver(e, idx) }}
+                    onDrop={e => { e.stopPropagation(); handleDrop() }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',

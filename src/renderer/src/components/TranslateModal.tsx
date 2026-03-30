@@ -45,13 +45,10 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
     const offDone = window.api.ai.onDone(() => {
       const result = streamRef.current
       if (result.trim()) {
-        setResultText(prev => {
-          const entry: TranslateHistoryEntry = { from: sourceLangRef.current, to: targetLangRef.current, source: sourceTextRef.current, result, ts: Date.now() }
-          const updated = [entry, ...loadHistory()].slice(0, 20)
-          localStorage.setItem(HISTORY_KEY, JSON.stringify(updated))
-          setHistory(updated)
-          return prev
-        })
+        const entry: TranslateHistoryEntry = { from: sourceLangRef.current, to: targetLangRef.current, source: sourceTextRef.current, result, ts: Date.now() }
+        const updated = [entry, ...loadHistory()].slice(0, 20)
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated))
+        setHistory(updated)
       }
       setTranslating(false)
       streamRef.current = ''

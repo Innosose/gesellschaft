@@ -35,6 +35,11 @@ export default function ClipboardModal({ onClose, asPanel }: { onClose: () => vo
   const remove = async (text: string): Promise<void> => {
     const updated = await window.api.clipboard.remove(text)
     setHistory(updated)
+    setPins(prev => {
+      const next = prev.filter(p => p !== text)
+      localStorage.setItem(PIN_KEY, JSON.stringify(next))
+      return next
+    })
   }
 
   const clear = async (): Promise<void> => {
