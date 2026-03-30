@@ -149,8 +149,8 @@ export default function CenterHub({
           )}
         </button>
 
-        {/* Recommendation badge */}
-        {recommendedCount > 0 && (
+        {/* Recommendation badge — shows as count dot in hub state, pill in menu state */}
+        {recommendedCount > 0 && !isOpen && (
           <div
             style={{
               position: 'absolute',
@@ -171,6 +171,28 @@ export default function CenterHub({
             }}
           >
             {recommendedCount}
+          </div>
+        )}
+        {recommendedCount > 0 && isOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: -28,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              whiteSpace: 'nowrap',
+              fontSize: 10,
+              fontWeight: 600,
+              color: '#fbbf24',
+              background: 'rgba(251,191,36,0.1)',
+              border: '1px solid rgba(251,191,36,0.35)',
+              borderRadius: 10,
+              padding: '2px 8px',
+              animation: 'fadeIn 0.2s ease both',
+              pointerEvents: 'none',
+            }}
+          >
+            ✦ AI 추천 {recommendedCount}개
           </div>
         )}
       </div>

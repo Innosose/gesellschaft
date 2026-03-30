@@ -134,12 +134,16 @@ const FanCard = memo(function FanCard({
         cursor: isCenter ? 'pointer' : stepsToCenter < 0 ? 'w-resize' : 'e-resize',
         borderRadius: 10,
         background: isCenter ? `linear-gradient(175deg, #2a2318, #1e1a10)` : `linear-gradient(175deg, #1e1a12, #151208)`,
-        border: `2px solid ${tool.color + (isCenter ? 'dd' : hovered ? 'bb' : '44')}`,
+        border: isRecommended && !isCenter
+          ? `2px solid ${hovered ? '#fbbf24cc' : '#fbbf2455'}`
+          : `2px solid ${tool.color + (isCenter ? 'dd' : hovered ? 'bb' : '44')}`,
         boxShadow: isCenter
           ? `0 0 20px ${tool.color}55, 0 8px 24px rgba(0,0,0,0.7)`
-          : hovered
-            ? `0 0 16px ${tool.color}55`
-            : `0 2px 10px rgba(0,0,0,0.5)`,
+          : isRecommended
+            ? `0 0 ${hovered ? 22 : 10}px rgba(251,191,36,${hovered ? 0.45 : 0.2}), 0 2px 10px rgba(0,0,0,0.5)`
+            : hovered
+              ? `0 0 16px ${tool.color}55`
+              : `0 2px 10px rgba(0,0,0,0.5)`,
         // 1. 중앙 카드 pulse: animation은 아래 style에서
         animation: isCenter ? 'centerPulse 2.8s ease-in-out infinite' : undefined,
         filter: blurPx > 0.1 ? `blur(${blurPx}px)` : undefined,  // 9. depth blur
@@ -155,7 +159,9 @@ const FanCard = memo(function FanCard({
     >
       {/* Top color strip */}
       <div style={{
-        background: `linear-gradient(90deg, ${tool.color}, ${tool.color}aa)`,
+        background: isRecommended && !isCenter
+          ? `linear-gradient(90deg, #fbbf24, #f59e0b88)`
+          : `linear-gradient(90deg, ${tool.color}, ${tool.color}aa)`,
         height: isCenter ? 6 : 3, flexShrink: 0,
       }} />
 
@@ -168,23 +174,25 @@ const FanCard = memo(function FanCard({
           opacity: contentFade ? 0.2 : 1,
           transition: `opacity ${contentFade ? 30 : 120}ms ease`,
         }}>
-          {isRecommended && (
+          {isRecommended && hovered && (
             <div style={{ position: 'absolute', top: 8, right: 7 }}>
               <div style={{
                 fontSize: 9, fontWeight: 700, color: '#fbbf24',
-                background: 'rgba(251,191,36,0.15)',
-                border: '1px solid rgba(251,191,36,0.4)',
+                background: 'rgba(251,191,36,0.18)',
+                border: '1px solid rgba(251,191,36,0.5)',
                 borderRadius: 4, padding: '1px 5px',
-              }}>AI</div>
-              {hovered && reason && (
+                animation: 'fadeIn 0.12s ease both',
+              }}>AI ✦</div>
+              {reason && (
                 <div style={{
                   position: 'absolute', top: '100%', right: 0, marginTop: 4,
                   fontSize: 9, color: 'rgba(255,255,255,0.9)',
                   background: 'rgba(20,16,8,0.92)',
                   border: '1px solid rgba(251,191,36,0.35)',
-                  borderRadius: 4, padding: '3px 6px',
+                  borderRadius: 4, padding: '3px 7px',
                   whiteSpace: 'nowrap', zIndex: 50,
                   pointerEvents: 'none',
+                  animation: 'fadeIn 0.15s ease both',
                 }}>{reason}</div>
               )}
             </div>
@@ -229,10 +237,11 @@ const FanCard = memo(function FanCard({
 
 // ─── Overview Grid ────────────────────────────────────────────────────────────
 const OverviewGrid = memo(function OverviewGrid({
-  tools, recommended, recentIds, animDuration, onSelect, onClose,
+  tools, recommended, reasons, recentIds, animDuration, onSelect, onClose,
 }: {
   tools: Tool[]
   recommended: string[]
+  reasons?: Record<string, string>
   recentIds: string[]
   animDuration: number
   onSelect: (id: string) => void
@@ -292,6 +301,35 @@ const OverviewGrid = memo(function OverviewGrid({
           >✕</button>
         </div>
 
+        {/* AI 추천 — scan 후에만 표시 */}
+        {recommended.length > 0 && (() => {
+          const toolMap2 = new Map(tools.map(t => [t.id, t]))
+          const recTools = recommended.map(id => toolMap2.get(id)).filter(Boolean) as Tool[]
+          return recTools.length > 0 ? (
+            <div style={{ marginBottom: 18 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7,
+              }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: '#fbbf24', textTransform: 'uppercase' }}>AI 추천</span>
+                <span style={{ fontSize: 9, color: 'rgba(251,191,36,0.5)' }}>화면 분석 결과</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 7 }}>
+                {recTools.map(t => (
+                  <div key={t.id} style={{ position: 'relative' }}>
+                    <OverviewCard tool={t} isRecommended animDuration={animDuration} onSelect={() => onSelect(t.id)} />
+                    {reasons?.[t.id] && (
+                      <div style={{
+                        fontSize: 9, color: 'rgba(255,200,100,0.65)', textAlign: 'center',
+                        marginTop: 3, lineHeight: 1.2, wordBreak: 'keep-all',
+                      }}>{reasons[t.id]}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null
+        })()}
+
         {/* 7. 최근 사용 */}
         {recentTools.length > 0 && (
           <div style={{ marginBottom: 18 }}>
@@ -347,30 +385,35 @@ const OverviewCard = memo(function OverviewCard({
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         gap: 5, padding: '10px 6px 9px', borderRadius: 10, cursor: 'pointer',
-        background: hovered ? `linear-gradient(160deg, ${tool.color}28, ${tool.color}10)` : 'rgba(255,255,255,0.08)',
-        border: `1.5px solid ${hovered ? tool.color + 'bb' : isRecommended ? tool.color + '55' : 'rgba(255,255,255,0.18)'}`,
-        boxShadow: hovered ? `0 0 18px ${tool.color}44` : 'none',
+        background: hovered
+          ? `linear-gradient(160deg, ${tool.color}28, ${tool.color}10)`
+          : isRecommended ? 'rgba(251,191,36,0.06)' : 'rgba(255,255,255,0.08)',
+        border: `1.5px solid ${hovered ? tool.color + 'bb' : isRecommended ? 'rgba(251,191,36,0.45)' : 'rgba(255,255,255,0.18)'}`,
+        boxShadow: hovered ? `0 0 18px ${tool.color}44` : isRecommended ? '0 0 8px rgba(251,191,36,0.15)' : 'none',
         transition: `all ${animDuration * 0.5}ms ease`,
         position: 'relative', overflow: 'hidden',
       }}
     >
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-        background: `linear-gradient(90deg, ${tool.color}, ${tool.color}77)`,
+        background: isRecommended
+          ? `linear-gradient(90deg, #fbbf24, #f59e0b88)`
+          : `linear-gradient(90deg, ${tool.color}, ${tool.color}77)`,
       }} />
       <span style={{ fontSize: 22, lineHeight: 1, marginTop: 2 }}>{tool.icon}</span>
       <span style={{
         fontSize: 10, fontWeight: 600, textAlign: 'center', lineHeight: 1.3,
         color: hovered ? '#fff' : 'rgba(255,255,255,0.72)', wordBreak: 'keep-all',
       }}>{tool.label}</span>
-      {isRecommended && (
+      {isRecommended && hovered && (
         <div style={{
           position: 'absolute', top: 6, right: 5,
           fontSize: 8, fontWeight: 700, color: '#fbbf24',
-          background: 'rgba(251,191,36,0.15)',
-          border: '1px solid rgba(251,191,36,0.35)',
-          borderRadius: 3, padding: '0px 3px',
-        }}>AI</div>
+          background: 'rgba(251,191,36,0.18)',
+          border: '1px solid rgba(251,191,36,0.5)',
+          borderRadius: 3, padding: '0px 4px',
+          animation: 'fadeIn 0.12s ease both',
+        }}>AI ✦</div>
       )}
     </button>
   )
@@ -389,8 +432,9 @@ const GridCard = memo(function GridCard({
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
-        background: hovered ? `linear-gradient(135deg, ${tool.color}28, ${tool.color}12)` : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${hovered ? tool.color + '99' : isRecommended ? tool.color + '55' : 'rgba(255,255,255,0.1)'}`,
+        background: hovered ? `linear-gradient(135deg, ${tool.color}28, ${tool.color}12)` : isRecommended ? 'rgba(251,191,36,0.05)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${hovered ? tool.color + '99' : isRecommended ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`,
+        borderLeft: isRecommended && !hovered ? '2px solid rgba(251,191,36,0.55)' : undefined,
         boxShadow: hovered ? `0 0 20px ${tool.color}33` : undefined,
         transition: `all ${animDuration * 0.6}ms ease`,
         textAlign: 'left', width: '100%', color: 'inherit',
@@ -400,8 +444,8 @@ const GridCard = memo(function GridCard({
       <span style={{ fontSize: 13, fontWeight: 600, color: hovered ? '#fff' : 'rgba(255,255,255,0.82)' }}>
         {tool.label}
       </span>
-      {isRecommended && (
-        <span style={{ marginLeft: 'auto', fontSize: 10, color: '#fbbf24', fontWeight: 600 }}>AI ✦</span>
+      {isRecommended && hovered && (
+        <span style={{ marginLeft: 'auto', fontSize: 10, color: '#fbbf24', fontWeight: 600, animation: 'fadeIn 0.12s ease both' }}>AI ✦</span>
       )}
     </button>
   )
@@ -623,6 +667,7 @@ export default function SpiralMenu({
         <OverviewGrid
           tools={tools}
           recommended={recommended}
+          reasons={reasons}
           recentIds={recentIds}
           animDuration={animDuration}
           onSelect={(id) => { setShowOverview(false); handleSelect(id) }}

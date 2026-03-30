@@ -29,6 +29,7 @@ export default function App(): React.ReactElement {
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
   const [recommended, setRecommended] = useState<string[]>([])
   const [reasons, setReasons] = useState<Record<string, string>>({})
+  const recommendClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [scanning, setScanning] = useState(false)
   const [toolSearch, setToolSearch] = useState('')
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -55,7 +56,10 @@ export default function App(): React.ReactElement {
 
   // Cleanup timers on unmount
   useEffect(() => {
-    return () => { dismissTimers.current.forEach(t => clearTimeout(t)) }
+    return () => {
+      dismissTimers.current.forEach(t => clearTimeout(t))
+      if (recommendClearTimer.current) clearTimeout(recommendClearTimer.current)
+    }
   }, [])
 
   const handleHubClick = useCallback(() => {
@@ -66,6 +70,10 @@ export default function App(): React.ReactElement {
     const tool = ALL_TOOLS.find(t => t.id === id) ?? null
     setActiveTool(tool)
     setUiState('tool')
+    // Clear AI recommendations once user picks a tool
+    if (recommendClearTimer.current) clearTimeout(recommendClearTimer.current)
+    setRecommended([])
+    setReasons({})
   }, [])
 
   const handleBack = useCallback(() => {
@@ -88,6 +96,12 @@ export default function App(): React.ReactElement {
       if (result.success) {
         setRecommended(result.recommendations)
         setReasons(result.reasons ?? {})
+        // Auto-clear recommendations after 60s
+        if (recommendClearTimer.current) clearTimeout(recommendClearTimer.current)
+        recommendClearTimer.current = setTimeout(() => {
+          setRecommended([])
+          setReasons({})
+        }, 60_000)
         setUiState('menu')
         if (result.recommendations.length === 0) {
           addNotification('화면에서 추천 기능을 찾지 못했습니다.', 'info')
