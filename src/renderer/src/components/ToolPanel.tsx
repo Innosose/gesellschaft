@@ -1,31 +1,21 @@
 import React, { useState } from 'react'
 import SettingsPanel from './SettingsPanel'
-import SearchModal from './SearchModal'
 import CadConvertModal from './CadConvertModal'
-import BulkRenameModal from './BulkRenameModal'
-import FolderCompareModal from './FolderCompareModal'
-import ReminderModal from './ReminderModal'
 import ClipboardModal from './ClipboardModal'
-import QuickNotesModal from './QuickNotesModal'
 import TodoModal from './TodoModal'
 import TextToolsModal from './TextToolsModal'
 import PdfToolModal from './PdfToolModal'
-import ImageConvertModal from './ImageConvertModal'
 import ExcelToolModal from './ExcelToolModal'
 import TranslateModal from './TranslateModal'
-import SnippetsModal from './SnippetsModal'
-import EmailTemplateModal from './EmailTemplateModal'
-import DateCalcModal from './DateCalcModal'
-import UnitConverterModal from './UnitConverterModal'
-import ExchangeRateModal from './ExchangeRateModal'
-import VatCalcModal from './VatCalcModal'
-import QrCodeModal from './QrCodeModal'
-import ColorPickerModal from './ColorPickerModal'
-import OcrModal from './OcrModal'
 import AiPanel from './AiPanel'
 import MeetingTimerModal from './MeetingTimerModal'
 import SalaryCalcModal from './SalaryCalcModal'
-import AnnualLeaveModal from './AnnualLeaveModal'
+import CalculatorModal from './CalculatorModal'
+import DateToolsModal from './DateToolsModal'
+import MemoAlarmModal from './MemoAlarmModal'
+import DocTemplateModal from './DocTemplateModal'
+import FileManagerModal from './FileManagerModal'
+import ImageToolsModal from './ImageToolsModal'
 import ErrorBoundary from './ErrorBoundary'
 import { useAppStore } from '../store/appStore'
 
@@ -45,7 +35,7 @@ export default function ToolPanel({
   const { hubColor } = useAppStore()
   const [folder, setFolder] = useState('')
 
-  const folderTools = ['search', 'bulkRename', 'folderCompare']
+  const folderTools = ['fileManager']
   const showFolder = folderTools.includes(toolId)
 
   return (
@@ -174,33 +164,23 @@ export default function ToolPanel({
         {/* Tool content — ErrorBoundary로 감싸 개별 도구 크래시가 앱 전체에 영향 없도록 */}
         <ErrorBoundary>
         <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
-          {toolId === 'settings' && <SettingsPanel />}
-          {toolId === 'ai' && <AiPanel asPanel onClose={onBack} />}
-          {toolId === 'search'        && <SearchModal        onClose={onBack} initialFolder={folder} asPanel />}
-          {toolId === 'cadConvert'    && <CadConvertModal    onClose={onBack} asPanel />}
-          {toolId === 'bulkRename'    && <BulkRenameModal    onClose={onBack} initialFolder={folder} asPanel />}
-          {toolId === 'folderCompare' && <FolderCompareModal onClose={onBack} initialFolder={folder} asPanel />}
-          {toolId === 'reminder'      && <ReminderModal      onClose={onBack} asPanel />}
-          {toolId === 'clipboard'     && <ClipboardModal     onClose={onBack} asPanel />}
-          {toolId === 'notes'         && <QuickNotesModal    onClose={onBack} asPanel />}
-          {toolId === 'todo'          && <TodoModal          onClose={onBack} asPanel />}
-          {toolId === 'textTools'     && <TextToolsModal     onClose={onBack} asPanel />}
-          {toolId === 'pdfTool'       && <PdfToolModal       onClose={onBack} asPanel />}
-          {toolId === 'imageConvert'  && <ImageConvertModal  onClose={onBack} asPanel />}
-          {toolId === 'excelTool'     && <ExcelToolModal     onClose={onBack} asPanel />}
-          {toolId === 'translate'     && <TranslateModal     onClose={onBack} asPanel />}
-          {toolId === 'snippets'      && <SnippetsModal      onClose={onBack} asPanel />}
-          {toolId === 'emailTemplate' && <EmailTemplateModal onClose={onBack} asPanel />}
-          {toolId === 'dateCalc'      && <DateCalcModal      onClose={onBack} asPanel />}
-          {toolId === 'unitConverter' && <UnitConverterModal onClose={onBack} asPanel />}
-          {toolId === 'exchangeRate'  && <ExchangeRateModal  onClose={onBack} asPanel />}
-          {toolId === 'vatCalc'       && <VatCalcModal       onClose={onBack} asPanel />}
-          {toolId === 'qrCode'        && <QrCodeModal        onClose={onBack} asPanel />}
-          {toolId === 'colorPicker'   && <ColorPickerModal   onClose={onBack} asPanel />}
-          {toolId === 'ocr'           && <OcrModal           onClose={onBack} asPanel />}
-          {toolId === 'meetingTimer'  && <MeetingTimerModal  onClose={onBack} asPanel />}
-          {toolId === 'salaryCalc'    && <SalaryCalcModal    onClose={onBack} asPanel />}
-          {toolId === 'annualLeave'   && <AnnualLeaveModal   onClose={onBack} asPanel />}
+          {toolId === 'settings'      && <SettingsPanel />}
+          {toolId === 'ai'            && <AiPanel          asPanel onClose={onBack} />}
+          {toolId === 'todo'          && <TodoModal        onClose={onBack} asPanel />}
+          {toolId === 'clipboard'     && <ClipboardModal   onClose={onBack} asPanel />}
+          {toolId === 'memoAlarm'     && <MemoAlarmModal   onClose={onBack} asPanel />}
+          {toolId === 'docTemplate'   && <DocTemplateModal onClose={onBack} asPanel />}
+          {toolId === 'meetingTimer'  && <MeetingTimerModal onClose={onBack} asPanel />}
+          {toolId === 'dateTools'     && <DateToolsModal   onClose={onBack} asPanel />}
+          {toolId === 'translate'     && <TranslateModal   onClose={onBack} asPanel />}
+          {toolId === 'salaryCalc'    && <SalaryCalcModal  onClose={onBack} asPanel />}
+          {toolId === 'calculator'    && <CalculatorModal  onClose={onBack} asPanel />}
+          {toolId === 'pdfTool'       && <PdfToolModal     onClose={onBack} asPanel />}
+          {toolId === 'excelTool'     && <ExcelToolModal   onClose={onBack} asPanel />}
+          {toolId === 'imageTools'    && <ImageToolsModal  onClose={onBack} asPanel />}
+          {toolId === 'textTools'     && <TextToolsModal   onClose={onBack} asPanel />}
+          {toolId === 'fileManager'   && <FileManagerModal onClose={onBack} asPanel />}
+          {toolId === 'cadConvert'    && <CadConvertModal  onClose={onBack} asPanel />}
         </div>
         </ErrorBoundary>
       </div>

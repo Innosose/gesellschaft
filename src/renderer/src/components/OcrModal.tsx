@@ -7,7 +7,7 @@ interface OcrModalProps {
   asPanel?: boolean
 }
 
-export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.ReactElement {
+export function OcrContent(): React.ReactElement {
   const [imageSrc, setImageSrc] = React.useState<string | null>(null)
   const [imageFile, setImageFile] = React.useState<File | null>(null)
   const [lang, setLang] = React.useState('kor+eng')
@@ -85,7 +85,7 @@ export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.Rea
   }
 
   return (
-    <Modal title="이미지 OCR (텍스트 추출)" onClose={onClose} asPanel={asPanel}>
+    <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, height: '100%' }}>
         {/* 첫 실행 / 다운로드 안내 */}
         {running && ocrStatus && ocrStatus !== 'recognizing text' && (
@@ -276,6 +276,14 @@ export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.Rea
           </div>
         </div>
       </div>
+    </>
+  )
+}
+
+export default function OcrModal({ onClose, asPanel }: OcrModalProps): React.ReactElement {
+  return (
+    <Modal title="이미지 OCR (텍스트 추출)" onClose={onClose} asPanel={asPanel}>
+      <OcrContent />
     </Modal>
   )
 }

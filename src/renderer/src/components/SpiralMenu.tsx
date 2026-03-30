@@ -27,12 +27,11 @@ const MAX_RECENT = 5
 
 // 카테고리 정의
 const CATEGORIES: { label: string; ids: string[] }[] = [
-  { label: '업무·협업',  ids: ['ai', 'todo', 'notes', 'reminder', 'clipboard', 'emailTemplate', 'snippets', 'translate', 'meetingTimer'] },
-  { label: '날짜·시간',  ids: ['dateCalc', 'annualLeave'] },
-  { label: '급여·세금',  ids: ['salaryCalc', 'vatCalc', 'exchangeRate'] },
-  { label: '파일·문서',  ids: ['pdfTool', 'excelTool', 'ocr', 'qrCode', 'imageConvert'] },
-  { label: '텍스트·변환', ids: ['textTools', 'unitConverter', 'colorPicker'] },
-  { label: '파일 관리',  ids: ['search', 'bulkRename', 'folderCompare', 'cadConvert'] },
+  { label: '업무·협업',  ids: ['ai', 'todo', 'clipboard', 'memoAlarm', 'docTemplate', 'translate', 'meetingTimer'] },
+  { label: '날짜·재무',  ids: ['dateTools', 'salaryCalc', 'calculator'] },
+  { label: '파일·문서',  ids: ['pdfTool', 'excelTool', 'imageTools'] },
+  { label: '텍스트·변환', ids: ['textTools'] },
+  { label: '파일 관리',  ids: ['fileManager', 'cadConvert'] },
 ]
 
 function getRecentTools(): string[] {

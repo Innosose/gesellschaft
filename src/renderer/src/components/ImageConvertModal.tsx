@@ -13,7 +13,7 @@ interface ImageConvertModalProps {
   asPanel?: boolean
 }
 
-export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModalProps): React.ReactElement {
+export function ImageConvertContent(): React.ReactElement {
   const [files, setFiles] = React.useState<ImageFile[]>([])
   const [format, setFormat] = React.useState<'jpg' | 'png' | 'bmp'>('jpg')
   const [quality, setQuality] = React.useState(85)
@@ -111,7 +111,7 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   }
 
   return (
-    <Modal title="이미지 일괄 변환 / 리사이즈" onClose={onClose} asPanel={asPanel}>
+    <>
       <div style={{ display: 'flex', gap: 16, height: '100%' }}>
         {/* 파일 목록 */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -302,6 +302,14 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
           </div>
         </div>
       </div>
+    </>
+  )
+}
+
+export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModalProps): React.ReactElement {
+  return (
+    <Modal title="이미지 일괄 변환 / 리사이즈" onClose={onClose} asPanel={asPanel}>
+      <ImageConvertContent />
     </Modal>
   )
 }
