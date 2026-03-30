@@ -165,7 +165,9 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
 
   // Focus input when panel opens
   useEffect(() => {
-    if (effectiveOpen) setTimeout(() => inputRef.current?.focus(), 150)
+    if (!effectiveOpen) return
+    const t = setTimeout(() => inputRef.current?.focus(), 150)
+    return () => clearTimeout(t)
   }, [effectiveOpen])
 
   const send = useCallback(async () => {

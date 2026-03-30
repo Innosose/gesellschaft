@@ -77,6 +77,8 @@ export default function MemoAlarmModal({ onClose, asPanel }: MemoAlarmModalProps
     }).catch(() => {})
   }, [])
 
+  useEffect(() => () => { if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current) }, [])
+
   const selectNote = (note: Note): void => {
     setSelectedNote(note)
     setNoteTitle(note.title)

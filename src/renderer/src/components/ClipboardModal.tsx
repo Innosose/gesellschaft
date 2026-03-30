@@ -86,7 +86,7 @@ export default function ClipboardModal({ onClose, asPanel }: { onClose: () => vo
             const showSeparator = i === pinnedInView.length && pinnedInView.length > 0 && unpinned.length > 0
 
             return (
-              <React.Fragment key={`${i}-${item.slice(0, 40)}`}>
+              <React.Fragment key={item}>
                 {showSeparator && (
                   <div className="flex items-center gap-2 text-[10px]" style={{ color: 'var(--win-text-muted)' }}>
                     <div className="flex-1 h-px" style={{ background: 'var(--win-border)' }} />

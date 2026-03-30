@@ -266,6 +266,8 @@ function SnippetsTab(): React.ReactElement {
     window.api.snippets.get().then(setSnippets)
   }, [])
 
+  React.useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
+
   const selected = snippets.find(s => s.id === selectedId) || null
 
   const filtered = snippets.filter(s => {
