@@ -68,6 +68,9 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
   const [output, setOutput] = useState('')
   const [copied, setCopied] = useState(false)
   const [lastTool, setLastTool] = useState('')
+  const [activeGroup, setActiveGroup] = useState(GROUPS[0])
+
+  const visibleTools = TOOLS.filter(t => t.group === activeGroup)
 
   const apply = (tool: Tool): void => {
     setOutput(tool.fn(output || input))
@@ -90,32 +93,40 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
 
   return (
     <Modal title="텍스트 도구" onClose={onClose} asPanel={asPanel}>
-      <div className="flex gap-3 h-[400px]">
-        {/* 도구 버튼 */}
-        <div className="w-48 flex-shrink-0 flex flex-col gap-3 overflow-y-auto pr-1">
+      <div className="flex flex-col gap-3 h-[420px]">
+        {/* 그룹 탭 */}
+        <div className="flex gap-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
           {GROUPS.map(group => (
-            <div key={group}>
-              <div className="text-[10px] px-1 mb-1.5 font-semibold tracking-wide" style={{ color: 'var(--win-text-muted)' }}>
-                {group}
-              </div>
-              <div className="flex flex-col gap-1">
-                {TOOLS.filter(t => t.group === group).map(tool => (
-                  <button
-                    key={tool.label}
-                    className="text-left text-xs px-2.5 py-1.5 rounded border transition-colors"
-                    style={lastTool === tool.label
-                      ? { borderColor: 'var(--win-accent)', background: 'var(--win-accent-dim)', color: '#60a0ff' }
-                      : { borderColor: 'var(--win-surface-2)', color: 'var(--win-text-muted)' }
-                    }
-                    onMouseEnter={(e) => { if (lastTool !== tool.label) { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--win-border)' } }}
-                    onMouseLeave={(e) => { if (lastTool !== tool.label) { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--win-surface-2)' } }}
-                    onClick={() => apply(tool)}
-                  >
-                    {tool.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <button
+              key={group}
+              onClick={() => { setActiveGroup(group); setLastTool('') }}
+              style={{
+                padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
+                background: activeGroup === group ? 'rgba(255,255,255,0.12)' : 'transparent',
+                color: activeGroup === group ? '#fff' : 'rgba(255,255,255,0.45)',
+              }}
+            >{group}</button>
+          ))}
+        </div>
+
+        <div className="flex gap-3 flex-1 min-h-0">
+        {/* 도구 버튼 */}
+        <div className="w-44 flex-shrink-0 flex flex-col gap-1 overflow-y-auto pr-1">
+          {visibleTools.map(tool => (
+            <button
+              key={tool.label}
+              className="text-left text-xs px-2.5 py-1.5 rounded border transition-colors"
+              style={lastTool === tool.label
+                ? { borderColor: 'var(--win-accent)', background: 'var(--win-accent-dim)', color: '#60a0ff' }
+                : { borderColor: 'var(--win-surface-2)', color: 'var(--win-text-muted)' }
+              }
+              onMouseEnter={(e) => { if (lastTool !== tool.label) { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--win-border)' } }}
+              onMouseLeave={(e) => { if (lastTool !== tool.label) { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--win-surface-2)' } }}
+              onClick={() => apply(tool)}
+            >
+              {tool.label}
+            </button>
           ))}
         </div>
 
@@ -179,6 +190,7 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
           >
             {copied ? '✓ 복사됨' : '출력 복사'}
           </button>
+        </div>
         </div>
       </div>
     </Modal>

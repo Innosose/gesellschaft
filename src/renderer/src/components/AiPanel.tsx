@@ -5,6 +5,31 @@ interface ChatMessage {
   content: string
 }
 
+interface SavedConversation {
+  id: string
+  title: string
+  savedAt: number
+  messages: ChatMessage[]
+}
+
+const HISTORY_KEY = 'ai-conversation-history'
+
+function loadHistory(): SavedConversation[] {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') } catch { return [] }
+}
+
+function saveToHistory(messages: ChatMessage[]): void {
+  if (messages.length === 0) return
+  const title = messages[0].content.slice(0, 40) + (messages[0].content.length > 40 ? '…' : '')
+  const entry: SavedConversation = { id: Date.now().toString(), title, savedAt: Date.now(), messages }
+  const prev = loadHistory().slice(0, 19)
+  localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...prev]))
+}
+
+function deleteFromHistory(id: string): void {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(loadHistory().filter(c => c.id !== id)))
+}
+
 interface AiConfig {
   provider: string
   apiKey: string
@@ -21,7 +46,8 @@ interface AiPanelProps {
 
 export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps): React.ReactElement {
   const effectiveOpen = asPanel ? (open ?? true) : (open ?? false)
-  const [tab, setTab] = useState<'chat' | 'settings'>('chat')
+  const [tab, setTab] = useState<'chat' | 'history' | 'settings'>('chat')
+  const [history, setHistory] = useState<SavedConversation[]>(loadHistory)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -134,7 +160,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           background: 'rgba(255,255,255,0.02)',
           flexShrink: 0,
         }}>
-          {(['chat', 'settings'] as const).map(t => (
+          {(['chat', 'history', 'settings'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -144,14 +170,11 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                 border: tab === t ? '1px solid rgba(139,92,246,0.4)' : '1px solid transparent',
                 background: tab === t ? 'rgba(139,92,246,0.2)' : 'transparent',
                 color: tab === t ? 'rgba(196,181,253,0.9)' : 'rgba(255,255,255,0.4)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginRight: 6,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer', marginRight: 6,
                 transition: 'all 0.15s ease',
               }}
             >
-              {t === 'chat' ? '채팅' : '설정'}
+              {t === 'chat' ? '채팅' : t === 'history' ? '기록' : '설정'}
             </button>
           ))}
         </div>
@@ -208,11 +231,15 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
             </div>
 
             {messages.length > 0 && (
-              <div style={{ padding: '0 14px 6px', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '0 14px 6px', display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => { saveToHistory(messages); setHistory(loadHistory()); }}
+                  style={{ fontSize: 11, color: 'rgba(139,92,246,0.7)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                >💾 저장</button>
                 <button
                   onClick={() => setMessages([])}
                   style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
-                >대화 초기화</button>
+                >초기화</button>
               </div>
             )}
 
@@ -262,6 +289,42 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
               </div>
             </div>
           </>
+        )}
+
+        {/* History Tab */}
+        {tab === 'history' && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {history.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 40 }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
+                <div>저장된 대화가 없습니다</div>
+                <div style={{ fontSize: 11, marginTop: 4 }}>채팅 창에서 💾 저장 버튼을 누르세요</div>
+              </div>
+            ) : history.map(conv => (
+              <div key={conv.id} style={{
+                padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.12)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)' }}
+              onClick={() => { setMessages(conv.messages); setTab('chat') }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.title}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+                    {new Date(conv.savedAt).toLocaleDateString('ko-KR')} · {conv.messages.length}개 메시지
+                  </div>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); deleteFromHistory(conv.id); setHistory(loadHistory()) }}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer', fontSize: 12, padding: '2px 4px' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.25)' }}
+                >✕</button>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Settings Tab */}

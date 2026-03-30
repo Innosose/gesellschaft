@@ -63,16 +63,49 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
 
   const pending = todos.filter(t => !t.done)
   const done = todos.filter(t => t.done)
+  const overdueCount = pending.filter(t => isOverdue(t.dueDate)).length
+  const todayCount = pending.filter(t => isDueToday(t.dueDate)).length
+  const highCount = pending.filter(t => t.priority === 'high').length
+  const total = todos.length
+  const doneRate = total > 0 ? Math.round((done.length / total) * 100) : 0
 
   const sorted = [...pending].sort((a, b) => {
     if (a.priority === 'high' && b.priority !== 'high') return -1
     if (a.priority !== 'high' && b.priority === 'high') return 1
-    return 0
+    if (a.dueDate && !b.dueDate) return -1
+    if (!a.dueDate && b.dueDate) return 1
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate)
+    return b.createdAt - a.createdAt
   })
 
   return (
     <Modal title="할일 목록" onClose={onClose} asPanel={asPanel}>
       <div className="space-y-3">
+
+        {/* 완료율 통계 */}
+        {total > 0 && (
+          <div className="rounded-lg p-3" style={{ background: 'var(--win-bg)', border: '1px solid var(--win-surface)' }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex gap-3 text-xs">
+                <span style={{ color: 'var(--win-text-muted)' }}>전체 <b style={{ color: 'var(--win-text)' }}>{total}</b></span>
+                <span style={{ color: 'var(--win-text-muted)' }}>남은 <b style={{ color: 'var(--win-text)' }}>{pending.length}</b></span>
+                <span style={{ color: 'var(--win-text-muted)' }}>완료 <b style={{ color: '#4caf50' }}>{done.length}</b></span>
+                {overdueCount > 0 && <span style={{ color: '#c42b1c' }}>⚠️ 초과 {overdueCount}</span>}
+                {todayCount > 0 && <span style={{ color: '#f97316' }}>📅 오늘 {todayCount}</span>}
+                {highCount > 0 && <span style={{ color: '#ff6b6b' }}>🔴 중요 {highCount}</span>}
+              </div>
+              <span className="text-xs font-bold" style={{ color: doneRate === 100 ? '#4caf50' : 'var(--win-text-muted)' }}>{doneRate}%</span>
+            </div>
+            <div className="rounded-full overflow-hidden" style={{ height: 5, background: 'var(--win-surface)' }}>
+              <div style={{
+                height: '100%', width: `${doneRate}%`,
+                background: doneRate === 100 ? '#4caf50' : 'linear-gradient(90deg, #0078d4, #40a0ff)',
+                transition: 'width 0.4s ease',
+                borderRadius: 999,
+              }} />
+            </div>
+          </div>
+        )}
         {/* 입력 */}
         <div className="rounded-lg p-3 space-y-2" style={{ background: 'var(--win-bg)', border: '1px solid var(--win-surface)' }}>
           <div className="flex gap-2">
