@@ -1,32 +1,7 @@
-import { ipcMain, desktopCapturer, app } from 'electron'
-import * as fs from 'fs'
-import * as path from 'path'
+import { ipcMain, desktopCapturer } from 'electron'
 import log, { logIpcError } from './logger'
 import { TOOL_DESCRIPTIONS } from '../shared/constants'
-
-const CONFIG_PATH = (): string => path.join(app.getPath('userData'), 'ai-config.json')
-
-interface AiConfig {
-  provider: string
-  apiKey: string
-  model: string
-  ollamaUrl: string
-}
-
-const DEFAULTS: AiConfig = {
-  provider: 'openai',
-  apiKey: '',
-  model: 'gpt-4o-mini',
-  ollamaUrl: 'http://localhost:11434',
-}
-
-function loadConfig(): AiConfig {
-  try {
-    return { ...DEFAULTS, ...JSON.parse(fs.readFileSync(CONFIG_PATH(), 'utf8')) }
-  } catch {
-    return { ...DEFAULTS }
-  }
-}
+import { load as loadConfig } from './aiAssistant'
 
 export function registerScreenCaptureHandlers(): void {
   ipcMain.handle('screen:captureAndAnalyze', async () => {

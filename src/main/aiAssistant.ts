@@ -48,7 +48,7 @@ const AiConfigPatchSchema = z.object({
   apiKeyRaw:    z.string().max(200).optional(),
 })
 
-function load(): AiConfig {
+export function load(): AiConfig {
   try {
     const raw: AiConfig & { _enc?: boolean } = { ...DEFAULTS, ...JSON.parse(fs.readFileSync(CONFIG_PATH(), 'utf8')) }
     if (raw._enc && raw.apiKey && safeStorage.isEncryptionAvailable()) {
