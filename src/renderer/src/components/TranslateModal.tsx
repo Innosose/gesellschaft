@@ -6,8 +6,21 @@ interface TranslateModalProps {
   asPanel?: boolean
 }
 
+interface TranslateHistoryEntry {
+  from: string
+  to: string
+  source: string
+  result: string
+  ts: number
+}
+
 const LANGUAGES = ['자동 감지', '한국어', '영어', '일본어', '중국어', '스페인어', '프랑스어', '독일어', '러시아어', '아랍어', '포르투갈어', '이탈리아어']
 const TARGET_LANGUAGES = LANGUAGES.filter(l => l !== '자동 감지')
+const HISTORY_KEY = 'gesellschaft-translate-history'
+
+function loadHistory(): TranslateHistoryEntry[] {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') } catch { return [] }
+}
 
 export default function TranslateModal({ onClose, asPanel }: TranslateModalProps): React.ReactElement {
   const [sourceLang, setSourceLang] = useState('자동 감지')
@@ -16,7 +29,12 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
   const [resultText, setResultText] = useState('')
   const [translating, setTranslating] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [history, setHistory] = useState<TranslateHistoryEntry[]>(loadHistory)
   const streamRef = useRef('')
+  const sourceLangRef = useRef(sourceLang)
+  const targetLangRef = useRef(targetLang)
+  const sourceTextRef = useRef(sourceText)
 
   // Register streaming listeners
   useEffect(() => {
@@ -25,6 +43,16 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
       setResultText(streamRef.current)
     })
     const offDone = window.api.ai.onDone(() => {
+      const result = streamRef.current
+      if (result.trim()) {
+        setResultText(prev => {
+          const entry: TranslateHistoryEntry = { from: sourceLangRef.current, to: targetLangRef.current, source: sourceTextRef.current, result, ts: Date.now() }
+          const updated = [entry, ...loadHistory()].slice(0, 20)
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(updated))
+          setHistory(updated)
+          return prev
+        })
+      }
       setTranslating(false)
       streamRef.current = ''
     })
@@ -38,6 +66,9 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
 
   const handleTranslate = async (): Promise<void> => {
     if (!sourceText.trim() || translating) return
+    sourceLangRef.current = sourceLang
+    targetLangRef.current = targetLang
+    sourceTextRef.current = sourceText
     setTranslating(true)
     setResultText('')
     streamRef.current = ''
@@ -129,7 +160,36 @@ export default function TranslateModal({ onClose, asPanel }: TranslateModalProps
               }}
             >번역</button>
           )}
+          <button
+            onClick={() => setShowHistory(h => !h)}
+            title="번역 기록"
+            style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${showHistory ? 'rgba(41,128,185,0.5)' : 'rgba(255,255,255,0.1)'}`, background: showHistory ? 'rgba(41,128,185,0.15)' : 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.6)', fontSize: 14, cursor: 'pointer' }}
+          >📋</button>
         </div>
+
+        {/* History Panel */}
+        {showHistory && (
+          <div style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', padding: '8px 0', maxHeight: 180, overflowY: 'auto', flexShrink: 0 }}>
+            {history.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 12, padding: '16px 0' }}>번역 기록이 없습니다</div>
+            ) : history.map((h, i) => (
+              <div
+                key={i}
+                style={{ padding: '7px 14px', borderBottom: i < history.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', cursor: 'pointer' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+                onClick={() => { setSourceLang(h.from === '(자동 감지)' ? '자동 감지' : h.from); setTargetLang(h.to); setSourceText(h.source); setResultText(h.result); setShowHistory(false) }}
+              >
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{h.from} → {h.to}</span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginLeft: 'auto' }}>{new Date(h.ts).toLocaleDateString('ko-KR')}</span>
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.source}</div>
+                <div style={{ fontSize: 11, color: 'rgba(96,165,250,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.result}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Text areas */}
         <div style={{ flex: 1, display: 'flex', gap: 12, minHeight: 0 }}>

@@ -30,6 +30,7 @@
     "path-browserify": "^1.0.1",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
+    "react-markdown": "^10.1.0",
     "tesseract.js": "^7.0.0",
     "zod": "^4.3.6",
     "zustand": "^4.5.2"

@@ -425,7 +425,12 @@ export default function SpiralMenu({
 }: SpiralMenuProps): React.ReactElement {
   const [vw, setVw] = useState(window.innerWidth)
   const [vh, setVh] = useState(window.innerHeight)
-  const [centerIdx, setCenterIdx] = useState(0)
+  const [centerIdx, setCenterIdx] = useState(() => {
+    const recent = getRecentTools()
+    if (recent.length === 0) return 0
+    const idx = tools.findIndex(t => t.id === recent[0])
+    return idx >= 0 ? idx : 0
+  })
   const [showOverview, setShowOverview] = useState(false)
   const [recentIds, setRecentIds] = useState<string[]>(getRecentTools)
   const wheelCooldown = useRef(false)

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import ReactMarkdown from 'react-markdown'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -28,6 +29,65 @@ function saveToHistory(messages: ChatMessage[]): void {
 
 function deleteFromHistory(id: string): void {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(loadHistory().filter(c => c.id !== id)))
+}
+
+function exportChat(messages: ChatMessage[]): void {
+  const lines: string[] = [`# AI 대화 내보내기`, `날짜: ${new Date().toLocaleString('ko-KR')}`, '']
+  messages.forEach(m => {
+    lines.push(`## ${m.role === 'user' ? '나' : 'AI'}`)
+    lines.push(m.content)
+    lines.push('')
+  })
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `ai-chat-${Date.now()}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function CodeBlock({ code }: { code: string }): React.ReactElement {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div style={{ position: 'relative', margin: '6px 0' }}>
+      <pre style={{ margin: 0, padding: '10px 12px', borderRadius: 6, overflowX: 'auto', fontSize: 11, lineHeight: 1.6, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <code style={{ fontFamily: 'ui-monospace, monospace' }}>{code}</code>
+      </pre>
+      <button
+        onClick={() => { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+        style={{ position: 'absolute', top: 4, right: 4, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: copied ? '#1e7e34' : 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
+      >{copied ? '✓' : '복사'}</button>
+    </div>
+  )
+}
+
+function MarkdownMessage({ content, dark }: { content: string; dark?: boolean }): React.ReactElement {
+  const textColor = dark ? 'rgba(255,255,255,0.85)' : 'var(--win-text)'
+  const mutedColor = dark ? 'rgba(255,255,255,0.5)' : 'var(--win-text-muted)'
+  return (
+    <ReactMarkdown
+      components={{
+        p: ({ children }) => <p style={{ margin: '2px 0', lineHeight: 1.6, color: textColor }}>{children}</p>,
+        strong: ({ children }) => <strong style={{ fontWeight: 700, color: textColor }}>{children}</strong>,
+        em: ({ children }) => <em style={{ color: mutedColor }}>{children}</em>,
+        ul: ({ children }) => <ul style={{ margin: '4px 0', paddingLeft: 18, color: textColor }}>{children}</ul>,
+        ol: ({ children }) => <ol style={{ margin: '4px 0', paddingLeft: 18, color: textColor }}>{children}</ol>,
+        li: ({ children }) => <li style={{ margin: '1px 0', lineHeight: 1.6 }}>{children}</li>,
+        h1: ({ children }) => <h1 style={{ fontSize: 15, fontWeight: 700, margin: '6px 0 2px', color: textColor }}>{children}</h1>,
+        h2: ({ children }) => <h2 style={{ fontSize: 13, fontWeight: 700, margin: '5px 0 2px', color: textColor }}>{children}</h2>,
+        h3: ({ children }) => <h3 style={{ fontSize: 12, fontWeight: 600, margin: '4px 0 2px', color: textColor }}>{children}</h3>,
+        code: ({ children, className }) => {
+          const isBlock = className?.startsWith('language-') || (typeof children === 'string' && (children as string).includes('\n'))
+          if (isBlock) return <CodeBlock code={String(children).trimEnd()} />
+          return <code style={{ fontSize: 11, padding: '1px 4px', borderRadius: 3, background: dark ? 'rgba(255,255,255,0.12)' : 'var(--win-surface-3)', fontFamily: 'ui-monospace, monospace', color: textColor }}>{children}</code>
+        },
+        pre: ({ children }) => <>{children}</>,
+        blockquote: ({ children }) => <blockquote style={{ margin: '4px 0', paddingLeft: 10, borderLeft: '3px solid rgba(139,92,246,0.5)', color: mutedColor }}>{children}</blockquote>,
+        hr: () => <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '6px 0' }} />,
+      }}
+    >{content}</ReactMarkdown>
+  )
 }
 
 interface AiConfig {
@@ -221,10 +281,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     background: msg.role === 'user' ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.05)',
                     color: 'rgba(255,255,255,0.85)',
                     border: msg.role === 'user' ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                    whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                   }}>
-                    {msg.content}
+                    {msg.role === 'user'
+                      ? <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+                      : <MarkdownMessage content={msg.content} dark />
+                    }
                     {streaming && i === messages.length - 1 && msg.role === 'assistant' && (
                       <span style={{ display: 'inline-block', width: 6, height: 12, background: 'rgba(139,92,246,0.8)', marginLeft: 2, animation: 'blink 0.8s step-end infinite', verticalAlign: 'text-bottom' }} />
                     )}
@@ -240,6 +302,10 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                   onClick={() => { saveToHistory(messages); setHistory(loadHistory()); }}
                   style={{ fontSize: 11, color: 'rgba(139,92,246,0.7)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 >💾 저장</button>
+                <button
+                  onClick={() => exportChat(messages)}
+                  style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                >↓ 내보내기</button>
                 <button
                   onClick={() => setMessages([])}
                   style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
@@ -548,10 +614,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                     background: msg.role === 'user' ? 'var(--win-accent-dim)' : 'var(--win-surface-2)',
                     color: 'var(--win-text)',
                     border: '1px solid var(--win-border)',
-                    whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                   }}>
-                    {msg.content}
+                    {msg.role === 'user'
+                      ? <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+                      : <MarkdownMessage content={msg.content} />
+                    }
                     {streaming && i === messages.length - 1 && msg.role === 'assistant' && (
                       <span style={{ display: 'inline-block', width: 6, height: 12, background: 'var(--win-accent)', marginLeft: 2, animation: 'blink 0.8s step-end infinite', verticalAlign: 'text-bottom' }} />
                     )}
@@ -563,7 +631,11 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
 
             {/* Clear button */}
             {messages.length > 0 && (
-              <div style={{ padding: '0 14px 6px', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '0 14px 6px', display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => exportChat(messages)}
+                  style={{ fontSize: 11, color: 'var(--win-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+                >↓ 내보내기</button>
                 <button
                   onClick={() => setMessages([])}
                   style={{ fontSize: 11, color: 'var(--win-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}

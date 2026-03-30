@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Modal } from './SearchModal'
 
 interface TodoItem {
@@ -26,20 +26,20 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
   const [text, setText] = useState('')
   const [priority, setPriority] = useState<'high' | 'normal'>('normal')
   const [dueDate, setDueDate] = useState('')
+  const [manualOrder, setManualOrder] = useState<string[]>([])
+  const dragId = useRef<string | null>(null)
+  const dragOverId = useRef<string | null>(null)
 
   useEffect(() => {
-    window.api.todo.get().then(setTodos).catch(() => {})
+    window.api.todo.get().then(t => { setTodos(t); setManualOrder(t.filter(x => !x.done).map(x => x.id)) }).catch(() => {})
   }, [])
 
   const add = async (): Promise<void> => {
     if (!text.trim()) return
-    const updated = await window.api.todo.add({
-      text: text.trim(),
-      done: false,
-      priority,
-      dueDate: dueDate || undefined
-    })
+    const updated = await window.api.todo.add({ text: text.trim(), done: false, priority, dueDate: dueDate || undefined })
+    const pendingIds = updated.filter(x => !x.done).map(x => x.id)
     setTodos(updated)
+    setManualOrder(prev => [...prev, ...pendingIds.filter(id => !prev.includes(id))])
     setText('')
     setDueDate('')
     setPriority('normal')
@@ -48,17 +48,39 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
   const toggle = async (id: string): Promise<void> => {
     const updated = await window.api.todo.toggle(id)
     setTodos(updated)
+    setManualOrder(prev => prev.filter(x => updated.find(t => t.id === x && !t.done)))
   }
 
   const remove = async (id: string): Promise<void> => {
     if (!window.confirm('항목을 삭제하시겠습니까?')) return
     const updated = await window.api.todo.delete(id)
     setTodos(updated)
+    setManualOrder(prev => prev.filter(x => x !== id))
   }
 
   const clearDone = async (): Promise<void> => {
     const updated = await window.api.todo.clearDone()
     setTodos(updated)
+  }
+
+  const handleDragStart = (id: string): void => { dragId.current = id }
+  const handleDragOver = (e: React.DragEvent, id: string): void => {
+    e.preventDefault()
+    dragOverId.current = id
+  }
+  const handleDrop = (): void => {
+    if (!dragId.current || !dragOverId.current || dragId.current === dragOverId.current) return
+    setManualOrder(prev => {
+      const arr = [...prev]
+      const from = arr.indexOf(dragId.current!)
+      const to = arr.indexOf(dragOverId.current!)
+      if (from === -1 || to === -1) return prev
+      arr.splice(from, 1)
+      arr.splice(to, 0, dragId.current!)
+      return arr
+    })
+    dragId.current = null
+    dragOverId.current = null
   }
 
   const pending = todos.filter(t => !t.done)
@@ -69,14 +91,23 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
   const total = todos.length
   const doneRate = total > 0 ? Math.round((done.length / total) * 100) : 0
 
-  const sorted = [...pending].sort((a, b) => {
-    if (a.priority === 'high' && b.priority !== 'high') return -1
-    if (a.priority !== 'high' && b.priority === 'high') return 1
-    if (a.dueDate && !b.dueDate) return -1
-    if (!a.dueDate && b.dueDate) return 1
-    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate)
-    return b.createdAt - a.createdAt
-  })
+  const sorted = manualOrder.length > 0
+    ? [...pending].sort((a, b) => {
+        const ai = manualOrder.indexOf(a.id)
+        const bi = manualOrder.indexOf(b.id)
+        if (ai === -1 && bi === -1) return b.createdAt - a.createdAt
+        if (ai === -1) return 1
+        if (bi === -1) return -1
+        return ai - bi
+      })
+    : [...pending].sort((a, b) => {
+        if (a.priority === 'high' && b.priority !== 'high') return -1
+        if (a.priority !== 'high' && b.priority === 'high') return 1
+        if (a.dueDate && !b.dueDate) return -1
+        if (!a.dueDate && b.dueDate) return 1
+        if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate)
+        return b.createdAt - a.createdAt
+      })
 
   return (
     <Modal title="할일 목록" onClose={onClose} asPanel={asPanel}>
@@ -195,10 +226,15 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
               <div
                 key={item.id}
                 className="flex items-center gap-2.5 p-2.5 rounded-lg group transition-colors"
-                style={{ background: 'var(--win-bg)', border: '1px solid var(--win-surface)' }}
+                style={{ background: 'var(--win-bg)', border: '1px solid var(--win-surface)', cursor: 'default' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--win-border)' }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--win-surface)' }}
+                draggable
+                onDragStart={() => handleDragStart(item.id)}
+                onDragOver={(e) => handleDragOver(e, item.id)}
+                onDrop={handleDrop}
               >
+                <span className="text-[10px] cursor-grab opacity-30 group-hover:opacity-70 flex-shrink-0 select-none" title="드래그하여 순서 변경">⠿</span>
                 <button
                   className="rounded flex-shrink-0 flex items-center justify-center transition-colors"
                   style={{

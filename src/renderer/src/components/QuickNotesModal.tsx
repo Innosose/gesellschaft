@@ -31,6 +31,7 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
   const [color, setColor] = useState(COLORS[0].bg)
   const [dirty, setDirty] = useState(false)
   const [savedMsg, setSavedMsg] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const saveTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -51,18 +52,25 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
   const autoSave = (updTitle: string, updContent: string, updColor: string): void => {
     if (!selected) return
     setDirty(true)
+    setSaveError(false)
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
-      const updated = await window.api.quickNotes.save({
-        id: selected.id,
-        title: updTitle,
-        content: updContent,
-        color: updColor
-      })
-      setNotes(updated)
-      setDirty(false)
-      setSavedMsg(true)
-      setTimeout(() => setSavedMsg(false), 1500)
+      try {
+        const updated = await window.api.quickNotes.save({
+          id: selected.id,
+          title: updTitle,
+          content: updContent,
+          color: updColor
+        })
+        setNotes(updated)
+        setDirty(false)
+        setSavedMsg(true)
+        setTimeout(() => setSavedMsg(false), 1500)
+      } catch {
+        setDirty(false)
+        setSaveError(true)
+        setTimeout(() => setSaveError(false), 3000)
+      }
     }, 800)
   }
 
@@ -144,6 +152,7 @@ export default function QuickNotesModal({ onClose, asPanel }: { onClose: () => v
                 </div>
                 {dirty && <span className="text-[10px]" style={{ color: 'var(--win-text-muted)' }}>저장 중...</span>}
                 {savedMsg && !dirty && <span className="text-[10px]" style={{ color: 'var(--win-success)' }}>✓ 저장됨</span>}
+                {saveError && <span className="text-[10px]" style={{ color: 'var(--win-danger)' }}>⚠ 저장 실패</span>}
               </div>
               <textarea
                 className="flex-1 win-input resize-none text-sm leading-relaxed"

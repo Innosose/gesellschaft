@@ -24,6 +24,17 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
   const [outputDir, setOutputDir] = React.useState('')
   const [converting, setConverting] = React.useState(false)
   const [done, setDone] = React.useState(false)
+  const [dragOver, setDragOver] = React.useState(false)
+
+  const handleDropFiles = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault()
+    setDragOver(false)
+    const dropped = Array.from(e.dataTransfer.files)
+      .filter(f => /\.(jpe?g|png|bmp|webp|gif|tiff?)$/i.test(f.name))
+      .map(f => ({ path: (f as File & { path?: string }).path ?? f.name, name: f.name, status: 'waiting' as const }))
+      .filter(f => f.path && !files.some(ex => ex.path === f.path))
+    if (dropped.length > 0) { setFiles(prev => [...prev, ...dropped]); setDone(false) }
+  }
 
   React.useEffect(() => {
     window.api.imageTool.defaultOutputDir().then(dir => {
@@ -114,15 +125,20 @@ export default function ImageConvertModal({ onClose, asPanel }: ImageConvertModa
             style={{
               flex: 1,
               overflowY: 'auto',
-              border: '1px solid var(--win-border)',
+              border: `1px solid ${dragOver ? 'var(--win-accent)' : 'var(--win-border)'}`,
               borderRadius: 6,
-              background: 'var(--win-surface-2)',
+              background: dragOver ? 'var(--win-accent-dim)' : 'var(--win-surface-2)',
               minHeight: 100,
+              transition: 'border-color 0.15s, background 0.15s',
             }}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDropFiles}
           >
             {files.length === 0 ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--win-text-muted)', fontSize: 13 }}>
-                이미지 파일을 추가해주세요
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--win-text-muted)', fontSize: 13, gap: 4 }}>
+                <span style={{ fontSize: 28 }}>🖼️</span>
+                <span>이미지 파일을 드래그하거나 추가하세요</span>
               </div>
             ) : (
               files.map((f, idx) => (

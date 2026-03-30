@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { formatSize, formatDate, getFileIcon } from '../utils/format'
+
+const RECENT_SEARCH_KEY = 'gesellschaft-recent-searches'
 
 export interface SearchResult {
   path: string
@@ -56,7 +58,31 @@ export default function SearchModal({
   const [fileNote, setFileNote] = useState('')
   const [fileTags, setFileTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState('')
+  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [recentSearches, setRecentSearches] = useState<{ query: string; rootPath: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem(RECENT_SEARCH_KEY) ?? '[]') } catch { return [] }
+  })
+  const [showRecent, setShowRecent] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const sortedResults = useMemo(() => {
+    return [...results].sort((a, b) => {
+      let cmp = 0
+      if (sortBy === 'name') cmp = a.name.localeCompare(b.name)
+      else if (sortBy === 'size') cmp = a.size - b.size
+      else cmp = a.modified - b.modified
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [results, sortBy, sortDir])
+
+  const toggleSort = (col: 'name' | 'size' | 'date'): void => {
+    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortBy(col); setSortDir('asc') }
+  }
+
+  const sortArrow = (col: 'name' | 'size' | 'date'): string =>
+    sortBy === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''
 
   const title = tagMode ? '태그 & 메모 검색' : '고급 검색'
 
@@ -91,6 +117,13 @@ export default function SearchModal({
       caseSensitive: opts.caseSensitive,
       regex: opts.regex,
       contentSearch: opts.contentSearch
+    }
+
+    if (opts.query.trim()) {
+      const entry = { query: opts.query.trim(), rootPath: opts.rootPath }
+      const updated = [entry, ...recentSearches.filter(r => r.query !== opts.query.trim())].slice(0, 5)
+      setRecentSearches(updated)
+      localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(updated))
     }
 
     const res = await window.api.search.files(options)
@@ -168,16 +201,39 @@ export default function SearchModal({
           </button>
         </div>
 
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center relative">
           <label className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--win-text-muted)' }}>검색어</label>
-          <input
-            ref={inputRef}
-            className="win-input flex-1 text-xs"
-            placeholder="파일명 또는 내용 검색..."
-            value={opts.query}
-            onChange={(e) => setOpts({ ...opts, query: e.target.value })}
-            onKeyDown={(e) => e.key === 'Enter' && !searching && doSearch()}
-          />
+          <div className="flex-1 relative">
+            <input
+              ref={inputRef}
+              className="win-input w-full text-xs"
+              placeholder="파일명 또는 내용 검색..."
+              value={opts.query}
+              onChange={(e) => setOpts({ ...opts, query: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && !searching && doSearch()}
+              onFocus={() => setShowRecent(recentSearches.length > 0)}
+              onBlur={() => setTimeout(() => setShowRecent(false), 150)}
+            />
+            {showRecent && recentSearches.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-0.5 rounded shadow-lg z-50 overflow-hidden" style={{ background: 'var(--win-surface)', border: '1px solid var(--win-border)' }}>
+                {recentSearches.map((r, i) => (
+                  <button
+                    key={i}
+                    className="w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-[var(--win-surface-2)]"
+                    style={{ color: 'var(--win-text-sub)' }}
+                    onMouseDown={() => {
+                      setOpts(prev => ({ ...prev, query: r.query, rootPath: r.rootPath }))
+                      setShowRecent(false)
+                    }}
+                  >
+                    <span style={{ color: 'var(--win-text-muted)' }}>🕐</span>
+                    <span className="flex-1 truncate">{r.query}</span>
+                    <span className="text-[10px] truncate max-w-[120px]" style={{ color: 'var(--win-text-muted)' }}>{r.rootPath}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3 text-xs" style={{ color: 'var(--win-text-sub)' }}>
@@ -224,9 +280,17 @@ export default function SearchModal({
         {/* Results */}
         {results.length > 0 && (
           <div className="rounded overflow-hidden" style={{ border: '1px solid var(--win-border)' }}>
-            <div className="px-3 py-1.5 text-xs" style={{ background: 'var(--win-surface-2)', color: 'var(--win-text-muted)', borderBottom: '1px solid var(--win-border)' }}>{results.length}개 결과</div>
+            <div className="px-3 py-1 flex items-center gap-3 text-xs select-none" style={{ background: 'var(--win-surface-2)', color: 'var(--win-text-muted)', borderBottom: '1px solid var(--win-border)' }}>
+              <span className="flex-1">{results.length}개 결과</span>
+              <span>정렬:</span>
+              {(['name', 'size', 'date'] as const).map(col => (
+                <button key={col} className="hover:text-[var(--win-text)] transition-colors" style={{ color: sortBy === col ? 'var(--win-accent)' : 'var(--win-text-muted)' }} onClick={() => toggleSort(col)}>
+                  {col === 'name' ? '이름' : col === 'size' ? '크기' : '날짜'}{sortArrow(col)}
+                </button>
+              ))}
+            </div>
             <div className="max-h-48 overflow-y-auto">
-              {results.map((r, i) => (
+              {sortedResults.map((r, i) => (
                 <div
                   key={i}
                   className="flex items-center gap-2 px-3 py-1.5 cursor-pointer group"
