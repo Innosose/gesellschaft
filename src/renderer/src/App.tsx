@@ -154,7 +154,6 @@ export default function App(): React.ReactElement {
     error:   { bg: 'rgba(22,8,8,0.97)',    border: 'rgba(220,38,38,0.45)',   color: 'rgba(252,165,165,0.95)', dot: '#ef4444' },
     success: { bg: 'rgba(6,18,12,0.97)',   border: 'rgba(34,197,94,0.40)',   color: 'rgba(134,239,172,0.95)', dot: '#22c55e' },
   }
-
   return (
     <div
       style={{
@@ -311,12 +310,12 @@ export default function App(): React.ReactElement {
         </div>
       )}
 
-      {/* Notification stack — top right */}
+      {/* Notification stack — top right (8. 버튼과 겹치지 않도록 top 조정) */}
       <div
         style={{
           position: 'fixed',
-          top: 54,
-          right: 16,
+          top: 52,
+          right: 90,
           zIndex: 300,
           display: 'flex',
           flexDirection: 'column',
@@ -373,8 +372,9 @@ export default function App(): React.ReactElement {
         })}
       </div>
 
-      {/* Tool Panel — settings prop은 Zustand에서 읽으므로 전달 불필요 */}
+      {/* Tool Panel — 10. 전환 애니메이션 */}
       {uiState === 'tool' && activeTool && (
+        <div style={{ animation: 'toolPanelIn 0.22s cubic-bezier(0.22,1,0.36,1) both', position: 'fixed', inset: 0, zIndex: 50 }}>
         <ToolPanel
           key={activeTool.id}
           toolId={activeTool.id}
@@ -382,6 +382,7 @@ export default function App(): React.ReactElement {
           toolLabel={activeTool.label}
           onBack={handleBack}
         />
+        </div>
       )}
 
       {/* Top-right floating controls */}
