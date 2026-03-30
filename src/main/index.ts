@@ -41,7 +41,11 @@ function createWindow(): void {
     autoHideMenuBar: true,
     resizable: false,
     movable: false,
-    ...(process.platform === 'linux' ? { icon: join(__dirname, '../../resources/icon.png') } : {}),
+    skipTaskbar: false,
+    ...(process.platform === 'linux' ? {
+      icon: join(__dirname, '../../resources/icon.png'),
+      type: 'splash',          // removes window decorations on Linux WMs that ignore frame:false
+    } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
