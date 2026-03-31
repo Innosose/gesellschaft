@@ -163,13 +163,11 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
               autoFocus
             />
             <button
-              className="text-xs px-2.5 py-1 rounded border transition-colors"
+              className={`text-xs px-2.5 py-1 rounded border transition-colors${priority !== 'high' ? ' todo-priority-btn' : ''}`}
               style={priority === 'high'
                 ? { background: '#c42b1c20', borderColor: '#c42b1c60', color: '#ff6b6b' }
-                : { borderColor: 'var(--win-border)', color: 'var(--win-text-muted)' }
+                : { borderColor: 'var(--win-border)' }
               }
-              onMouseEnter={(e) => { if (priority !== 'high') (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text)' }}
-              onMouseLeave={(e) => { if (priority !== 'high') (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)' }}
               onClick={() => setPriority(p => p === 'high' ? 'normal' : 'high')}
               title="중요도 토글"
             >
@@ -213,10 +211,7 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
           </button>
           {done.length > 0 && tab === 'done' && (
             <button
-              className="ml-auto text-xs"
-              style={{ color: 'var(--win-text-muted)' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-danger)' }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)' }}
+              className="ml-auto text-xs todo-muted-btn"
               onClick={clearDone}
             >
               완료 항목 삭제
@@ -239,10 +234,8 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
             return (
               <div
                 key={item.id}
-                className="flex items-center gap-2.5 p-2.5 rounded-lg group transition-colors"
-                style={{ background: 'var(--win-bg)', border: '1px solid var(--win-surface)', cursor: 'default' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--win-border)' }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--win-surface)' }}
+                className="flex items-center gap-2.5 p-2.5 rounded-lg group transition-colors todo-row"
+                style={{ background: 'var(--win-bg)', cursor: 'default' }}
                 draggable
                 onDragStart={() => handleDragStart(item.id)}
                 onDragOver={(e) => handleDragOver(e, item.id)}
@@ -250,7 +243,7 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
               >
                 <span className="text-[10px] cursor-grab opacity-30 group-hover:opacity-70 flex-shrink-0 select-none" title="드래그하여 순서 변경">⠿</span>
                 <button
-                  className="rounded flex-shrink-0 flex items-center justify-center transition-colors"
+                  className="rounded flex-shrink-0 flex items-center justify-center transition-colors todo-checkbox"
                   style={{
                     width: 18,
                     height: 18,
@@ -258,8 +251,6 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
                     borderStyle: 'solid',
                     borderColor: item.priority === 'high' ? '#c42b1c80' : 'var(--win-text-muted)'
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--win-accent)' }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = item.priority === 'high' ? '#c42b1c80' : 'var(--win-text-muted)' }}
                   onClick={() => toggle(item.id)}
                 />
                 <div className="flex-1 min-w-0">
@@ -274,10 +265,7 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
                   )}
                 </div>
                 <button
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                  style={{ color: 'var(--win-text-muted)' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-danger)' }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)' }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-xs todo-muted-btn"
                   onClick={() => remove(item.id)}
                 >✕</button>
               </div>
@@ -294,10 +282,7 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
               <span className="flex-1 text-xs line-through truncate" style={{ color: 'var(--win-text-muted)' }}>{item.text}</span>
               {item.dueDate && <span className="text-[10px]" style={{ color: 'var(--win-text-muted)' }}>{item.dueDate}</span>}
               <button
-                className="opacity-0 group-hover:opacity-100 text-xs"
-                style={{ color: 'var(--win-text-muted)' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-danger)' }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)' }}
+                className="opacity-0 group-hover:opacity-100 text-xs todo-muted-btn"
                 onClick={() => remove(item.id)}
               >✕</button>
             </div>

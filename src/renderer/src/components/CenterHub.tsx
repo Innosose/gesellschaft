@@ -210,32 +210,16 @@ export default function CenterHub({
           <button
             onClick={onScan}
             disabled={scanning}
+            className="hub-scan-btn"
             style={{
-              padding: '6px 14px',
-              borderRadius: 20,
-              border: `1px solid ${rgba(hubColor, 0.4)}`,
-              background: rgba(hubColor, 0.1),
-              color: rgba(hubColor, 0.9),
-              fontSize: 11,
-              fontWeight: 600,
+              '--hub-scan-bg':           rgba(hubColor, 0.1),
+              '--hub-scan-bg-hover':     rgba(hubColor, 0.22),
+              '--hub-scan-border':       rgba(hubColor, 0.4),
+              '--hub-scan-border-hover': rgba(hubColor, 0.7),
+              '--hub-scan-color':        rgba(hubColor, 0.9),
               cursor: scanning ? 'wait' : 'pointer',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.15s ease',
-              letterSpacing: '0.02em',
               opacity: scanning ? 0.6 : 1,
-            }}
-            onMouseEnter={e => {
-              if (!scanning) {
-                const el = e.currentTarget as HTMLButtonElement
-                el.style.background = rgba(hubColor, 0.22)
-                el.style.borderColor = rgba(hubColor, 0.7)
-              }
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLButtonElement
-              el.style.background = rgba(hubColor, 0.1)
-              el.style.borderColor = rgba(hubColor, 0.4)
-            }}
+            } as React.CSSProperties}
           >
             {scanning ? '⟳ 분석중...' : '✦ AI 추천'}
           </button>
@@ -243,27 +227,7 @@ export default function CenterHub({
           <button
             onClick={onHide}
             title="숨기기 (Ctrl+Shift+G)"
-            style={{
-              padding: '6px 12px',
-              borderRadius: 20,
-              border: '1px solid rgba(255,255,255,0.12)',
-              background: 'rgba(255,255,255,0.05)',
-              color: 'rgba(255,255,255,0.4)',
-              fontSize: 11,
-              cursor: 'pointer',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLButtonElement
-              el.style.background = 'rgba(255,255,255,0.1)'
-              el.style.color = 'rgba(255,255,255,0.7)'
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLButtonElement
-              el.style.background = 'rgba(255,255,255,0.05)'
-              el.style.color = 'rgba(255,255,255,0.4)'
-            }}
+            className="hub-hide-btn"
           >
             숨기기
           </button>

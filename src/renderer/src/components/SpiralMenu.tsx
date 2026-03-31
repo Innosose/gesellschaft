@@ -295,13 +295,7 @@ const OverviewGrid = memo(function OverviewGrid({
           <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,210,120,0.85)', letterSpacing: '0.04em' }}>
             전체 기능 ({tools.length})
           </span>
-          <button onClick={onClose} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'rgba(255,255,255,0.35)', fontSize: 16, padding: '2px 6px', borderRadius: 6,
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.7)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)' }}
-          >✕</button>
+          <button onClick={onClose} className="spiral-close-btn">✕</button>
         </div>
 
         {/* AI 추천 — scan 후에만 표시 */}
@@ -456,25 +450,7 @@ const GridCard = memo(function GridCard({
 // ─── NavBtn ───────────────────────────────────────────────────────────────────
 const NavBtn = memo(function NavBtn({ onClick, label }: { onClick: () => void; label: string }) {
   return (
-    <button onClick={onClick} style={{
-      width: 34, height: 34, borderRadius: '50%',
-      border: '1px solid rgba(210,148,50,0.35)',
-      background: 'rgba(18,12,6,0.88)',
-      color: 'rgba(255,200,100,0.8)',
-      fontSize: 18, cursor: 'pointer',
-      backdropFilter: 'blur(10px)',
-      transition: 'all 0.15s ease',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}
-    onMouseEnter={e => {
-      const el = e.currentTarget as HTMLButtonElement
-      el.style.background = 'rgba(210,148,50,0.2)'; el.style.borderColor = 'rgba(210,148,50,0.7)'; el.style.color = '#ffd080'
-    }}
-    onMouseLeave={e => {
-      const el = e.currentTarget as HTMLButtonElement
-      el.style.background = 'rgba(18,12,6,0.88)'; el.style.borderColor = 'rgba(210,148,50,0.35)'; el.style.color = 'rgba(255,200,100,0.8)'
-    }}
-    >{label}</button>
+    <button onClick={onClick} className="spiral-nav-btn">{label}</button>
   )
 })
 
@@ -633,25 +609,7 @@ export default function SpiralMenu({
           <button
             onClick={() => setShowOverview(true)}
             title="전체 기능 보기"
-            style={{
-              width: 34, height: 34, borderRadius: 8,
-              border: '1px solid rgba(210,148,50,0.30)',
-              background: 'rgba(18,12,6,0.88)',
-              color: 'rgba(255,200,100,0.65)',
-              fontSize: 16, cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.15s ease',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginLeft: 4,
-            }}
-            onMouseEnter={e => {
-              const el = e.currentTarget as HTMLButtonElement
-              el.style.background = 'rgba(210,148,50,0.18)'; el.style.borderColor = 'rgba(210,148,50,0.65)'; el.style.color = '#ffd080'
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLButtonElement
-              el.style.background = 'rgba(18,12,6,0.88)'; el.style.borderColor = 'rgba(210,148,50,0.30)'; el.style.color = 'rgba(255,200,100,0.65)'
-            }}
+            className="spiral-overview-btn"
           >⊞</button>
         </div>
 
