@@ -120,6 +120,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const streamingTextRef = useRef('')
+  const streamingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Load config and presets
   useEffect(() => {
@@ -137,6 +138,14 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   // Register streaming listeners once
   useEffect(() => {
     const offChunk = window.api.ai.onChunk((text) => {
+      // 청크 수신마다 타임아웃 리셋 (30초 비활동 시 UI 잠금 해제)
+      if (streamingTimeoutRef.current !== null) clearTimeout(streamingTimeoutRef.current)
+      streamingTimeoutRef.current = setTimeout(() => {
+        streamingTimeoutRef.current = null
+        streamingTextRef.current = ''
+        setStreaming(false)
+        setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 응답 대기 중 연결이 끊겼습니다. (30초 초과)' }])
+      }, 30_000)
       streamingTextRef.current += text
       setMessages(prev => {
         const last = prev[prev.length - 1]
@@ -147,15 +156,20 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
       })
     })
     const offDone = window.api.ai.onDone(() => {
+      if (streamingTimeoutRef.current !== null) { clearTimeout(streamingTimeoutRef.current); streamingTimeoutRef.current = null }
       streamingTextRef.current = ''
       setStreaming(false)
     })
     const offError = window.api.ai.onError((msg) => {
+      if (streamingTimeoutRef.current !== null) { clearTimeout(streamingTimeoutRef.current); streamingTimeoutRef.current = null }
       streamingTextRef.current = ''
       setStreaming(false)
       setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${msg}` }])
     })
-    return () => { offChunk(); offDone(); offError() }
+    return () => {
+      offChunk(); offDone(); offError()
+      if (streamingTimeoutRef.current !== null) { clearTimeout(streamingTimeoutRef.current); streamingTimeoutRef.current = null }
+    }
   }, [])
 
   // Scroll to bottom on new messages
@@ -178,10 +192,19 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
     setMessages(newMessages)
     setStreaming(true)
     streamingTextRef.current = ''
+    // 첫 청크가 30초 내 도착하지 않으면 UI 잠금 해제
+    if (streamingTimeoutRef.current !== null) clearTimeout(streamingTimeoutRef.current)
+    streamingTimeoutRef.current = setTimeout(() => {
+      streamingTimeoutRef.current = null
+      streamingTextRef.current = ''
+      setStreaming(false)
+      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 응답 대기 중 연결이 끊겼습니다. (30초 초과)' }])
+    }, 30_000)
     try {
       await window.api.ai.chat(newMessages)
     } catch (e: unknown) {
       // IPC call itself failed before streaming started — reset state so UI isn't stuck
+      if (streamingTimeoutRef.current !== null) { clearTimeout(streamingTimeoutRef.current); streamingTimeoutRef.current = null }
       streamingTextRef.current = ''
       setStreaming(false)
       const msg = e instanceof Error ? e.message : '전송 오류가 발생했습니다.'
@@ -198,6 +221,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   }
 
   const handleCancel = (): void => {
+    if (streamingTimeoutRef.current !== null) { clearTimeout(streamingTimeoutRef.current); streamingTimeoutRef.current = null }
     window.api.ai.cancel()
     setStreaming(false)
   }
