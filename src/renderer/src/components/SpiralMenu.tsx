@@ -248,7 +248,10 @@ const OverviewGrid = memo(function OverviewGrid({
   onClose: () => void
 }) {
   const toolMap = useMemo(() => new Map(tools.map(t => [t.id, t])), [tools])
-  const recentTools = recentIds.map(id => toolMap.get(id)).filter(Boolean) as Tool[]
+  const recentTools = useMemo(
+    () => recentIds.map(id => toolMap.get(id)).filter(Boolean) as Tool[],
+    [recentIds, toolMap],
+  )
 
   // 카테고리별로 도구를 분류
   const categorized = useMemo(() => {
@@ -303,8 +306,7 @@ const OverviewGrid = memo(function OverviewGrid({
 
         {/* AI 추천 — scan 후에만 표시 */}
         {recommended.length > 0 && (() => {
-          const toolMap2 = new Map(tools.map(t => [t.id, t]))
-          const recTools = recommended.map(id => toolMap2.get(id)).filter(Boolean) as Tool[]
+          const recTools = recommended.map(id => toolMap.get(id)).filter(Boolean) as Tool[]
           return recTools.length > 0 ? (
             <div style={{ marginBottom: 18 }}>
               <div style={{
@@ -350,7 +352,7 @@ const OverviewGrid = memo(function OverviewGrid({
   )
 })
 
-function SectionLabel({ label }: { label: string }) {
+const SectionLabel = memo(function SectionLabel({ label }: { label: string }) {
   return (
     <div style={{
       fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
@@ -358,9 +360,9 @@ function SectionLabel({ label }: { label: string }) {
       textTransform: 'uppercase',
     }}>{label}</div>
   )
-}
+})
 
-function OverviewRow({ tools, recommended, animDuration, onSelect }: {
+const OverviewRow = memo(function OverviewRow({ tools, recommended, animDuration, onSelect }: {
   tools: Tool[]; recommended: string[]; animDuration: number; onSelect: (id: string) => void
 }) {
   return (
@@ -371,7 +373,7 @@ function OverviewRow({ tools, recommended, animDuration, onSelect }: {
       ))}
     </div>
   )
-}
+})
 
 const OverviewCard = memo(function OverviewCard({
   tool, isRecommended, animDuration, onSelect,
@@ -452,7 +454,7 @@ const GridCard = memo(function GridCard({
 })
 
 // ─── NavBtn ───────────────────────────────────────────────────────────────────
-function NavBtn({ onClick, label }: { onClick: () => void; label: string }) {
+const NavBtn = memo(function NavBtn({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button onClick={onClick} style={{
       width: 34, height: 34, borderRadius: '50%',
@@ -474,7 +476,7 @@ function NavBtn({ onClick, label }: { onClick: () => void; label: string }) {
     }}
     >{label}</button>
   )
-}
+})
 
 // ─── Main SpiralMenu ──────────────────────────────────────────────────────────
 export default function SpiralMenu({
