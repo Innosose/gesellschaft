@@ -30,6 +30,16 @@ const api = {
       ipcRenderer.invoke('fs:bulkRename', items),
     folderSize: (dirPath: string) => ipcRenderer.invoke('fs:folderSize', dirPath),
     typeStats: (dirPath: string) => ipcRenderer.invoke('fs:typeStats', dirPath),
+    onFolderSizeProgress: (cb: (scanned: number) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, scanned: number): void => cb(scanned)
+      ipcRenderer.on('fs:folderSize:progress', handler)
+      return () => ipcRenderer.removeListener('fs:folderSize:progress', handler)
+    },
+    onTypeStatsProgress: (cb: (scanned: number) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, scanned: number): void => cb(scanned)
+      ipcRenderer.on('fs:typeStats:progress', handler)
+      return () => ipcRenderer.removeListener('fs:typeStats:progress', handler)
+    },
     open: (filePath: string) => ipcRenderer.invoke('fs:open', filePath),
     showInExplorer: (filePath: string) => ipcRenderer.invoke('fs:showInExplorer', filePath)
   },

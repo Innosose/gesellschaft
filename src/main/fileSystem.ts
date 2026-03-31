@@ -19,6 +19,8 @@ export interface FileEntry {
   tags?: string[]
 }
 
+// 파일 N개마다 진행률 이벤트 발송 (IPC 과부하 방지)
+const PROGRESS_INTERVAL = 200
 
 export function registerFileSystemHandlers(): void {
   // 디렉토리 목록 읽기
@@ -27,16 +29,13 @@ export function registerFileSystemHandlers(): void {
       return { success: false, error: '유효하지 않은 경로' }
     }
     try {
-      const entries = fs.readdirSync(dirPath, { withFileTypes: true })
-      const result: FileEntry[] = []
-
-      for (const entry of entries) {
-        try {
+      const entries = await fs.promises.readdir(dirPath, { withFileTypes: true })
+      const settled = await Promise.allSettled(
+        entries.map(async (entry) => {
           const fullPath = path.join(dirPath, entry.name)
-          const stats = fs.statSync(fullPath)
+          const stats = await fs.promises.stat(fullPath)
           const ext = path.extname(entry.name).toLowerCase()
-
-          result.push({
+          return {
             name: entry.name,
             path: fullPath,
             isDirectory: entry.isDirectory(),
@@ -45,13 +44,13 @@ export function registerFileSystemHandlers(): void {
             created: stats.birthtimeMs,
             extension: ext,
             mimeType: mime.lookup(ext) || false,
-            tags: []
-          })
-        } catch {
-          // 접근 불가 파일 스킵
-        }
-      }
-
+            tags: [],
+          } as FileEntry
+        })
+      )
+      const result = settled
+        .filter((r): r is PromiseFulfilledResult<FileEntry> => r.status === 'fulfilled')
+        .map((r) => r.value)
       return { success: true, data: result }
     } catch (err) {
       logIpcError('fs:readDir', err, { dirPath })
@@ -96,12 +95,11 @@ export function registerFileSystemHandlers(): void {
       try {
         const dir = path.dirname(item.path)
         const newPath = path.join(dir, item.newName)
-        // 최종 경로가 동일 디렉터리 안에 있는지 재확인
         if (path.dirname(newPath) !== dir) {
           results.push({ path: item.path, success: false, error: '디렉터리 이탈 차단' })
           continue
         }
-        fs.renameSync(item.path, newPath)
+        await fs.promises.rename(item.path, newPath)
         results.push({ path: item.path, success: true, newPath })
       } catch (err) {
         logIpcError('fs:bulkRename', err, { path: item.path })
@@ -112,11 +110,13 @@ export function registerFileSystemHandlers(): void {
     return results
   })
 
-  // 폴더 크기 계산
-  ipcMain.handle('fs:folderSize', async (_, dirPath: string) => {
+  // 폴더 크기 계산 (진행률: fs:folderSize:progress)
+  ipcMain.handle('fs:folderSize', async (event, dirPath: string) => {
     if (typeof dirPath !== 'string' || !dirPath) return { success: false, error: '유효하지 않은 경로' }
     try {
-      const size = calcFolderSize(dirPath)
+      const size = await calcFolderSize(dirPath, (scanned) => {
+        if (!event.sender.isDestroyed()) event.sender.send('fs:folderSize:progress', scanned)
+      })
       return { success: true, size }
     } catch (err) {
       logIpcError('fs:folderSize', err, { dirPath })
@@ -124,11 +124,13 @@ export function registerFileSystemHandlers(): void {
     }
   })
 
-  // 파일 타입별 통계
-  ipcMain.handle('fs:typeStats', async (_, dirPath: string) => {
+  // 파일 타입별 통계 (진행률: fs:typeStats:progress)
+  ipcMain.handle('fs:typeStats', async (event, dirPath: string) => {
     if (typeof dirPath !== 'string' || !dirPath) return { success: false, error: '유효하지 않은 경로' }
     try {
-      const stats = calcTypeStats(dirPath)
+      const stats = await calcTypeStats(dirPath, (scanned) => {
+        if (!event.sender.isDestroyed()) event.sender.send('fs:typeStats:progress', scanned)
+      })
       return { success: true, data: stats }
     } catch (err) {
       logIpcError('fs:typeStats', err, { dirPath })
@@ -156,17 +158,24 @@ export function registerFileSystemHandlers(): void {
   })
 }
 
-function calcFolderSize(dirPath: string): number {
+// counter 객체를 공유해 재귀 호출 간 스캔 수를 누적
+async function calcFolderSize(
+  dirPath: string,
+  onProgress?: (scanned: number) => void,
+  counter: { n: number } = { n: 0 }
+): Promise<number> {
   let total = 0
   try {
-    const entries = fs.readdirSync(dirPath, { withFileTypes: true })
+    const entries = await fs.promises.readdir(dirPath, { withFileTypes: true })
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name)
       try {
         if (entry.isDirectory()) {
-          total += calcFolderSize(fullPath)
+          total += await calcFolderSize(fullPath, onProgress, counter)
         } else {
-          total += fs.statSync(fullPath).size
+          total += (await fs.promises.stat(fullPath)).size
+          counter.n++
+          if (onProgress && counter.n % PROGRESS_INTERVAL === 0) onProgress(counter.n)
         }
       } catch {}
     }
@@ -174,29 +183,35 @@ function calcFolderSize(dirPath: string): number {
   return total
 }
 
-function calcTypeStats(dirPath: string): Record<string, { count: number; size: number }> {
+async function calcTypeStats(
+  dirPath: string,
+  onProgress?: (scanned: number) => void
+): Promise<Record<string, { count: number; size: number }>> {
   const stats: Record<string, { count: number; size: number }> = {}
+  let scanned = 0
 
-  function walk(dir: string): void {
+  async function walk(dir: string): Promise<void> {
     try {
-      const entries = fs.readdirSync(dir, { withFileTypes: true })
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true })
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name)
         try {
           if (entry.isDirectory()) {
-            walk(fullPath)
+            await walk(fullPath)
           } else {
             const ext = path.extname(entry.name).toLowerCase() || '.unknown'
-            const size = fs.statSync(fullPath).size
+            const size = (await fs.promises.stat(fullPath)).size
             if (!stats[ext]) stats[ext] = { count: 0, size: 0 }
             stats[ext].count++
             stats[ext].size += size
+            scanned++
+            if (onProgress && scanned % PROGRESS_INTERVAL === 0) onProgress(scanned)
           }
         } catch {}
       }
     } catch {}
   }
 
-  walk(dirPath)
+  await walk(dirPath)
   return stats
 }
