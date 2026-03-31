@@ -22,6 +22,13 @@ interface Notification {
 
 let notifIdCounter = 0
 
+// 컴포넌트 밖 상수 — 매 렌더마다 재생성되지 않음
+const NOTIF_COLORS: Record<'info' | 'error' | 'success', { bg: string; border: string; color: string; dot: string }> = {
+  info:    { bg: 'rgba(18,14,34,0.97)',  border: 'rgba(139,92,246,0.45)',  color: 'rgba(196,181,253,0.95)', dot: '#8b5cf6' },
+  error:   { bg: 'rgba(22,8,8,0.97)',    border: 'rgba(220,38,38,0.45)',   color: 'rgba(252,165,165,0.95)', dot: '#ef4444' },
+  success: { bg: 'rgba(6,18,12,0.97)',   border: 'rgba(34,197,94,0.40)',   color: 'rgba(134,239,172,0.95)', dot: '#22c55e' },
+}
+
 export default function App(): React.ReactElement {
   const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, loadFromAPI } = useAppStore()
 
@@ -126,6 +133,25 @@ export default function App(): React.ReactElement {
     window.api.window.hide()
   }, [])
 
+  const handleClose = useCallback(() => {
+    window.api.window.close()
+  }, [])
+
+  const handleOpenSettings = useCallback(() => {
+    setActiveTool({ id: 'settings', icon: '⚙', label: '설정', color: '#6366f1' })
+    setUiState('tool')
+  }, [])
+
+  // functional setState로 uiState 의존성 제거
+  const handleBackdropClick = useCallback(() => {
+    setUiState(s => s === 'menu' ? 'hub' : s)
+  }, [])
+
+  const handleMenuSelect = useCallback((id: string) => {
+    setToolSearch('')
+    handleToolSelect(id)
+  }, [handleToolSelect])
+
   // Click-through: hub 상태에서 배경 클릭이 다른 앱으로 통과되도록
   useEffect(() => {
     if (uiState !== 'hub') {
@@ -165,11 +191,6 @@ export default function App(): React.ReactElement {
     return () => window.removeEventListener('keydown', handler)
   }, [uiState, handleBack])
 
-  const notifColors: Record<Notification['type'], { bg: string; border: string; color: string; dot: string }> = {
-    info:    { bg: 'rgba(18,14,34,0.97)',  border: 'rgba(139,92,246,0.45)',  color: 'rgba(196,181,253,0.95)', dot: '#8b5cf6' },
-    error:   { bg: 'rgba(22,8,8,0.97)',    border: 'rgba(220,38,38,0.45)',   color: 'rgba(252,165,165,0.95)', dot: '#ef4444' },
-    success: { bg: 'rgba(6,18,12,0.97)',   border: 'rgba(34,197,94,0.40)',   color: 'rgba(134,239,172,0.95)', dot: '#22c55e' },
-  }
   return (
     <div
       style={{
@@ -184,7 +205,7 @@ export default function App(): React.ReactElement {
       <div
         className={`app-backdrop ${uiState !== 'hub' ? 'active' : ''}`}
         style={uiState !== 'hub' ? { background: `rgba(8, 5, 18, ${Math.min(overlayOpacity + 0.04, 0.97)})` } : undefined}
-        onClick={() => { if (uiState === 'menu') setUiState('hub') }}
+        onClick={handleBackdropClick}
       />
 
       {/* Center Hub — visible in hub + menu states */}
@@ -210,7 +231,7 @@ export default function App(): React.ReactElement {
           spiralScale={spiralScale}
           animSpeed={animSpeed}
           filterQuery={toolSearch}
-          onSelectTool={(id) => { setToolSearch(''); handleToolSelect(id) }}
+          onSelectTool={handleMenuSelect}
         />
       )}
 
@@ -293,34 +314,19 @@ export default function App(): React.ReactElement {
 
           {/* AI 추천 버튼 */}
           <button
+            className="app-scan-btn"
             onClick={handleScan}
             disabled={scanning}
             style={{
-              padding: '6px 16px',
-              borderRadius: 20,
-              border: `1px solid ${hubColor}66`,
-              background: `${hubColor}14`,
-              color: `${hubColor}ee`,
-              fontSize: 11,
-              fontWeight: 600,
+              '--hub-bg':           `${hubColor}14`,
+              '--hub-bg-hover':     `${hubColor}28`,
+              '--hub-border':       `${hubColor}66`,
+              '--hub-border-hover': `${hubColor}cc`,
+              '--hub-text':         `${hubColor}ee`,
               cursor: scanning ? 'wait' : 'pointer',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.15s ease',
               opacity: scanning ? 0.6 : 1,
               pointerEvents: 'auto',
-            }}
-            onMouseEnter={e => {
-              if (!scanning) {
-                const el = e.currentTarget as HTMLButtonElement
-                el.style.background = `${hubColor}28`
-                el.style.borderColor = `${hubColor}cc`
-              }
-            }}
-            onMouseLeave={e => {
-              const el = e.currentTarget as HTMLButtonElement
-              el.style.background = `${hubColor}14`
-              el.style.borderColor = `${hubColor}66`
-            }}
+            } as React.CSSProperties}
           >
             {scanning ? '⟳ 분석중...' : '✦ AI 화면 분석'}
           </button>
@@ -342,7 +348,7 @@ export default function App(): React.ReactElement {
         }}
       >
         {notifications.map(n => {
-          const c = notifColors[n.type]
+          const c = NOTIF_COLORS[n.type]
           return (
             <div
               key={n.id}
@@ -389,6 +395,46 @@ export default function App(): React.ReactElement {
         })}
       </div>
 
+      <style>{`
+        /* ── 공통 컨트롤 버튼 (설정·종료) ─────────────────────── */
+        .app-ctrl-btn {
+          width: 28px; height: 28px; border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.18);
+          background: rgba(255,255,255,0.07);
+          color: rgba(255,255,255,0.50);
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px;
+          transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+          backdrop-filter: blur(4px);
+        }
+        .app-ctrl-btn--settings:hover {
+          background: rgba(139,92,246,0.25);
+          color: rgba(196,181,253,0.85);
+          border-color: rgba(139,92,246,0.4);
+        }
+        .app-ctrl-btn--quit:hover {
+          background: rgba(220,38,38,0.35);
+          color: rgba(255,255,255,0.8);
+          border-color: rgba(220,38,38,0.5);
+        }
+
+        /* ── AI 스캔 버튼 (hubColor 기반 CSS 커스텀 프로퍼티) ─── */
+        .app-scan-btn {
+          padding: 6px 16px; border-radius: 20px;
+          border: 1px solid var(--hub-border);
+          background: var(--hub-bg);
+          color: var(--hub-text);
+          font-size: 11px; font-weight: 600;
+          backdrop-filter: blur(8px);
+          transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .app-scan-btn:hover:not(:disabled) {
+          background: var(--hub-bg-hover);
+          border-color: var(--hub-border-hover);
+        }
+      `}</style>
+
       {/* Tool Panel — 10. 전환 애니메이션 */}
       {uiState === 'tool' && activeTool && (
         <div style={{ animation: 'toolPanelIn 0.22s cubic-bezier(0.22,1,0.36,1) both', position: 'fixed', inset: 0, zIndex: 50 }}>
@@ -404,77 +450,20 @@ export default function App(): React.ReactElement {
 
       {/* Top-right floating controls */}
       <button
-        onClick={() => {
-          setActiveTool({ id: 'settings', icon: '⚙', label: '설정', color: '#6366f1' })
-          setUiState('tool')
-        }}
+        className="app-ctrl-btn app-ctrl-btn--settings"
+        onClick={handleOpenSettings}
         title="단축키 설정"
-        style={{
-          position: 'fixed',
-          top: 16,
-          right: 56,
-          width: 28,
-          height: 28,
-          borderRadius: '50%',
-          border: '1px solid rgba(255,255,255,0.18)',
-          background: 'rgba(255,255,255,0.07)',
-          color: 'rgba(255,255,255,0.50)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 13,
-          transition: 'all 0.15s ease',
-          zIndex: 100,
-          backdropFilter: 'blur(4px)',
-        }}
-        onMouseEnter={e => {
-          ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(139,92,246,0.25)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(196,181,253,0.85)'
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139,92,246,0.4)'
-        }}
-        onMouseLeave={e => {
-          ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.50)'
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'
-        }}
+        style={{ position: 'fixed', top: 16, right: 56, zIndex: 100 }}
       >
         ⚙
       </button>
 
       {/* Quit button */}
       <button
-        onClick={() => window.api.window.close()}
+        className="app-ctrl-btn app-ctrl-btn--quit"
+        onClick={handleClose}
         title="앱 종료"
-        style={{
-          position: 'fixed',
-          top: 16,
-          right: 20,
-          width: 28,
-          height: 28,
-          borderRadius: '50%',
-          border: '1px solid rgba(255,255,255,0.18)',
-          background: 'rgba(255,255,255,0.07)',
-          color: 'rgba(255,255,255,0.50)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 13,
-          transition: 'all 0.15s ease',
-          zIndex: 100,
-          backdropFilter: 'blur(4px)',
-        }}
-        onMouseEnter={e => {
-          ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(220,38,38,0.35)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.8)'
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.5)'
-        }}
-        onMouseLeave={e => {
-          ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.50)'
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)'
-        }}
+        style={{ position: 'fixed', top: 16, right: 20, zIndex: 100 }}
       >
         ✕
       </button>
