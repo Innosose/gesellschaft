@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 
 interface ChatMessage {
@@ -14,6 +14,8 @@ interface SavedConversation {
 }
 
 const HISTORY_KEY = 'ai-conversation-history'
+const MAX_MESSAGES   = 100   // 이 수를 넘으면 오래된 메시지를 접음
+const COLLAPSED_KEEP = 80    // 접힌 상태에서 보여줄 최신 메시지 수
 
 function loadHistory(): SavedConversation[] {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]') } catch { return [] }
@@ -62,7 +64,7 @@ function CodeBlock({ code }: { code: string }): React.ReactElement {
   )
 }
 
-function MarkdownMessage({ content, dark }: { content: string; dark?: boolean }): React.ReactElement {
+const MarkdownMessage = memo(function MarkdownMessage({ content, dark }: { content: string; dark?: boolean }): React.ReactElement {
   const textColor = dark ? 'rgba(255,255,255,0.85)' : 'var(--win-text)'
   const mutedColor = dark ? 'rgba(255,255,255,0.5)' : 'var(--win-text-muted)'
   return (
@@ -88,7 +90,7 @@ function MarkdownMessage({ content, dark }: { content: string; dark?: boolean })
       }}
     >{content}</ReactMarkdown>
   )
-}
+})
 
 interface AiConfig {
   provider: string
@@ -117,6 +119,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   const [ollamaModels, setOllamaModels] = useState<string[]>([])
   const [draft, setDraft] = useState<Partial<AiConfig & { apiKeyRaw?: string }>>({})
   const [saved, setSaved] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const streamingTextRef = useRef('')
@@ -246,6 +249,23 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
     }
   }
 
+  const handleClearMessages = useCallback(() => {
+    setMessages([])
+    setShowAll(false)
+  }, [])
+
+  const handleLoadConversation = useCallback((conv: SavedConversation) => {
+    setMessages(conv.messages)
+    setShowAll(false)
+    setTab('chat')
+  }, [])
+
+  // 렌더 분기 전에 공통 계산 — asPanel·modal 양쪽에서 동일하게 사용
+  const hiddenCount = (!showAll && messages.length > MAX_MESSAGES)
+    ? messages.length - COLLAPSED_KEEP
+    : 0
+  const visibleMessages = hiddenCount > 0 ? messages.slice(hiddenCount) : messages
+
   const provider = (draft.provider ?? config?.provider) as string
   const models = provider === 'ollama' ? ollamaModels : (presetModels[provider] ?? [])
 
@@ -294,9 +314,23 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                   <div style={{ marginTop: 6, fontSize: 11 }}>Shift+Enter로 줄바꿈</div>
                 </div>
               )}
-              {messages.map((msg, i) => (
+              {hiddenCount > 0 && (
+                <button
+                  onClick={() => setShowAll(true)}
+                  style={{
+                    alignSelf: 'center', padding: '5px 14px', borderRadius: 14,
+                    border: '1px solid rgba(139,92,246,0.3)',
+                    background: 'rgba(139,92,246,0.08)',
+                    color: 'rgba(196,181,253,0.8)', fontSize: 11, cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  ⬆ 이전 메시지 {hiddenCount}개 더 보기
+                </button>
+              )}
+              {visibleMessages.map((msg, i) => (
                 <div
-                  key={i}
+                  key={hiddenCount + i}
                   style={{
                     display: 'flex',
                     flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
@@ -327,7 +361,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                       ? <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
                       : <MarkdownMessage content={msg.content} dark />
                     }
-                    {streaming && i === messages.length - 1 && msg.role === 'assistant' && (
+                    {streaming && hiddenCount + i === messages.length - 1 && msg.role === 'assistant' && (
                       <span style={{ display: 'inline-block', width: 6, height: 12, background: 'rgba(139,92,246,0.8)', marginLeft: 2, animation: 'blink 0.8s step-end infinite', verticalAlign: 'text-bottom' }} />
                     )}
                   </div>
@@ -347,7 +381,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                   style={{ fontSize: 11, color: 'rgba(255,255,255,0.58)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 >↓ 내보내기</button>
                 <button
-                  onClick={() => setMessages([])}
+                  onClick={handleClearMessages}
                   style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 >초기화</button>
               </div>
@@ -418,7 +452,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
               }}
               onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(139,92,246,0.12)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.04)' }}
-              onClick={() => { setMessages(conv.messages); setTab('chat') }}
+              onClick={() => handleLoadConversation(conv)}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.title}</div>
@@ -630,9 +664,23 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                   <div style={{ marginTop: 6, fontSize: 11 }}>Shift+Enter로 줄바꿈</div>
                 </div>
               )}
-              {messages.map((msg, i) => (
+              {hiddenCount > 0 && (
+                <button
+                  onClick={() => setShowAll(true)}
+                  style={{
+                    alignSelf: 'center', padding: '5px 14px', borderRadius: 14,
+                    border: '1px solid var(--win-border)',
+                    background: 'var(--win-surface-2)',
+                    color: 'var(--win-text-sub)', fontSize: 11, cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  ⬆ 이전 메시지 {hiddenCount}개 더 보기
+                </button>
+              )}
+              {visibleMessages.map((msg, i) => (
                 <div
-                  key={i}
+                  key={hiddenCount + i}
                   style={{
                     display: 'flex',
                     flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
@@ -663,7 +711,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                       ? <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
                       : <MarkdownMessage content={msg.content} />
                     }
-                    {streaming && i === messages.length - 1 && msg.role === 'assistant' && (
+                    {streaming && hiddenCount + i === messages.length - 1 && msg.role === 'assistant' && (
                       <span style={{ display: 'inline-block', width: 6, height: 12, background: 'var(--win-accent)', marginLeft: 2, animation: 'blink 0.8s step-end infinite', verticalAlign: 'text-bottom' }} />
                     )}
                   </div>
@@ -680,7 +728,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                   style={{ fontSize: 11, color: 'var(--win-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 >↓ 내보내기</button>
                 <button
-                  onClick={() => setMessages([])}
+                  onClick={handleClearMessages}
                   style={{ fontSize: 11, color: 'var(--win-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 >대화 초기화</button>
               </div>
