@@ -68,7 +68,7 @@ export function registerTodoHandlers(): void {
       return { success: false, error: '유효하지 않은 할일 데이터' }
     }
     const item = result.data
-    todos.unshift({ ...item, id: Date.now().toString(), createdAt: Date.now() })
+    todos.unshift({ ...item, id: `todo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, createdAt: Date.now() })
     save()
     log.debug(`[todo:add] 추가됨: "${item.text.slice(0, 40)}"`)
     return todos

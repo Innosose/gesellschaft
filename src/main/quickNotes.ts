@@ -67,7 +67,7 @@ export function registerQuickNotesHandlers(): void {
     } else {
       const colorIdx = notes.length % QUICK_NOTE_COLORS.length
       notes.unshift({
-        id:        Date.now().toString(),
+        id:        `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         title:     note.title   ?? '',
         content:   note.content ?? '',
         color:     note.color   ?? QUICK_NOTE_COLORS[colorIdx],
