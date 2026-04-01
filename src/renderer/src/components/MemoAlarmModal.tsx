@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 
 // ── QuickNotes types & helpers ─────────────────────────────────────────────────
 
@@ -11,13 +12,15 @@ interface Note {
   updatedAt: number
 }
 
-const NOTE_COLORS = [
-  { bg: '#2d2d2d', border: '#404040', label: '기본' },
-  { bg: '#1a3a2a', border: '#2a5a3a', label: '초록' },
-  { bg: '#1a1a3a', border: '#2a2a5a', label: '파랑' },
-  { bg: '#3a1a1a', border: '#5a2a2a', label: '빨강' },
-  { bg: '#2a2a1a', border: '#4a4a2a', label: '노랑' },
-]
+function getNoteColors() {
+  return [
+    { bg: T.surface, border: rgba(T.fg, 0.15), label: '기본' },
+    { bg: rgba(T.success, 0.15), border: rgba(T.success, 0.3), label: '초록' },
+    { bg: rgba(T.teal, 0.15), border: rgba(T.teal, 0.3), label: '파랑' },
+    { bg: rgba(T.danger, 0.15), border: rgba(T.danger, 0.3), label: '빨강' },
+    { bg: rgba(T.warning, 0.15), border: rgba(T.warning, 0.3), label: '노랑' },
+  ]
+}
 
 function formatNoteDate(ts: number): string {
   const d = new Date(ts)
@@ -65,7 +68,7 @@ export default function MemoAlarmModal({ onClose, asPanel }: MemoAlarmModalProps
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [noteTitle, setNoteTitle] = useState('')
   const [noteContent, setNoteContent] = useState('')
-  const [noteColor, setNoteColor] = useState(NOTE_COLORS[0].bg)
+  const [noteColor, setNoteColor] = useState(getNoteColors()[0].bg)
   const [noteDirty, setNoteDirty] = useState(false)
   const [noteSavedMsg, setNoteSavedMsg] = useState(false)
   const noteSaveTimer = useRef<NodeJS.Timeout | null>(null)
@@ -106,7 +109,7 @@ export default function MemoAlarmModal({ onClose, asPanel }: MemoAlarmModalProps
   }
 
   const newNote = async (): Promise<void> => {
-    const updated = await window.api.quickNotes.save({ title: '새 메모', content: '', color: NOTE_COLORS[notes.length % NOTE_COLORS.length].bg })
+    const updated = await window.api.quickNotes.save({ title: '새 메모', content: '', color: getNoteColors()[notes.length % getNoteColors().length].bg })
     setNotes(updated)
     selectNote(updated[0])
   }
@@ -175,12 +178,12 @@ export default function MemoAlarmModal({ onClose, asPanel }: MemoAlarmModalProps
   return (
     <Modal title="메모 & 알림" onClose={onClose} asPanel={asPanel}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
         {(['memo', 'alarm'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            background: tab === t ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: tab === t ? '#fff' : 'rgba(255,255,255,0.45)',
+            background: tab === t ? rgba(T.fg, 0.12) : 'transparent',
+            color: tab === t ? T.fg : rgba(T.fg, 0.45),
             transition: 'all 0.15s',
           }}>{t === 'memo' ? '메모' : '알림'}</button>
         ))}
@@ -234,12 +237,12 @@ export default function MemoAlarmModal({ onClose, asPanel }: MemoAlarmModalProps
                     placeholder="제목"
                   />
                   <div className="flex gap-1">
-                    {NOTE_COLORS.map(c => (
+                    {getNoteColors().map(c => (
                       <button
                         key={c.bg}
                         className={`w-4 h-4 rounded-full border transition-all ${noteColor === c.bg ? 'scale-125' : 'border-transparent'}`}
                         style={{
-                          backgroundColor: c.bg === '#2d2d2d' ? '#555' : c.bg,
+                          backgroundColor: c.bg === T.surface ? rgba(T.fg, 0.25) : c.bg,
                           borderColor: noteColor === c.bg ? 'var(--win-text)' : 'transparent',
                         }}
                         onClick={() => { setNoteColor(c.bg); autoSaveNote(noteTitle, noteContent, c.bg) }}

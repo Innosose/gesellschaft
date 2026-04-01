@@ -15,6 +15,15 @@ const config: Config = {
         '^../../shared/constants$': '<rootDir>/src/shared/constants.ts',
       },
     },
+    // Shared 모듈 테스트 (Node 환경)
+    {
+      displayName: 'shared',
+      testMatch: ['<rootDir>/tests/shared/**/*.test.ts'],
+      testEnvironment: 'node',
+      transform: {
+        '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.node.json' }],
+      },
+    },
     // Renderer 프로세스 테스트 (JSDOM 환경)
     {
       displayName: 'renderer',

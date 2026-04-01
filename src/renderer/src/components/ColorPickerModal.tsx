@@ -1,5 +1,6 @@
 import React from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 
 const HISTORY_KEY = 'gs_color_history'
 const PRESET_COLORS = [
@@ -61,6 +62,9 @@ function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   }
   return [Math.round(h * 360), Math.round(s * 100), Math.round(v * 100)]
 }
+
+// EyeDropper API type (Chromium)
+declare class EyeDropper { open(): Promise<{ sRGBHex: string }> }
 
 function loadHistory(): string[] {
   try {
@@ -141,10 +145,12 @@ export function ColorPickerContent(): React.ReactElement {
   }
 
   const handleCopy = async (key: string, val: string): Promise<void> => {
-    await navigator.clipboard.writeText(val)
-    setCopiedKey(key)
-    setTimeout(() => setCopiedKey(''), 1200)
-    addToHistory(hex)
+    try {
+      await navigator.clipboard.writeText(val)
+      setCopiedKey(key)
+      setTimeout(() => setCopiedKey(''), 1200)
+      addToHistory(hex)
+    } catch { /* clipboard unavailable */ }
   }
 
   // Cursor position on SL picker
@@ -186,29 +192,14 @@ export function ColorPickerContent(): React.ReactElement {
             }} />
           </div>
 
-          {/* 색조 휠 */}
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div
-              ref={hueWheelRef}
-              onClick={handleHueWheel}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                border: '2px solid var(--win-border)',
-                cursor: 'crosshair',
-                flexShrink: 0,
-                background: 'conic-gradient(red, yellow, lime, cyan, blue, magenta, red)',
-              }}
+          {/* 색조 슬라이더 */}
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--win-text-muted)' }}>색조 (H): {hue}°</label>
+            <input
+              type="range" min={0} max={359} value={hue}
+              onChange={e => setHue(Number(e.target.value))}
+              style={{ width: '100%' }}
             />
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, color: 'var(--win-text-muted)' }}>색조 (H): {hue}°</label>
-              <input
-                type="range" min={0} max={359} value={hue}
-                onChange={e => setHue(Number(e.target.value))}
-                style={{ width: '100%' }}
-              />
-            </div>
           </div>
 
           {/* 슬라이더들 */}
@@ -227,7 +218,7 @@ export function ColorPickerContent(): React.ReactElement {
             </div>
           ))}
 
-          {/* 미리보기 */}
+          {/* 미리보기 + 스포이트 */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div
               style={{
@@ -243,6 +234,27 @@ export function ColorPickerContent(): React.ReactElement {
               <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'monospace', color: 'var(--win-text)' }}>{hex}</div>
               <div style={{ fontSize: 11, color: 'var(--win-text-muted)' }}>{`rgba(${r},${g},${b},${a01.toFixed(2)})`}</div>
             </div>
+            {'EyeDropper' in window && (
+              <button
+                onClick={async () => {
+                  try {
+                    const dropper = new EyeDropper()
+                    const result = await dropper.open()
+                    setColor(result.sRGBHex)
+                  } catch { /* user cancelled */ }
+                }}
+                title="화면에서 색상 추출"
+                style={{
+                  width: 36, height: 36, borderRadius: 6, flexShrink: 0, cursor: 'pointer',
+                  border: `1px solid ${rgba(T.gold, 0.2)}`, background: rgba(T.gold, 0.06),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="rgba(T.gold,0.7)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13.5 2.5a1.5 1.5 0 00-2.12 0L9.5 4.38 7.38 2.25l-1.06 1.06 1.06 1.06-5.13 5.13a1 1 0 00-.25.47l-.75 3a.5.5 0 00.6.6l3-.75a1 1 0 00.47-.25l5.13-5.13 1.06 1.06 1.06-1.06L10.63 5.5l1.87-1.88a1.5 1.5 0 000-2.12z"/>
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 
@@ -272,10 +284,10 @@ export function ColorPickerContent(): React.ReactElement {
                 </span>
                 <button
                   className="win-btn-ghost"
-                  style={{ padding: '2px 8px', fontSize: 11, flexShrink: 0 }}
+                  style={{ padding: '2px 8px', fontSize: 11, flexShrink: 0, color: copiedKey === key ? T.success : undefined }}
                   onClick={() => handleCopy(key, val)}
                 >
-                  {copiedKey === key ? '✅' : '복사'}
+                  {copiedKey === key ? '복사됨 ✓' : '복사'}
                 </button>
               </div>
             ))}

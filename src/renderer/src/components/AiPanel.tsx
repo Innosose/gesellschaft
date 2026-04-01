@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import { T, rgba } from '../utils/theme'
 import type { AiConfig, ChatMessage } from '../../../shared/types'
 import AiChatInput from './AiChatInput'
 import AiMessageList from './AiMessageList'
@@ -89,8 +90,8 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
         streamingTimeoutRef.current = null
         streamingTextRef.current = ''
         setStreaming(false)
-        setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 응답 대기 중 연결이 끊겼습니다. (30초 초과)' }])
-      }, 30_000)
+        setMessages(prev => [...prev, { role: 'assistant', content: '응답 대기 시간을 초과했습니다. (90초)' }])
+      }, 90_000)
       streamingTextRef.current += text
       setMessages(prev => {
         const last = prev[prev.length - 1]
@@ -142,8 +143,8 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
       streamingTimeoutRef.current = null
       streamingTextRef.current = ''
       setStreaming(false)
-      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ 응답 대기 중 연결이 끊겼습니다. (30초 초과)' }])
-    }, 30_000)
+      setMessages(prev => [...prev, { role: 'assistant', content: '응답 대기 시간을 초과했습니다. (90초)' }])
+    }, 90_000)
     try {
       await window.api.ai.chat(newMessages)
     } catch (e: unknown) {
@@ -212,12 +213,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   // ── asPanel mode ────────────────────────────────────────────────────────────
   if (asPanel) {
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(14,12,26,0.97)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: rgba(T.bg, 0.97) }}>
         {/* Tab header */}
         <div style={{
           height: 44, display: 'flex', alignItems: 'center', gap: 0,
-          padding: '0 20px', borderBottom: '1px solid rgba(255,255,255,0.14)',
-          background: 'rgba(255,255,255,0.04)', flexShrink: 0,
+          padding: '0 20px', borderBottom: `1px solid ${rgba(T.fg, 0.14)}`,
+          background: rgba(T.fg, 0.04), flexShrink: 0,
         }}>
           {(['chat', 'history', 'settings'] as const).map(t => (
             <button
@@ -225,9 +226,9 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
               onClick={() => setTab(t)}
               style={{
                 padding: '4px 14px', borderRadius: 14,
-                border: tab === t ? '1px solid rgba(139,92,246,0.4)' : '1px solid transparent',
-                background: tab === t ? 'rgba(139,92,246,0.2)' : 'transparent',
-                color: tab === t ? 'rgba(196,181,253,0.9)' : 'rgba(255,255,255,0.65)',
+                border: tab === t ? `1px solid ${rgba(T.gold, 0.4)}` : '1px solid transparent',
+                background: tab === t ? rgba(T.gold, 0.2) : 'transparent',
+                color: tab === t ? 'rgba(220,200,140,0.9)' : rgba(T.fg, 0.65),
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', marginRight: 6,
                 transition: 'all 0.15s ease',
               }}
@@ -323,7 +324,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           padding: '0 14px', borderBottom: '1px solid var(--win-border)',
           background: 'var(--win-surface-2)', flexShrink: 0,
         }}>
-          <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>🤖 AI 어시스턴트</span>
+          <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>AI 어시스턴트</span>
           <div style={{ display: 'flex', gap: 6 }}>
             {(['chat', 'settings'] as const).map(t => (
               <button
@@ -332,7 +333,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                 style={{
                   fontSize: 11, padding: '3px 10px', borderRadius: 4, border: 'none', cursor: 'pointer',
                   background: tab === t ? 'var(--win-accent)' : 'transparent',
-                  color: tab === t ? '#fff' : 'var(--win-text-sub)',
+                  color: tab === t ? T.fg : 'var(--win-text-sub)',
                 }}
               >{t === 'chat' ? '채팅' : '설정'}</button>
             ))}

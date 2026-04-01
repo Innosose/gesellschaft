@@ -44,7 +44,10 @@ const AiConfigPatchSchema = z.object({
   provider:     z.enum(['openai', 'anthropic', 'ollama']).optional(),
   model:        z.string().max(100).optional(),
   systemPrompt: z.string().max(4000).optional(),
-  ollamaUrl:    z.string().url().optional(),
+  ollamaUrl:    z.string().url().refine(
+    url => url.startsWith('http://') || url.startsWith('https://'),
+    'HTTP/HTTPS만 허용됩니다'
+  ).optional(),
   apiKeyRaw:    z.string().max(200).optional(),
 })
 

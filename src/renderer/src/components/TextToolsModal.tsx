@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 
 type Tool = {
   label: string
@@ -130,9 +131,11 @@ function RegexTab(): React.ReactElement {
 
   const copyResult = async (): Promise<void> => {
     if (!matches.length) return
-    await navigator.clipboard.writeText(matches.map(m => m.value).join('\n'))
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await navigator.clipboard.writeText(matches.map(m => m.value).join('\n'))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   return (
@@ -162,8 +165,8 @@ function RegexTab(): React.ReactElement {
             style={{
               width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer',
               fontFamily: 'monospace', fontSize: 12, fontWeight: 700,
-              background: f.val ? 'rgba(167,139,250,0.25)' : 'rgba(255,255,255,0.07)',
-              color: f.val ? '#a78bfa' : 'rgba(255,255,255,0.45)',
+              background: f.val ? rgba(T.teal, 0.25) : rgba(T.fg, 0.07),
+              color: f.val ? T.gold : rgba(T.fg, 0.45),
               transition: 'all 0.12s',
             }}
           >
@@ -174,7 +177,7 @@ function RegexTab(): React.ReactElement {
 
       {/* 에러 */}
       {error && (
-        <div style={{ fontSize: 11, color: '#ef4444', padding: '5px 10px', background: 'rgba(239,68,68,0.09)', borderRadius: 6, border: '1px solid rgba(239,68,68,0.2)' }}>
+        <div style={{ fontSize: 11, color: T.danger, padding: '5px 10px', background: rgba(T.danger, 0.09), borderRadius: 6, border: `1px solid ${rgba(T.danger, 0.2)}` }}>
           ⚠ {error}
         </div>
       )}
@@ -191,12 +194,12 @@ function RegexTab(): React.ReactElement {
               setFlagM(q.flags.includes('m'))
             }}
             style={{
-              padding: '2px 9px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.14)',
-              background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.65)',
+              padding: '2px 9px', borderRadius: 5, border: `1px solid ${rgba(T.fg, 0.14)}`,
+              background: rgba(T.fg, 0.05), color: rgba(T.fg, 0.65),
               fontSize: 10, cursor: 'pointer', transition: 'all 0.1s',
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(167,139,250,0.15)'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#a78bfa88' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.14)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = rgba(T.teal, 0.15); (e.currentTarget as HTMLButtonElement).style.borderColor = rgba(T.gold, 0.53) }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = rgba(T.fg, 0.05); (e.currentTarget as HTMLButtonElement).style.borderColor = rgba(T.fg, 0.14) }}
           >
             {q.label}
           </button>
@@ -209,7 +212,7 @@ function RegexTab(): React.ReactElement {
           <span style={{ fontSize: 10, color: 'var(--win-text-muted)' }}>
             테스트 문자열
             {matches.length > 0 && !error && (
-              <span style={{ marginLeft: 8, color: '#a78bfa', fontWeight: 700 }}>
+              <span style={{ marginLeft: 8, color: T.gold, fontWeight: 700 }}>
                 {matches.length}개 매칭
               </span>
             )}
@@ -221,7 +224,7 @@ function RegexTab(): React.ReactElement {
             >
               {highlighted.map((p, i) =>
                 p.match
-                  ? <mark key={i} style={{ background: 'rgba(167,139,250,0.35)', color: '#e9d5ff', borderRadius: 3, padding: '0 1px' }}>{p.text}</mark>
+                  ? <mark key={i} style={{ background: rgba(T.teal, 0.35), color: T.teal, borderRadius: 3, padding: '0 1px' }}>{p.text}</mark>
                   : <span key={i}>{p.text}</span>
               )}
             </div>
@@ -253,7 +256,7 @@ function RegexTab(): React.ReactElement {
             <span style={{ fontSize: 10, color: 'var(--win-text-muted)' }}>매칭 목록</span>
             <button
               className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${copied ? 'text-green-400' : ''}`}
-              style={{ color: copied ? '#4ade80' : 'var(--win-text-muted)', fontSize: 10 }}
+              style={{ color: copied ? T.success : 'var(--win-text-muted)', fontSize: 10 }}
               onClick={copyResult}
               disabled={!matches.length}
             >
@@ -268,20 +271,20 @@ function RegexTab(): React.ReactElement {
               <div
                 key={i}
                 style={{
-                  padding: '4px 8px', borderRadius: 5, background: 'rgba(167,139,250,0.08)',
-                  border: '1px solid rgba(167,139,250,0.18)', fontSize: 11,
-                  fontFamily: 'monospace', color: '#e9d5ff',
+                  padding: '4px 8px', borderRadius: 5, background: rgba(T.teal, 0.08),
+                  border: `1px solid ${rgba(T.teal, 0.18)}`, fontSize: 11,
+                  fontFamily: 'monospace', color: T.teal,
                   wordBreak: 'break-all',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: m.groups.length ? 2 : 0 }}>
-                  <span style={{ color: '#a78bfa', fontSize: 9, fontFamily: 'sans-serif' }}>#{i + 1} @{m.index}</span>
+                  <span style={{ color: T.gold, fontSize: 9, fontFamily: 'sans-serif' }}>#{i + 1} @{m.index}</span>
                 </div>
                 {m.value}
                 {m.groups.length > 0 && m.groups.some(Boolean) && (
-                  <div style={{ marginTop: 2, paddingTop: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ marginTop: 2, paddingTop: 2, borderTop: `1px solid ${rgba(T.fg, 0.08)}` }}>
                     {m.groups.map((g, gi) => g != null && (
-                      <div key={gi} style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)' }}>
+                      <div key={gi} style={{ fontSize: 9, color: rgba(T.fg, 0.5) }}>
                         ${gi + 1}: {g}
                       </div>
                     ))}
@@ -298,8 +301,9 @@ function RegexTab(): React.ReactElement {
 
 // ── 메인 ─────────────────────────────────────────────────────────────────────────
 
-type Mode = '텍스트 변환' | '정규식'
-const MODES: Mode[] = ['텍스트 변환', '정규식']
+type Mode = '텍스트 변환' | '정규식' | '개발'
+const MODES: Mode[] = ['텍스트 변환', '정규식', '개발']
+const LazyDevTools = React.lazy(() => import('./DevToolsModal').then(m => ({ default: m.DevToolsContent })))
 
 export default function TextToolsModal({ onClose, asPanel }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {
   const [mode, setMode]           = useState<Mode>('텍스트 변환')
@@ -319,9 +323,11 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
 
   const copyOutput = async (): Promise<void> => {
     if (!output) return
-    await navigator.clipboard.writeText(output)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await navigator.clipboard.writeText(output)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   const swap = (): void => {
@@ -334,7 +340,7 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
     <Modal title="텍스트 도구" onClose={onClose} asPanel={asPanel}>
       <div className="flex flex-col gap-3 h-[420px]">
         {/* 최상위 모드 전환 */}
-        <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
           {MODES.map(m => (
             <button
               key={m}
@@ -342,8 +348,8 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
               style={{
                 padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
                 fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-                background: mode === m ? 'rgba(255,255,255,0.12)' : 'transparent',
-                color: mode === m ? '#fff' : 'rgba(255,255,255,0.45)',
+                background: mode === m ? rgba(T.fg, 0.12) : 'transparent',
+                color: mode === m ? T.fg : rgba(T.fg, 0.45),
               }}
             >
               {m}
@@ -355,7 +361,7 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
         {mode === '텍스트 변환' && (
           <>
             {/* 그룹 탭 */}
-            <div className="flex gap-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+            <div className="flex gap-1" style={{ borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
               {GROUPS.map(group => (
                 <button
                   key={group}
@@ -363,8 +369,8 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
                   style={{
                     padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
                     fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-                    background: activeGroup === group ? 'rgba(255,255,255,0.12)' : 'transparent',
-                    color: activeGroup === group ? '#fff' : 'rgba(255,255,255,0.45)',
+                    background: activeGroup === group ? rgba(T.fg, 0.12) : 'transparent',
+                    color: activeGroup === group ? T.fg : rgba(T.fg, 0.45),
                   }}
                 >{group}</button>
               ))}
@@ -377,7 +383,7 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
                     key={tool.label}
                     className="text-left text-xs px-2.5 py-1.5 rounded border transition-colors"
                     style={lastTool === tool.label
-                      ? { borderColor: 'var(--win-accent)', background: 'var(--win-accent-dim)', color: '#60a0ff' }
+                      ? { borderColor: 'var(--win-accent)', background: 'var(--win-accent-dim)', color: T.teal }
                       : { borderColor: 'var(--win-surface-2)', color: 'var(--win-text-muted)' }
                     }
                     onMouseEnter={(e) => { if (lastTool !== tool.label) { (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--win-border)' } }}
@@ -455,6 +461,13 @@ export default function TextToolsModal({ onClose, asPanel }: { onClose: () => vo
 
         {/* ── 정규식 테스터 ── */}
         {mode === '정규식' && <RegexTab />}
+
+        {/* ── 개발자 도구 ── */}
+        {mode === '개발' && (
+          <React.Suspense fallback={<div style={{ textAlign: 'center', padding: 40, color: rgba(T.fg, 0.4) }}>로딩 중...</div>}>
+            <LazyDevTools />
+          </React.Suspense>
+        )}
       </div>
     </Modal>
   )

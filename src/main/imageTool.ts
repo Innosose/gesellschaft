@@ -1,7 +1,13 @@
-import { ipcMain, dialog, app, BrowserWindow } from 'electron'
+import { ipcMain, dialog, app } from 'electron'
+import { getWinFromEvent } from './windowUtil'
 import * as fs from 'fs'
 import * as path from 'path'
-import Jimp from 'jimp'
+// Lazy-loaded to avoid startup cost — Jimp is heavy
+let _Jimp: typeof import('jimp').default | null = null
+async function getJimp(): Promise<typeof import('jimp').default> {
+  if (!_Jimp) { _Jimp = (await import('jimp')).default }
+  return _Jimp
+}
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 
@@ -19,8 +25,8 @@ const ConvertJobsSchema = z.array(ConvertJobSchema).min(1).max(200)
 
 export function registerImageToolHandlers(): void {
   ipcMain.handle('imageTool:openFiles', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const result = await dialog.showOpenDialog(win!, {
+    const win = getWinFromEvent(event)
+    const result = await dialog.showOpenDialog(win, {
       filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'bmp', 'gif', 'tiff', 'tif'] }],
       properties: ['openFile', 'multiSelections'],
     })
@@ -28,8 +34,8 @@ export function registerImageToolHandlers(): void {
   })
 
   ipcMain.handle('imageTool:openOutputDir', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const result = await dialog.showOpenDialog(win!, { properties: ['openDirectory'] })
+    const win = getWinFromEvent(event)
+    const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
     return result.canceled ? null : result.filePaths[0]
   })
 
@@ -45,6 +51,7 @@ export function registerImageToolHandlers(): void {
     }
 
     const results: { filePath: string; success: boolean; outputPath?: string; error?: string }[] = []
+    const Jimp = await getJimp()
 
     for (const job of parsed.data) {
       try {
@@ -62,11 +69,6 @@ export function registerImageToolHandlers(): void {
           }
         }
 
-        const mimeMap: Record<string, string> = {
-          jpg: Jimp.MIME_JPEG,
-          png: Jimp.MIME_PNG,
-          bmp: Jimp.MIME_BMP,
-        }
         img.quality(job.quality)
 
         const baseName = path.basename(job.filePath, path.extname(job.filePath))

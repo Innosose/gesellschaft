@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 
 interface TodoItem {
   id: string
@@ -134,17 +135,17 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
               <div className="flex gap-3 text-xs">
                 <span style={{ color: 'var(--win-text-muted)' }}>전체 <b style={{ color: 'var(--win-text)' }}>{total}</b></span>
                 <span style={{ color: 'var(--win-text-muted)' }}>남은 <b style={{ color: 'var(--win-text)' }}>{pending.length}</b></span>
-                <span style={{ color: 'var(--win-text-muted)' }}>완료 <b style={{ color: '#4caf50' }}>{done.length}</b></span>
-                {overdueCount > 0 && <span style={{ color: '#c42b1c' }}>⚠️ 초과 {overdueCount}</span>}
-                {todayCount > 0 && <span style={{ color: '#f97316' }}>📅 오늘 {todayCount}</span>}
-                {highCount > 0 && <span style={{ color: '#ff6b6b' }}>🔴 중요 {highCount}</span>}
+                <span style={{ color: 'var(--win-text-muted)' }}>완료 <b style={{ color: T.success }}>{done.length}</b></span>
+                {overdueCount > 0 && <span style={{ color: T.danger }}>⚠️ 초과 {overdueCount}</span>}
+                {todayCount > 0 && <span style={{ color: T.warning }}>📅 오늘 {todayCount}</span>}
+                {highCount > 0 && <span style={{ color: T.danger }}>🔴 중요 {highCount}</span>}
               </div>
-              <span className="text-xs font-bold" style={{ color: doneRate === 100 ? '#4caf50' : 'var(--win-text-muted)' }}>{doneRate}%</span>
+              <span className="text-xs font-bold" style={{ color: doneRate === 100 ? T.success : 'var(--win-text-muted)' }}>{doneRate}%</span>
             </div>
             <div className="rounded-full overflow-hidden" style={{ height: 5, background: 'var(--win-surface)' }}>
               <div style={{
                 height: '100%', width: `${doneRate}%`,
-                background: doneRate === 100 ? '#4caf50' : 'linear-gradient(90deg, #0078d4, #40a0ff)',
+                background: doneRate === 100 ? T.success : `linear-gradient(90deg, ${T.teal}, ${rgba(T.teal, 0.6)})`,
                 transition: 'width 0.4s ease',
                 borderRadius: 999,
               }} />
@@ -165,7 +166,7 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
             <button
               className={`text-xs px-2.5 py-1 rounded border transition-colors${priority !== 'high' ? ' todo-priority-btn' : ''}`}
               style={priority === 'high'
-                ? { background: '#c42b1c20', borderColor: '#c42b1c60', color: '#ff6b6b' }
+                ? { background: rgba(T.danger, 0.12), borderColor: rgba(T.danger, 0.38), color: T.danger }
                 : { borderColor: 'var(--win-border)' }
               }
               onClick={() => setPriority(p => p === 'high' ? 'normal' : 'high')}
@@ -196,15 +197,15 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
         {/* 탭 */}
         <div className="flex gap-1 items-center">
           <button
-            className={`text-xs px-3 py-1.5 rounded transition-colors ${tab === 'todo' ? 'bg-[#0078d4] text-white' : ''}`}
-            style={tab !== 'todo' ? { background: 'var(--win-surface-2)', color: 'var(--win-text-muted)' } : undefined}
+            className="text-xs px-3 py-1.5 rounded transition-colors"
+            style={tab === 'todo' ? { background: T.teal, color: T.fg } : { background: 'var(--win-surface-2)', color: 'var(--win-text-muted)' }}
             onClick={() => setTab('todo')}
           >
             할일 {pending.length > 0 && `(${pending.length})`}
           </button>
           <button
-            className={`text-xs px-3 py-1.5 rounded transition-colors ${tab === 'done' ? 'bg-[#0078d4] text-white' : ''}`}
-            style={tab !== 'done' ? { background: 'var(--win-surface-2)', color: 'var(--win-text-muted)' } : undefined}
+            className="text-xs px-3 py-1.5 rounded transition-colors"
+            style={tab === 'done' ? { background: T.teal, color: T.fg } : { background: 'var(--win-surface-2)', color: 'var(--win-text-muted)' }}
             onClick={() => setTab('done')}
           >
             완료 {done.length > 0 && `(${done.length})`}
@@ -249,17 +250,17 @@ export default function TodoModal({ onClose, asPanel }: { onClose: () => void; a
                     height: 18,
                     borderWidth: 1,
                     borderStyle: 'solid',
-                    borderColor: item.priority === 'high' ? '#c42b1c80' : 'var(--win-text-muted)'
+                    borderColor: item.priority === 'high' ? rgba(T.danger, 0.5) : 'var(--win-text-muted)'
                   }}
                   onClick={() => toggle(item.id)}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm" style={{ color: item.priority === 'high' ? 'var(--win-text)' : 'var(--win-text-sub)' }}>
-                    {item.priority === 'high' && <span className="mr-1" style={{ color: '#ff6b6b' }}>●</span>}
+                    {item.priority === 'high' && <span className="mr-1" style={{ color: T.danger }}>●</span>}
                     {item.text}
                   </div>
                   {item.dueDate && (
-                    <div className={`text-[10px] mt-0.5 ${overdue ? 'text-[#c42b1c]' : today ? 'text-[#f97316]' : ''}`} style={!overdue && !today ? { color: 'var(--win-text-muted)' } : undefined}>
+                    <div className="text-[10px] mt-0.5" style={{ color: overdue ? T.danger : today ? T.warning : 'var(--win-text-muted)' }}>
                       {overdue ? '⚠️ 마감 지남 — ' : today ? '📅 오늘 마감 — ' : '📅 '}{item.dueDate}
                     </div>
                   )}

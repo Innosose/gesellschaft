@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Modal } from './SearchModal'
+import { T } from '../utils/theme'
 
 // 2024년 기준 4대보험 요율
 const RATES = {
@@ -41,13 +42,7 @@ interface Row {
   note?: string
 }
 
-export default function SalaryCalcModal({
-  onClose,
-  asPanel,
-}: {
-  onClose: () => void
-  asPanel?: boolean
-}): React.ReactElement {
+export function SalaryCalcContent(): React.ReactElement {
   const [salaryInput, setSalaryInput] = useState('3000000')
   const [dependents, setDependents] = useState(1)
   const [mealAllowance, setMealAllowance] = useState(true)
@@ -103,7 +98,7 @@ export default function SalaryCalcModal({
   ] : []
 
   return (
-    <Modal title="급여 계산기" onClose={onClose} asPanel={asPanel}>
+    <>
       <div style={{ display: 'flex', gap: 24, height: '100%' }}>
         {/* 입력 */}
         <div style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -210,7 +205,7 @@ export default function SalaryCalcModal({
                   >
                     <span style={{ flex: 1, fontSize: 13, color: 'var(--win-text)' }}>{row.label}</span>
                     <span style={{ fontSize: 11, color: 'var(--win-text-muted)', marginRight: 16 }}>{row.note}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#e74c3c', minWidth: 100, textAlign: 'right' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: T.danger, minWidth: 100, textAlign: 'right' }}>
                       − {row.amount.toLocaleString('ko-KR')}원
                     </span>
                   </div>
@@ -230,7 +225,7 @@ export default function SalaryCalcModal({
                   }}
                 >
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--win-text)' }}>총 공제액</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#e74c3c' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: T.danger }}>
                     − {fmt(calc.totalDeduction)}
                   </span>
                 </div>
@@ -273,6 +268,20 @@ export default function SalaryCalcModal({
           )}
         </div>
       </div>
+    </>
+  )
+}
+
+export default function SalaryCalcModal({
+  onClose,
+  asPanel,
+}: {
+  onClose: () => void
+  asPanel?: boolean
+}): React.ReactElement {
+  return (
+    <Modal title="급여 계산기" onClose={onClose} asPanel={asPanel}>
+      <SalaryCalcContent />
     </Modal>
   )
 }

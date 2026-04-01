@@ -1,7 +1,13 @@
-import { ipcMain, dialog, app, shell, BrowserWindow } from 'electron'
+import { ipcMain, dialog, app, shell } from 'electron'
+import { getWinFromEvent } from './windowUtil'
 import * as fs from 'fs'
 import * as path from 'path'
-import { PDFDocument } from 'pdf-lib'
+// Lazy-loaded to avoid startup cost — pdf-lib is heavy
+let _PDFDocument: typeof import('pdf-lib').PDFDocument | null = null
+async function getPDFDocument(): Promise<typeof import('pdf-lib').PDFDocument> {
+  if (!_PDFDocument) { _PDFDocument = (await import('pdf-lib')).PDFDocument }
+  return _PDFDocument
+}
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 
@@ -10,8 +16,8 @@ const FilePathsSchema = z.array(z.string().min(1)).min(1)
 
 export function registerPdfToolHandlers(): void {
   ipcMain.handle('pdfTool:openFiles', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const result = await dialog.showOpenDialog(win!, {
+    const win = getWinFromEvent(event)
+    const result = await dialog.showOpenDialog(win, {
       filters: [{ name: 'PDF', extensions: ['pdf'] }],
       properties: ['openFile', 'multiSelections'],
     })
@@ -19,8 +25,8 @@ export function registerPdfToolHandlers(): void {
   })
 
   ipcMain.handle('pdfTool:openOutputDir', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const result = await dialog.showOpenDialog(win!, { properties: ['openDirectory'] })
+    const win = getWinFromEvent(event)
+    const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
     return result.canceled ? null : result.filePaths[0]
   })
 
@@ -35,6 +41,7 @@ export function registerPdfToolHandlers(): void {
     const files      = filesResult.data
     const outputPath = outputResult.data
     try {
+      const PDFDocument = await getPDFDocument()
       const merged = await PDFDocument.create()
       for (const file of files) {
         const bytes = fs.readFileSync(file)
@@ -62,9 +69,14 @@ export function registerPdfToolHandlers(): void {
     const file      = fileResult.data
     const outputDir = outputResult.data
     try {
+      const PDFDocument = await getPDFDocument()
       const bytes     = fs.readFileSync(file)
       const pdf       = await PDFDocument.load(bytes)
       const pageCount = pdf.getPageCount()
+      const SPLIT_PAGE_LIMIT = 500
+      if (pageCount > SPLIT_PAGE_LIMIT) {
+        return { success: false, error: `페이지 수가 ${SPLIT_PAGE_LIMIT}을 초과합니다 (${pageCount}페이지). 큰 파일은 먼저 범위를 지정해 나눠주세요.` }
+      }
       if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true })
       const baseName = path.basename(file, '.pdf')
       const outputs: string[] = []
@@ -86,7 +98,13 @@ export function registerPdfToolHandlers(): void {
 
   ipcMain.handle('pdfTool:openFile', async (_, rawPath: unknown) => {
     const result = FilePathSchema.safeParse(rawPath)
-    if (!result.success) return
-    await shell.openPath(result.data)
+    if (!result.success) return { success: false, error: '유효하지 않은 파일 경로' }
+    try {
+      await shell.openPath(result.data)
+      return { success: true }
+    } catch (err) {
+      logIpcError('pdfTool:openFile', err, { path: result.data })
+      return { success: false, error: err instanceof Error ? err.message : String(err) }
+    }
   })
 }

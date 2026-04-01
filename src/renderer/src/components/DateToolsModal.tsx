@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 
 // ── DateCalc types & helpers ───────────────────────────────────────────────────
 
@@ -143,8 +144,8 @@ function TimezoneTab(): React.ReactElement {
             key={c.tz}
             style={{
               display: 'flex', alignItems: 'center', padding: '9px 14px', borderRadius: 8,
-              background: isSeoul ? 'rgba(167,139,250,0.10)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${isSeoul ? 'rgba(167,139,250,0.35)' : 'rgba(255,255,255,0.08)'}`,
+              background: isSeoul ? rgba(T.teal, 0.10) : rgba(T.fg, 0.04),
+              border: `1px solid ${isSeoul ? rgba(T.teal, 0.35) : rgba(T.fg, 0.08)}`,
             }}
           >
             <span style={{ fontSize: 20, marginRight: 10, lineHeight: 1 }}>{c.flag}</span>
@@ -153,7 +154,7 @@ function TimezoneTab(): React.ReactElement {
                 {c.city}
                 <span style={{ fontSize: 10, color: 'var(--win-text-muted)', fontWeight: 400 }}>{c.country}</span>
                 {!isToday && (
-                  <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 4, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.35)', color: '#fbbf24' }}>
+                  <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 4, background: rgba(T.warning, 0.15), border: `1px solid ${rgba(T.warning, 0.35)}`, color: T.warning }}>
                     +1일
                   </span>
                 )}
@@ -164,7 +165,7 @@ function TimezoneTab(): React.ReactElement {
             </div>
             <span style={{
               fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-              color: isSeoul ? '#a78bfa' : 'var(--win-text-sub)',
+              color: isSeoul ? T.gold : 'var(--win-text-sub)',
               letterSpacing: '0.03em', fontFamily: 'monospace',
             }}>
               {time}
@@ -282,12 +283,12 @@ export default function DateToolsModal({ onClose, asPanel }: DateToolsModalProps
   return (
     <Modal title="날짜 도구" onClose={onClose} asPanel={asPanel}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
         {([['dateCalc', '날짜 계산'], ['annualLeave', '연차 계산'], ['timezone', '타임존']] as const).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{
             padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            background: tab === id ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: tab === id ? '#fff' : 'rgba(255,255,255,0.45)',
+            background: tab === id ? rgba(T.fg, 0.12) : 'transparent',
+            color: tab === id ? T.fg : rgba(T.fg, 0.45),
             transition: 'all 0.15s',
           }}>{label}</button>
         ))}
@@ -305,7 +306,7 @@ export default function DateToolsModal({ onClose, asPanel }: DateToolsModalProps
                 style={{
                   padding: '8px 18px',
                   background: dateCalcTab === t.id ? 'var(--win-accent)' : 'transparent',
-                  color: dateCalcTab === t.id ? '#fff' : 'var(--win-text-sub)',
+                  color: dateCalcTab === t.id ? T.fg : 'var(--win-text-sub)',
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: 13,
@@ -564,17 +565,17 @@ export default function DateToolsModal({ onClose, asPanel }: DateToolsModalProps
 
                   <div style={{ flex: 1, padding: '16px', background: 'var(--win-surface-2)', borderRadius: 8, border: '1px solid var(--win-border)', textAlign: 'center' }}>
                     <div style={{ fontSize: 11, color: 'var(--win-text-muted)', marginBottom: 6 }}>사용 연차</div>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: '#e74c3c' }}>{used}</div>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: T.danger }}>{used}</div>
                     <div style={{ fontSize: 11, color: 'var(--win-text-muted)' }}>일</div>
                   </div>
 
                   <div style={{
                     flex: 1, padding: '16px', textAlign: 'center', borderRadius: 8,
-                    background: remaining > 5 ? 'rgba(39,174,96,0.1)' : remaining > 0 ? 'rgba(243,156,18,0.1)' : 'rgba(231,76,60,0.08)',
-                    border: `1px solid ${remaining > 5 ? '#27ae60' : remaining > 0 ? '#f39c12' : '#e74c3c'}`,
+                    background: remaining > 5 ? rgba(T.success, 0.1) : remaining > 0 ? rgba(T.warning, 0.1) : rgba(T.danger, 0.08),
+                    border: `1px solid ${remaining > 5 ? T.success : remaining > 0 ? T.warning : T.danger}`,
                   }}>
                     <div style={{ fontSize: 11, color: 'var(--win-text-muted)', marginBottom: 6 }}>잔여 연차</div>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: remaining > 5 ? '#27ae60' : remaining > 0 ? '#f39c12' : '#e74c3c' }}>{remaining}</div>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: remaining > 5 ? T.success : remaining > 0 ? T.warning : T.danger }}>{remaining}</div>
                     <div style={{ fontSize: 11, color: 'var(--win-text-muted)' }}>일</div>
                   </div>
                 </div>
@@ -589,7 +590,7 @@ export default function DateToolsModal({ onClose, asPanel }: DateToolsModalProps
                     <div style={{
                       height: '100%',
                       width: `${progressPct}%`,
-                      background: progressPct >= 90 ? '#e74c3c' : progressPct >= 70 ? '#f39c12' : '#27ae60',
+                      background: progressPct >= 90 ? T.danger : progressPct >= 70 ? T.warning : T.success,
                       borderRadius: 4,
                       transition: 'width 0.5s ease',
                     }} />

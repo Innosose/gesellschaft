@@ -7,7 +7,7 @@ import {
   DEFAULT_ANIM_SPEED,
 } from '../../../shared/constants'
 
-export type AnimSpeed = 'slow' | 'normal' | 'fast'
+export type AnimSpeed = 'slow' | 'normal' | 'fast' | 'none'
 
 export interface DisplaySettings {
   hubSize: number
@@ -18,8 +18,10 @@ export interface DisplaySettings {
 
 interface AppState extends DisplaySettings {
   hubColor: string
+  autoScan: boolean
   // Actions
   setHubColor: (color: string) => void
+  setAutoScan: (v: boolean) => void
   setDisplay: (patch: Partial<DisplaySettings>) => void
   loadFromAPI: () => Promise<void>
 }
@@ -31,12 +33,15 @@ export const useAppStore = create<AppState>((set) => ({
   overlayOpacity: DEFAULT_OVERLAY_OPACITY,
   spiralScale:    DEFAULT_SPIRAL_SCALE,
   animSpeed:      DEFAULT_ANIM_SPEED,
+  autoScan:       false,
 
   setHubColor: (color: string) => {
     set({ hubColor: color })
     document.documentElement.style.setProperty('--gs-accent', color)
     window.api.settings.setTheme(color)
   },
+
+  setAutoScan: (v: boolean) => set({ autoScan: v }),
 
   setDisplay: (patch: Partial<DisplaySettings>) => {
     set(patch)

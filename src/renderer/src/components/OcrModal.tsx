@@ -42,8 +42,14 @@ export function OcrContent(): React.ReactElement {
     if (file) handleFileSelect(file)
   }
 
+  const MAX_OCR_SIZE = 10 * 1024 * 1024 // 10MB
+
   const handleOcr = async (): Promise<void> => {
     if (!imageFile) return
+    if (imageFile.size > MAX_OCR_SIZE) {
+      setError(`파일이 너무 큽니다 (${(imageFile.size / 1024 / 1024).toFixed(1)}MB). 최대 10MB까지 지원합니다.`)
+      return
+    }
     setRunning(true)
     setResult('')
     setError('')
@@ -61,8 +67,8 @@ export function OcrContent(): React.ReactElement {
       setResult(data.text)
       setProgress(100)
       await worker.terminate()
-    } catch (e: any) {
-      setError(e?.message || 'OCR 처리 중 오류가 발생했습니다.')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'OCR 처리 중 오류가 발생했습니다.')
     }
     setOcrStatus('')
     setRunning(false)
@@ -70,9 +76,11 @@ export function OcrContent(): React.ReactElement {
 
   const handleCopy = async (): Promise<void> => {
     if (!result) return
-    await navigator.clipboard.writeText(result)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await navigator.clipboard.writeText(result)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   const handleClear = (): void => {
@@ -249,7 +257,7 @@ export function OcrContent(): React.ReactElement {
             </div>
 
             {error && (
-              <div style={{ padding: '8px 12px', background: 'var(--win-danger)', color: '#fff', borderRadius: 6, fontSize: 12 }}>
+              <div style={{ padding: '8px 12px', background: 'var(--win-danger)', color: T.fg, borderRadius: 6, fontSize: 12 }}>
                 ⚠️ {error}
               </div>
             )}

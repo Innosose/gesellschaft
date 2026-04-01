@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 import type { PomodoroPhase, PomodoroSession, PomodoroStats } from '../../../shared/types'
 
 // ── 설정 ────────────────────────────────────────────────────────────────────
@@ -28,9 +29,9 @@ const PHASE_LABEL: Record<PomodoroPhase, string> = {
 }
 
 const PHASE_COLOR: Record<PomodoroPhase, string> = {
-  'work':        '#e74c3c',
-  'short-break': '#27ae60',
-  'long-break':  '#2980b9',
+  'work':        T.danger,
+  'short-break': T.success,
+  'long-break':  T.teal,
 }
 
 // ── 통계 헬퍼 ───────────────────────────────────────────────────────────────
@@ -201,7 +202,7 @@ export default function PomodoroModal({ onClose, asPanel }: PomodoroModalProps):
           {/* 원형 타이머 */}
           <div style={{ position: 'relative', width: 176, height: 176 }}>
             <svg width={176} height={176} style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx={88} cy={88} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={10} />
+              <circle cx={88} cy={88} r={radius} fill="none" stroke={rgba(T.fg, 0.06)} strokeWidth={10} />
               <circle
                 cx={88} cy={88} r={radius} fill="none"
                 stroke={color} strokeWidth={10}
@@ -231,7 +232,7 @@ export default function PomodoroModal({ onClose, asPanel }: PomodoroModalProps):
           <div className="flex gap-3">
             <button
               className="win-btn-primary text-sm px-6"
-              style={{ background: running ? '#555' : color }}
+              style={{ background: running ? rgba(T.fg, 0.3) : color }}
               onClick={handleToggle}
             >
               {running ? '⏸ 일시정지' : '▶ 시작'}
@@ -281,7 +282,7 @@ export default function PomodoroModal({ onClose, asPanel }: PomodoroModalProps):
                     <span style={{ fontSize: 9, color: 'var(--win-text-muted)' }}>{count || ''}</span>
                     <div style={{
                       width: '100%', height: barH, borderRadius: 3,
-                      background: isToday ? '#e74c3c' : 'rgba(255,255,255,0.15)',
+                      background: isToday ? T.danger : rgba(T.fg, 0.15),
                       transition: 'height 0.3s ease',
                     }} />
                     <span style={{ fontSize: 9, color: isToday ? 'var(--win-text)' : 'var(--win-text-muted)' }}>
@@ -298,7 +299,7 @@ export default function PomodoroModal({ onClose, asPanel }: PomodoroModalProps):
             <div className="text-xs mb-2" style={{ color: 'var(--win-text-muted)' }}>7일 합계</div>
             <div className="flex gap-4 text-sm">
               <span>
-                <b style={{ color: '#e74c3c' }}>
+                <b style={{ color: T.danger }}>
                   {days.reduce((a, d) => a + (sessionMap.get(d)?.completedPomodoros ?? 0), 0)}
                 </b>
                 <span style={{ color: 'var(--win-text-muted)', marginLeft: 3 }}>포모도로</span>

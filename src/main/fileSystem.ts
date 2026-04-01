@@ -94,11 +94,12 @@ export function registerFileSystemHandlers(): void {
       }
       try {
         const dir = path.dirname(item.path)
-        const newPath = path.join(dir, item.newName)
-        if (path.dirname(newPath) !== dir) {
+        const resolved = path.resolve(dir, item.newName)
+        if (!resolved.startsWith(path.resolve(dir) + path.sep)) {
           results.push({ path: item.path, success: false, error: '디렉터리 이탈 차단' })
           continue
         }
+        const newPath = resolved
         await fs.promises.rename(item.path, newPath)
         results.push({ path: item.path, success: true, newPath })
       } catch (err) {
@@ -141,6 +142,7 @@ export function registerFileSystemHandlers(): void {
   // 외부 앱으로 열기
   ipcMain.handle('fs:open', async (_, filePath: string) => {
     if (typeof filePath !== 'string' || !filePath) return { success: false, error: '유효하지 않은 경로' }
+    if (!fs.existsSync(filePath)) return { success: false, error: 'File not found' }
     try {
       await shell.openPath(filePath)
       return { success: true }

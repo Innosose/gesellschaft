@@ -376,12 +376,11 @@ interface DevToolsModalProps {
   asPanel?: boolean
 }
 
-export default function DevToolsModal({ onClose, asPanel }: DevToolsModalProps): React.ReactElement {
+export function DevToolsContent(): React.ReactElement {
   const [tab, setTab] = useState<DevTab>('json')
 
   return (
-    <Modal title="🛠 개발자 도구" onClose={onClose} asPanel={asPanel}>
-      {/* 탭 헤더 */}
+    <>
       <div className="flex gap-1 flex-wrap mb-4">
         {TABS.map(t => (
           <button
@@ -394,14 +393,20 @@ export default function DevToolsModal({ onClose, asPanel }: DevToolsModalProps):
           </button>
         ))}
       </div>
-
-      {/* 탭 콘텐츠 */}
       {tab === 'json'      && <JsonTab />}
       {tab === 'base64'    && <Base64Tab />}
       {tab === 'url'       && <UrlTab />}
       {tab === 'hash'      && <HashTab />}
       {tab === 'jwt'       && <JwtTab />}
       {tab === 'timestamp' && <TimestampTab />}
+    </>
+  )
+}
+
+export default function DevToolsModal({ onClose, asPanel }: DevToolsModalProps): React.ReactElement {
+  return (
+    <Modal title="🛠 개발자 도구" onClose={onClose} asPanel={asPanel}>
+      <DevToolsContent />
     </Modal>
   )
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { rgba, THEMES } from '../utils/color'
+import { T, THEME_PRESETS, rgba, setTheme, useTheme } from '../utils/theme'
 import { useAppStore } from '../store/appStore'
 
 interface AiConfig {
@@ -54,17 +54,17 @@ function Slider({
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.78)', fontWeight: 500 }}>{label}</span>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontFamily: 'monospace' }}>{format(value)}</span>
+        <span style={{ fontSize: 12, color: rgba(T.fg, 0.78), fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 12, color: rgba(T.fg, 0.92), fontWeight: 700, fontFamily: 'monospace' }}>{format(value)}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        style={{ width: '100%', accentColor: 'var(--gs-accent, #8b5cf6)', cursor: 'pointer', height: 4 }}
+        style={{ width: '100%', cursor: 'pointer' }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)' }}>{format(min)}</span>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)' }}>{format(max)}</span>
+        <span style={{ fontSize: 10, color: rgba(T.fg, 0.55) }}>{format(min)}</span>
+        <span style={{ fontSize: 10, color: rgba(T.fg, 0.55) }}>{format(max)}</span>
       </div>
     </div>
   )
@@ -83,7 +83,7 @@ function KeyBadge({ keys, color, inline }: { keys: string; color: string; inline
           }}>
             {k}
           </span>
-          {i < parts.length - 1 && <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>+</span>}
+          {i < parts.length - 1 && <span style={{ color: rgba(T.fg, 0.5), fontSize: 10 }}>+</span>}
         </React.Fragment>
       ))}
     </div>
@@ -95,31 +95,30 @@ function StatusMsg({ ok, msg }: { ok: boolean; msg: string }): React.ReactElemen
   return (
     <div style={{
       marginBottom: 14, padding: '10px 14px', borderRadius: 8, fontSize: 12,
-      background: ok ? 'rgba(34,197,94,0.09)' : 'rgba(239,68,68,0.09)',
-      border: `1px solid ${ok ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)'}`,
-      color: ok ? 'rgba(134,239,172,0.9)' : 'rgba(252,165,165,0.9)',
+      background: ok ? rgba(T.teal, 0.09) : 'rgba(224,84,104,0.09)',
+      border: `1px solid ${ok ? rgba(T.teal, 0.22) : 'rgba(224,84,104,0.22)'}`,
+      color: ok ? rgba(T.teal, 0.9) : 'rgba(224,140,140,0.9)',
     }}>
       {msg}
     </div>
   )
 }
 
-type PanelTab = 'theme' | 'display' | 'shortcut' | 'ai'
+type PanelTab = 'display' | 'theme' | 'shortcut' | 'ai'
 
 const TABS: { id: PanelTab; icon: string; label: string }[] = [
-  { id: 'theme',    icon: '🎨', label: '테마' },
-  { id: 'display',  icon: '🖥',  label: '화면' },
-  { id: 'shortcut', icon: '⌨️', label: '단축키' },
-  { id: 'ai',       icon: '🤖', label: 'AI' },
+  { id: 'display',  icon: '', label: '화면' },
+  { id: 'theme',    icon: '', label: '테마' },
+  { id: 'shortcut', icon: '', label: '단축키' },
+  { id: 'ai',       icon: '', label: 'AI' },
 ]
 
 export default function SettingsPanel(): React.ReactElement {
-  const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, setHubColor, setDisplay } = useAppStore()
-  const [tab, setTab] = useState<PanelTab>('theme')
+  const { hubSize, overlayOpacity, spiralScale, animSpeed, autoScan, setAutoScan, setDisplay } = useAppStore()
+  const currentTheme = useTheme()
+  const [tab, setTab] = useState<PanelTab>('display')
 
   // ── Theme state ──
-  const [selectedColor, setSelectedColor] = useState(hubColor)
-  const [customColor, setCustomColor] = useState(hubColor)
 
   // ── Display state ──
   const [localHub, setLocalHub] = useState(hubSize)
@@ -127,6 +126,14 @@ export default function SettingsPanel(): React.ReactElement {
   const [localSpiral, setLocalSpiral] = useState(Math.round(spiralScale * 100))
   const [localAnim, setLocalAnim] = useState(animSpeed)
   const [loginItem, setLoginItem] = useState(false)
+
+  // store 값 변경 시 로컬 state 동기화
+  useEffect(() => {
+    setLocalHub(hubSize)
+    setLocalOpacity(Math.round(overlayOpacity * 100))
+    setLocalSpiral(Math.round(spiralScale * 100))
+    setLocalAnim(animSpeed)
+  }, [hubSize, overlayOpacity, spiralScale, animSpeed])
 
   // ── Shortcut state ──
   const [currentShortcut, setCurrentShortcut] = useState('...')
@@ -171,12 +178,7 @@ export default function SettingsPanel(): React.ReactElement {
   useEffect(() => { if (recording) recorderRef.current?.focus() }, [recording])
 
   // ── Handlers ──
-  const handleThemeSelect = (color: string): void => {
-    setSelectedColor(color); setCustomColor(color)
-    setHubColor(color) // Zustand: API 저장 + CSS 변수 업데이트
-  }
-
-  const saveDisplay = (patch: Partial<{ hubSize: number; overlayOpacity: number; spiralScale: number; animSpeed: 'slow' | 'normal' | 'fast' }>): void => {
+  const saveDisplay = (patch: Partial<{ hubSize: number; overlayOpacity: number; spiralScale: number; animSpeed: 'slow' | 'normal' | 'fast' | 'none' }>): void => {
     setDisplay(patch) // Zustand: API 저장 + 상태 업데이트
   }
 
@@ -217,28 +219,28 @@ export default function SettingsPanel(): React.ReactElement {
       <div style={{
         width: 180,
         flexShrink: 0,
-        borderRight: '1px solid rgba(255,255,255,0.14)',
-        background: 'rgba(255,255,255,0.03)',
+        borderRight: `1px solid ${rgba(T.fg, 0.14)}`,
+        background: rgba(T.fg, 0.03),
         padding: '20px 0',
         display: 'flex',
         flexDirection: 'column',
       }}>
-        <div style={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: 'rgba(255,255,255,0.65)',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
+        <div className="section-header" style={{
           padding: '0 20px',
           marginBottom: 12,
         }}>
           설정
         </div>
+        <div role="tablist" aria-label="설정 탭" style={{ display: 'contents' }}>
         {TABS.map(t => {
           const isActive = tab === t.id
           return (
             <button
               key={t.id}
+              role="tab"
+              aria-selected={isActive}
+              aria-label={t.label}
+              aria-controls={`tabpanel-${t.id}`}
               onClick={() => setTab(t.id)}
               style={{
                 width: '100%',
@@ -248,9 +250,9 @@ export default function SettingsPanel(): React.ReactElement {
                 alignItems: 'center',
                 cursor: 'pointer',
                 border: 'none',
-                borderRight: isActive ? `2px solid ${hubColor}` : '2px solid transparent',
-                background: isActive ? rgba(hubColor, 0.12) : 'none',
-                color: isActive ? hubColor : 'rgba(255,255,255,0.65)',
+                borderRight: isActive ? `2px solid ${T.gold}` : '2px solid transparent',
+                background: isActive ? rgba(T.gold, 0.12) : 'none',
+                color: isActive ? T.gold : rgba(T.fg, 0.65),
                 textAlign: 'left',
                 transition: 'all 0.15s ease',
               }}
@@ -260,98 +262,16 @@ export default function SettingsPanel(): React.ReactElement {
             </button>
           )
         })}
+        </div>
       </div>
 
       {/* Right content area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 32 }}>
-
-        {/* ════ THEME TAB ════ */}
-        {tab === 'theme' && (
-          <div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginBottom: 18, lineHeight: 1.6 }}>
-              허브 및 전체 UI 강조 색상을 선택합니다.
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 20 }}>
-              {THEMES.map(theme => {
-                const isSel = selectedColor === theme.color
-                return (
-                  <button key={theme.id} onClick={() => handleThemeSelect(theme.color)} title={theme.name}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
-                      padding: '10px 4px', borderRadius: 10, cursor: 'pointer',
-                      border: isSel ? `2px solid ${theme.color}` : '2px solid rgba(255,255,255,0.07)',
-                      background: isSel ? rgba(theme.color, 0.12) : 'rgba(255,255,255,0.07)',
-                      transition: 'all 0.15s ease',
-                      boxShadow: isSel ? `0 0 18px ${rgba(theme.color, 0.28)}` : 'none',
-                    }}
-                  >
-                    <div style={{
-                      width: 30, height: 30, borderRadius: '50%',
-                      background: `radial-gradient(circle at 35% 35%, ${theme.color}, ${rgba(theme.color, 0.5)})`,
-                      boxShadow: isSel ? `0 0 12px ${rgba(theme.color, 0.6)}` : '0 2px 6px rgba(0,0,0,0.4)',
-                    }} />
-                    <span style={{ fontSize: 10, color: isSel ? theme.color : 'rgba(255,255,255,0.65)', fontWeight: 700 }}>
-                      {theme.name}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Custom picker */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', marginBottom: 18 }}>
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', flex: 1 }}>커스텀 색상</span>
-              <input type="color" value={customColor} onChange={e => setCustomColor(e.target.value)}
-                onBlur={() => handleThemeSelect(customColor)}
-                style={{ width: 36, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', cursor: 'pointer', padding: 2 }} />
-              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.72)', width: 72 }}>{customColor.toUpperCase()}</span>
-              <button onClick={() => handleThemeSelect(customColor)}
-                style={{ padding: '5px 12px', borderRadius: 6, border: `1px solid ${rgba(hubColor, 0.4)}`, background: rgba(hubColor, 0.12), color: rgba(hubColor, 0.95), fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-                적용
-              </button>
-            </div>
-
-            {/* Preview */}
-            <div style={{ padding: '14px 18px', borderRadius: 10, border: `1px solid ${rgba(selectedColor, 0.18)}`, background: rgba(selectedColor, 0.04) }}>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.72)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>미리보기</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: '50%',
-                  border: `2px solid ${rgba(selectedColor, 0.75)}`,
-                  background: `radial-gradient(circle at 40% 35%, ${rgba(selectedColor, 0.28)}, rgba(10,8,22,0.95))`,
-                  boxShadow: `0 0 22px ${rgba(selectedColor, 0.32)}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  {/* Inline book icon */}
-                  <svg width="26" height="22" viewBox="0 0 50 41" fill="none">
-                    <path d="M25 4 C19 4 9 6.5 3 10.5 L3 36 C9 33 19 32 25 33 Z"
-                      fill={rgba(selectedColor, 0.28)} stroke={selectedColor} strokeWidth="2" strokeLinejoin="round" />
-                    <path d="M25 4 C31 4 41 6.5 47 10.5 L47 36 C41 33 31 32 25 33 Z"
-                      fill={rgba(selectedColor, 0.16)} stroke={selectedColor} strokeWidth="2" strokeLinejoin="round" />
-                    <line x1="25" y1="4" x2="25" y2="33" stroke={selectedColor} strokeWidth="2.5" strokeLinecap="round" />
-                    <line x1="7"  y1="16" x2="21" y2="15"   stroke={selectedColor} strokeWidth="1.2" strokeOpacity="0.5" strokeLinecap="round" />
-                    <line x1="7"  y1="22" x2="21" y2="21"   stroke={selectedColor} strokeWidth="1.2" strokeOpacity="0.5" strokeLinecap="round" />
-                    <line x1="29" y1="15" x2="43" y2="16"   stroke={selectedColor} strokeWidth="1.2" strokeOpacity="0.5" strokeLinecap="round" />
-                    <line x1="29" y1="21" x2="43" y2="22"   stroke={selectedColor} strokeWidth="1.2" strokeOpacity="0.5" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: selectedColor, marginBottom: 4 }}>게젤샤프트</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.60)' }}>바탕화면 AI 어시스턴트</div>
-                </div>
-                <div style={{ padding: '5px 12px', borderRadius: 14, border: `1px solid ${rgba(selectedColor, 0.4)}`, background: rgba(selectedColor, 0.1), fontSize: 10, fontWeight: 700, color: selectedColor }}>
-                  ✦ AI 추천
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      <div role="tabpanel" id={`tabpanel-${tab}`} style={{ flex: 1, overflowY: 'auto', padding: 32 }}>
 
         {/* ════ DISPLAY TAB ════ */}
         {tab === 'display' && (
           <div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginBottom: 22, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 11, color: rgba(T.fg, 0.62), marginBottom: 22, lineHeight: 1.6 }}>
               허브 크기, 오버레이 투명도, 나선 간격, 애니메이션 속도를 조절합니다.
             </p>
 
@@ -379,30 +299,30 @@ export default function SettingsPanel(): React.ReactElement {
 
             {/* Animation speed */}
             <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.78)', fontWeight: 500, marginBottom: 10 }}>애니메이션 속도</div>
+              <div style={{ fontSize: 12, color: rgba(T.fg, 0.78), fontWeight: 500, marginBottom: 10 }}>애니메이션 속도</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {(['slow', 'normal', 'fast'] as const).map(s => (
+                {(['slow', 'normal', 'fast', 'none'] as const).map(s => (
                   <button key={s} onClick={() => { setLocalAnim(s); saveDisplay({ animSpeed: s }) }}
                     style={{
                       flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                      border: localAnim === s ? `2px solid ${hubColor}` : '2px solid rgba(255,255,255,0.1)',
-                      background: localAnim === s ? rgba(hubColor, 0.15) : 'rgba(255,255,255,0.07)',
-                      color: localAnim === s ? hubColor : 'rgba(255,255,255,0.65)',
+                      border: localAnim === s ? `2px solid ${T.gold}` : `2px solid ${rgba(T.fg, 0.1)}`,
+                      background: localAnim === s ? rgba(T.gold, 0.15) : rgba(T.fg, 0.07),
+                      color: localAnim === s ? T.gold : rgba(T.fg, 0.65),
                       transition: 'all 0.15s ease',
                     }}>
-                    {s === 'slow' ? '천천히' : s === 'normal' ? '보통' : '빠르게'}
+                    {s === 'slow' ? '천천히' : s === 'normal' ? '보통' : s === 'fast' ? '빠르게' : '없음'}
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Startup settings */}
-            <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.76)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 12 }}>기본 설정</div>
+            <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: `1px solid ${rgba(T.fg, 0.12)}`, background: rgba(T.fg, 0.04) }}>
+              <div className="section-header" style={{ marginBottom: 12 }}>기본 설정</div>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>Windows 시작 시 자동 실행</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.62)', marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
+                  <div style={{ fontSize: 12, color: rgba(T.fg, 0.75), fontWeight: 500 }}>Windows 시작 시 자동 실행</div>
+                  <div style={{ fontSize: 10, color: rgba(T.fg, 0.62), marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
                 </div>
                 <button
                   onClick={async () => {
@@ -413,10 +333,10 @@ export default function SettingsPanel(): React.ReactElement {
                   }}
                   style={{
                     width: 44, height: 24, borderRadius: 12, border: 'none',
-                    background: loginItem ? hubColor : 'rgba(255,255,255,0.12)',
+                    background: loginItem ? T.gold : rgba(T.fg, 0.12),
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
                     transition: 'background 0.2s ease',
-                    boxShadow: loginItem ? `0 0 10px ${rgba(hubColor, 0.4)}` : 'none',
+                    boxShadow: loginItem ? `0 0 10px ${rgba(T.gold, 0.4)}` : 'none',
                   }}
                 >
                   <div style={{
@@ -429,70 +349,148 @@ export default function SettingsPanel(): React.ReactElement {
               </label>
             </div>
 
+            {/* Auto-scan setting */}
+            <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: `1px solid ${rgba(T.fg, 0.12)}`, background: rgba(T.fg, 0.04) }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: rgba(T.fg, 0.75), fontWeight: 500 }}>메뉴 열 때 자동 AI 분석</div>
+                  <div style={{ fontSize: 10, color: rgba(T.fg, 0.62), marginTop: 2 }}>메뉴를 처음 열 때 화면을 자동으로 분석하여 도구를 추천합니다</div>
+                </div>
+                <button
+                  onClick={() => setAutoScan(!autoScan)}
+                  style={{
+                    width: 44, height: 24, borderRadius: 12, border: 'none',
+                    background: autoScan ? T.teal : rgba(T.fg, 0.12),
+                    cursor: 'pointer', position: 'relative', flexShrink: 0,
+                    transition: 'background 0.2s ease',
+                    boxShadow: autoScan ? `0 0 10px ${rgba(T.teal, 0.4)}` : 'none',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: 3, width: 18, height: 18, borderRadius: '50%',
+                    background: 'white', transition: 'left 0.2s ease',
+                    left: autoScan ? 23 : 3,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  }} />
+                </button>
+              </label>
+            </div>
+
             {/* Reset to best-visibility defaults */}
             <button
               onClick={() => {
-                const BEST = { hubSize: 130, overlayOpacity: 0.91, spiralScale: 1.05, animSpeed: 'normal' as const }
+                const BEST = { hubSize: 140, overlayOpacity: 0.92, spiralScale: 1.0, animSpeed: 'normal' as const }
                 setLocalHub(BEST.hubSize)
                 setLocalOpacity(Math.round(BEST.overlayOpacity * 100))
                 setLocalSpiral(Math.round(BEST.spiralScale * 100))
                 setLocalAnim(BEST.animSpeed)
                 saveDisplay(BEST)
-                handleThemeSelect('#8b5cf6')
               }}
               style={{
                 fontSize: 12, fontWeight: 600,
-                color: rgba(hubColor, 0.85),
-                background: rgba(hubColor, 0.08),
-                border: `1px solid ${rgba(hubColor, 0.28)}`,
-                borderRadius: 8,
+                color: rgba(T.gold, 0.85),
+                background: rgba(T.gold, 0.06),
+                border: `1px solid ${rgba(T.gold, 0.2)}`,
+                borderRadius: 4,
                 cursor: 'pointer',
                 padding: '8px 16px',
                 transition: 'all 0.15s ease',
+                letterSpacing: '0.03em',
               }}
             >
-              ✦ 최적 시인성으로 초기화
+              최적 시인성으로 초기화
             </button>
           </div>
         )}
 
+        {/* ════ THEME TAB ════ */}
+        {tab === 'theme' && (() => {
+          const current = currentTheme // alias for brevity in JSX
+          return (
+            <div>
+              <p style={{ fontSize: 11, color: rgba(T.fg, 0.62), marginBottom: 22, lineHeight: 1.6 }}>
+                앱 전체의 색상 테마를 변경합니다. Primary(장식)와 Accent(강조) 색이 바뀝니다.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                {THEME_PRESETS.map(t => {
+                  const active = current.id === t.id
+                  return (
+                    <button key={t.id} onClick={() => setTheme(t.id)} style={{
+                      padding: '14px 16px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                      border: active ? `2px solid ${t.accent}` : `2px solid ${rgba(T.fg, 0.08)}`,
+                      background: active ? rgba(t.accent, 0.08) : rgba(T.fg, 0.04),
+                      transition: 'all 0.15s ease',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <div style={{ width: 20, height: 20, borderRadius: 4, background: t.primary, border: `1px solid ${rgba(T.fg, 0.1)}` }} />
+                        <div style={{ width: 20, height: 20, borderRadius: 4, background: t.accent, border: `1px solid ${rgba(T.fg, 0.1)}` }} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: active ? t.accent : rgba(T.fg, 0.75) }}>{t.name}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4, height: 4, borderRadius: 2, overflow: 'hidden' }}>
+                        <div style={{ flex: 1, background: t.primary }} />
+                        <div style={{ flex: 1, background: t.accent }} />
+                        <div style={{ flex: 1, background: `linear-gradient(90deg, ${t.primary}, ${t.accent})` }} />
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Preview */}
+              <div style={{ marginTop: 20, padding: '16px 18px', borderRadius: 8, border: `1px solid ${rgba(current.primary, 0.2)}`, background: rgba(current.primary, 0.04) }}>
+                <div className="section-header" style={{ marginBottom: 10, color: rgba(current.primary, 0.6) }}>미리보기</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${current.primary}`, background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 8, fontWeight: 900, color: current.accent, fontFamily: current.titleFont }}>GS</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: current.accent, marginBottom: 2 }}>Gesellschaft</div>
+                    <div style={{ fontSize: 10, color: rgba(current.primary, 0.7) }}>Book, Clock and Tools</div>
+                  </div>
+                  <div style={{ padding: '5px 12px', borderRadius: 4, border: `1px solid ${rgba(current.accent, 0.3)}`, background: rgba(current.accent, 0.08), color: current.accent, fontSize: 10, fontWeight: 600 }}>버튼</div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* ════ SHORTCUT TAB ════ */}
         {tab === 'shortcut' && (
           <div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginBottom: 18, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 11, color: rgba(T.fg, 0.62), marginBottom: 18, lineHeight: 1.6 }}>
               오버레이를 표시/숨기는 글로벌 단축키입니다. Ctrl, Alt, Shift 중 하나 이상 + 키 조합이 필요합니다.
             </p>
 
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.60)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>현재 단축키</div>
-              <KeyBadge keys={currentShortcut} color={hubColor} />
+              <div className="section-header">현재 단축키</div>
+              <KeyBadge keys={currentShortcut} color={T.gold} />
             </div>
 
             <div style={{ marginBottom: shortcutStatus ? 14 : 18 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.60)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>새 단축키</div>
+              <div className="section-header">새 단축키</div>
               <div
                 ref={recorderRef} tabIndex={0}
                 onClick={() => { setRecording(true); setShortcutStatus(null) }}
                 style={{
                   padding: '14px 18px', borderRadius: 10, outline: 'none',
                   cursor: recording ? 'default' : 'pointer',
-                  border: recording ? `2px solid ${rgba(hubColor, 0.8)}` : shortcutChanged ? '2px solid rgba(99,174,120,0.55)' : '1.5px solid rgba(255,255,255,0.1)',
-                  background: recording ? rgba(hubColor, 0.07) : 'rgba(255,255,255,0.03)',
-                  boxShadow: recording ? `0 0 20px ${rgba(hubColor, 0.12)}` : 'none',
+                  border: recording ? `2px solid ${rgba(T.gold, 0.8)}` : shortcutChanged ? '2px solid rgba(99,174,120,0.55)' : `1.5px solid ${rgba(T.fg, 0.1)}`,
+                  background: recording ? rgba(T.gold, 0.07) : rgba(T.fg, 0.03),
+                  boxShadow: recording ? `0 0 20px ${rgba(T.gold, 0.12)}` : 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                   transition: 'all 0.15s ease',
                 }}
               >
                 {recording
-                  ? <span style={{ fontSize: 12, color: rgba(hubColor, 0.8), fontStyle: 'italic' }}>키 조합을 입력하세요...</span>
-                  : <KeyBadge keys={pendingShortcut || currentShortcut} color={hubColor} inline />
+                  ? <span style={{ fontSize: 12, color: rgba(T.gold, 0.8), fontStyle: 'italic' }}>키 조합을 입력하세요...</span>
+                  : <KeyBadge keys={pendingShortcut || currentShortcut} color={T.gold} inline />
                 }
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.48)', flexShrink: 0 }}>
+                <span style={{ fontSize: 10, color: rgba(T.fg, 0.48), flexShrink: 0 }}>
                   {recording ? '입력 대기 중' : '클릭하여 변경'}
                 </span>
               </div>
               {recording && (
-                <button onClick={() => setRecording(false)} style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.52)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <button onClick={() => setRecording(false)} style={{ marginTop: 6, fontSize: 11, color: rgba(T.fg, 0.52), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   취소
                 </button>
               )}
@@ -506,8 +504,8 @@ export default function SettingsPanel(): React.ReactElement {
                 disabled={savingShortcut || recording || !shortcutChanged}
                 style={{
                   padding: '8px 22px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600,
-                  background: (savingShortcut || recording || !shortcutChanged) ? rgba(hubColor, 0.22) : rgba(hubColor, 0.88),
-                  color: (savingShortcut || recording || !shortcutChanged) ? 'rgba(255,255,255,0.48)' : 'white',
+                  background: (savingShortcut || recording || !shortcutChanged) ? rgba(T.gold, 0.22) : rgba(T.gold, 0.88),
+                  color: (savingShortcut || recording || !shortcutChanged) ? rgba(T.fg, 0.48) : T.fg,
                   cursor: (savingShortcut || recording || !shortcutChanged) ? 'default' : 'pointer',
                   transition: 'background 0.12s ease',
                 }}
@@ -515,31 +513,51 @@ export default function SettingsPanel(): React.ReactElement {
                 {savingShortcut ? '저장 중...' : '저장'}
               </button>
             </div>
+
+            {/* App shortcuts reference */}
+            <div style={{ marginTop: 28, borderTop: `1px solid ${rgba(T.gold, 0.06)}`, paddingTop: 20 }}>
+              <div className="section-header" style={{ marginBottom: 12 }}>앱 내 단축키</div>
+              {([
+                { label: '일반', items: [['Esc', '닫기 / 뒤로가기'], ['?', '단축키 도움말']] },
+                { label: '메뉴 탐색', items: [['← →', '이전 / 다음 도구'], ['Home', '첫 번째 도구 (A)'], ['End', '마지막 도구 (Z)'], ['↑ ↓', '전체 보기 토글'], ['Enter', '도구 선택'], ['스크롤', '도구 회전']] },
+                { label: '검색', items: [['텍스트 입력', '도구 이름으로 필터'], ['카테고리 클릭', '분류별 필터']] },
+              ] as const).map(section => (
+                <div key={section.label} style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: rgba(T.gold, 0.4), letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 5 }}>{section.label}</div>
+                  {section.items.map(([key, desc]) => (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+                      <kbd style={{ fontSize: 10, fontWeight: 600, color: T.teal, fontFamily: 'monospace', background: rgba(T.teal, 0.06), padding: '1px 8px', borderRadius: 3, border: `1px solid ${rgba(T.teal, 0.08)}`, minWidth: 50, textAlign: 'center' }}>{key}</kbd>
+                      <span style={{ fontSize: 10, color: rgba(T.fg, 0.5) }}>{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {/* ════ AI TAB ════ */}
         {tab === 'ai' && (
           <div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', marginBottom: 22, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 11, color: rgba(T.fg, 0.62), marginBottom: 22, lineHeight: 1.6 }}>
               AI 채팅 및 화면 분석에 사용할 제공자와 모델을 설정합니다.
             </p>
             {aiLoading && (
-              <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, textAlign: 'center', paddingTop: 40 }}>불러오는 중...</div>
+              <div style={{ color: rgba(T.fg, 0.55), fontSize: 12, textAlign: 'center', paddingTop: 40 }}>불러오는 중...</div>
             )}
             {!aiLoading && aiConfig && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', marginBottom: 6 }}>AI 제공자</div>
+                  <div style={{ fontSize: 'var(--fs-label)', fontWeight: 700, color: 'var(--win-text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 6 }}>AI 제공자</div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     {(['openai', 'anthropic', 'ollama'] as const).map(p => (
                       <button key={p}
                         onClick={() => setAiDraft(d => ({ ...d, provider: p, model: '' }))}
                         style={{
                           flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                          border: aiProvider === p ? `2px solid ${hubColor}` : '2px solid rgba(255,255,255,0.1)',
-                          background: aiProvider === p ? rgba(hubColor, 0.15) : 'rgba(255,255,255,0.07)',
-                          color: aiProvider === p ? hubColor : 'rgba(255,255,255,0.65)',
+                          border: aiProvider === p ? `2px solid ${T.gold}` : `2px solid ${rgba(T.fg, 0.1)}`,
+                          background: aiProvider === p ? rgba(T.gold, 0.15) : rgba(T.fg, 0.07),
+                          color: aiProvider === p ? T.gold : rgba(T.fg, 0.65),
                           transition: 'all 0.15s ease',
                         }}>
                         {p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic' : 'Ollama'}
@@ -549,32 +567,32 @@ export default function SettingsPanel(): React.ReactElement {
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, gap: 8 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)' }}>모델</span>
+                    <span style={{ fontSize: 'var(--fs-label)', fontWeight: 700, color: 'var(--win-text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>모델</span>
                     {aiProvider === 'ollama' && (
-                      <button onClick={loadOllamaModels} style={{ fontSize: 10, color: rgba(hubColor, 0.85), background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      <button onClick={loadOllamaModels} style={{ fontSize: 10, color: rgba(T.gold, 0.85), background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
                         새로고침
                       </button>
                     )}
                   </div>
                   {aiModels.length > 0 ? (
                     <select value={aiDraft.model ?? ''} onChange={e => setAiDraft(d => ({ ...d, model: e.target.value }))}
-                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8 }}>
+                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: rgba(T.bg, 0.95), color: rgba(T.fg, 0.88), border: `1px solid ${rgba(T.fg, 0.16)}`, borderRadius: 8 }}>
                       {aiModels.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   ) : (
                     <input value={aiDraft.model ?? ''} onChange={e => setAiDraft(d => ({ ...d, model: e.target.value }))}
                       placeholder={aiProvider === 'openai' ? 'gpt-4o' : aiProvider === 'anthropic' ? 'claude-sonnet-4-5' : '모델명 입력...'}
-                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, boxSizing: 'border-box' }} />
+                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: rgba(T.bg, 0.95), color: rgba(T.fg, 0.88), border: `1px solid ${rgba(T.fg, 0.16)}`, borderRadius: 8, boxSizing: 'border-box' }} />
                   )}
                 </div>
                 {aiProvider !== 'ollama' && (
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', marginBottom: 6 }}>API 키</div>
+                    <div style={{ fontSize: 'var(--fs-label)', fontWeight: 700, color: 'var(--win-text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 6 }}>API 키</div>
                     <input type="password" value={aiDraft.apiKeyRaw ?? ''}
                       onChange={e => setAiDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
                       placeholder={aiConfig.apiKey ? `현재: ••••${aiConfig.apiKey.slice(-4)}` : 'API 키를 입력하세요...'}
-                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, boxSizing: 'border-box' }} />
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.52)', marginTop: 4 }}>
+                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: rgba(T.bg, 0.95), color: rgba(T.fg, 0.88), border: `1px solid ${rgba(T.fg, 0.16)}`, borderRadius: 8, boxSizing: 'border-box' }} />
+                    <div style={{ fontSize: 10, color: rgba(T.fg, 0.52), marginTop: 4 }}>
                       비워두면 기존 키가 유지됩니다.
                       {aiProvider === 'openai' && ' OpenAI 대시보드에서 발급하세요.'}
                       {aiProvider === 'anthropic' && ' Anthropic Console에서 발급하세요.'}
@@ -583,23 +601,23 @@ export default function SettingsPanel(): React.ReactElement {
                 )}
                 {aiProvider === 'ollama' && (
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', marginBottom: 6 }}>Ollama 서버 URL</div>
+                    <div style={{ fontSize: 'var(--fs-label)', fontWeight: 700, color: 'var(--win-text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 6 }}>Ollama 서버 URL</div>
                     <input value={aiDraft.ollamaUrl ?? ''} onChange={e => setAiDraft(d => ({ ...d, ollamaUrl: e.target.value }))}
                       placeholder="http://localhost:11434"
-                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, boxSizing: 'border-box' }} />
+                      style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: rgba(T.bg, 0.95), color: rgba(T.fg, 0.88), border: `1px solid ${rgba(T.fg, 0.16)}`, borderRadius: 8, boxSizing: 'border-box' }} />
                   </div>
                 )}
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.68)', marginBottom: 6 }}>시스템 프롬프트</div>
+                  <div style={{ fontSize: 'var(--fs-label)', fontWeight: 700, color: 'var(--win-text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 6 }}>시스템 프롬프트</div>
                   <textarea value={aiDraft.systemPrompt ?? ''} onChange={e => setAiDraft(d => ({ ...d, systemPrompt: e.target.value }))}
                     rows={4} placeholder="AI의 역할이나 응답 방식을 지정합니다. 비워두면 기본값 사용."
-                    style={{ width: '100%', fontSize: 12, resize: 'vertical', padding: '8px 10px', lineHeight: 1.5, fontFamily: 'inherit', background: 'rgba(14,12,26,0.95)', color: 'rgba(255,255,255,0.88)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 8, boxSizing: 'border-box' }} />
+                    style={{ width: '100%', fontSize: 12, resize: 'vertical', padding: '8px 10px', lineHeight: 1.5, fontFamily: 'inherit', background: rgba(T.bg, 0.95), color: rgba(T.fg, 0.88), border: `1px solid ${rgba(T.fg, 0.16)}`, borderRadius: 8, boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button onClick={handleSaveAiConfig} style={{
                     padding: '8px 22px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    background: aiSaved ? 'rgba(34,197,94,0.25)' : rgba(hubColor, 0.88),
-                    color: aiSaved ? 'rgba(134,239,172,0.9)' : 'white',
+                    background: aiSaved ? rgba(T.teal, 0.25) : rgba(T.gold, 0.88),
+                    color: aiSaved ? rgba(T.teal, 0.9) : 'white',
                     transition: 'all 0.2s ease',
                   }}>
                     {aiSaved ? '✓ 저장됨' : '저장'}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Modal } from './SearchModal'
 import { basename } from 'path-browserify'
+import { T, rgba } from '../utils/theme'
 
 interface FileItem {
   path: string
@@ -101,9 +102,9 @@ export default function CadConvertModal({ onClose, asPanel }: { onClose: () => v
               <span>{files.length}개 파일</span>
               {(doneCount > 0 || errorCount > 0) && (
                 <span>
-                  {doneCount > 0 && <span style={{ color: '#6ccb5f' }}>{doneCount}개 완료</span>}
+                  {doneCount > 0 && <span style={{ color: T.success }}>{doneCount}개 완료</span>}
                   {doneCount > 0 && errorCount > 0 && ' · '}
-                  {errorCount > 0 && <span style={{ color: '#ff6b6b' }}>{errorCount}개 오류</span>}
+                  {errorCount > 0 && <span style={{ color: T.danger }}>{errorCount}개 오류</span>}
                 </span>
               )}
             </div>
@@ -122,8 +123,8 @@ export default function CadConvertModal({ onClose, asPanel }: { onClose: () => v
                       className="w-7 h-7 rounded flex items-center justify-center text-[11px] font-bold flex-shrink-0"
                       style={
                         f.status === 'dwg_warning'
-                          ? { background: 'rgba(255,140,0,0.15)', color: '#ffa040' }
-                          : { background: 'rgba(0,120,212,0.15)', color: '#60b0ff' }
+                          ? { background: rgba(T.warning, 0.15), color: T.warning }
+                          : { background: rgba(T.teal, 0.15), color: T.teal }
                       }
                     >
                       {f.path.toLowerCase().endsWith('.dwg') ? 'DWG' : 'DXF'}
@@ -133,12 +134,12 @@ export default function CadConvertModal({ onClose, asPanel }: { onClose: () => v
                     <div className="flex-1 min-w-0">
                       <div className="text-[12px] truncate" style={{ color: 'var(--win-text)' }}>{basename(f.path)}</div>
                       {f.status === 'dwg_warning' && (
-                        <div className="text-[10px] mt-0.5" style={{ color: '#ffa040' }}>
+                        <div className="text-[10px] mt-0.5" style={{ color: T.warning }}>
                           AutoCAD에서 <strong>다른 이름으로 저장 → DXF</strong>로 변환 후 추가하세요
                         </div>
                       )}
                       {f.error && (
-                        <div className="text-[10px] mt-0.5 truncate" style={{ color: '#ff6b6b' }}>
+                        <div className="text-[10px] mt-0.5 truncate" style={{ color: T.danger }}>
                           {f.error}
                         </div>
                       )}
@@ -199,7 +200,7 @@ export default function CadConvertModal({ onClose, asPanel }: { onClose: () => v
         {/* 안내 */}
         <div
           className="rounded-lg px-3 py-2.5 text-[11px] leading-relaxed"
-          style={{ background: 'rgba(0,120,212,0.08)', border: '1px solid rgba(0,120,212,0.2)', color: '#60b0ff' }}
+          style={{ background: rgba(T.teal, 0.08), border: `1px solid ${rgba(T.teal, 0.2)}`, color: T.teal }}
         >
           <strong>지원 형식:</strong> DXF (AutoCAD 2000 이상)<br />
           <span style={{ color: 'var(--win-text-muted)' }}>

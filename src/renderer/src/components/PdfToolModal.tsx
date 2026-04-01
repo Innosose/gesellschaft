@@ -156,7 +156,7 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
               style={{
                 padding: '8px 24px',
                 background: mode === m ? 'var(--win-accent)' : 'transparent',
-                color: mode === m ? '#fff' : 'var(--win-text-sub)',
+                color: mode === m ? T.fg : 'var(--win-text-sub)',
                 border: 'none',
                 cursor: 'pointer',
                 fontWeight: mode === m ? 600 : 400,
@@ -270,17 +270,17 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
               </div>
             )}
             {status === 'error' && (
-              <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: '#fff', borderRadius: 6, fontSize: 13 }}>
+              <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: T.fg, borderRadius: 6, fontSize: 13 }}>
                 ⚠️ {errorMsg}
               </div>
             )}
             {status === 'done' && (
-              <div style={{ padding: '10px 14px', background: 'var(--win-success)', color: '#fff', borderRadius: 6, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ padding: '10px 14px', background: 'var(--win-success)', color: T.fg, borderRadius: 6, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span>✅ 병합 완료: {fileName(resultPath)}</span>
                 <button
                   className="win-btn-secondary"
                   style={{ marginLeft: 'auto', fontSize: 12 }}
-                  onClick={() => (window.api as any).pdfTool?.openPath?.(resultPath)}
+                  onClick={() => window.api.pdfTool.openFile(resultPath)}
                 >열기</button>
               </div>
             )}
@@ -328,14 +328,14 @@ export default function PdfToolModal({ onClose, asPanel }: PdfToolModalProps): R
             </div>
 
             {status === 'error' && (
-              <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: '#fff', borderRadius: 6, fontSize: 13 }}>
+              <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: T.fg, borderRadius: 6, fontSize: 13 }}>
                 ⚠️ {errorMsg}
               </div>
             )}
 
             {status === 'done' && splitResults.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ padding: '10px 14px', background: 'var(--win-success)', color: '#fff', borderRadius: 6, fontSize: 13 }}>
+                <div style={{ padding: '10px 14px', background: 'var(--win-success)', color: T.fg, borderRadius: 6, fontSize: 13 }}>
                   ✅ 분할 완료: {splitResults.length}개 파일 생성됨
                 </div>
                 <div style={{ overflowY: 'auto', maxHeight: 200, border: '1px solid var(--win-border)', borderRadius: 6, background: 'var(--win-surface-2)' }}>

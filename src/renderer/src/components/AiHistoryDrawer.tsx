@@ -1,4 +1,5 @@
 import React from 'react'
+import { T, rgba } from '../utils/theme'
 import type { ChatMessage } from '../../../shared/types'
 
 export interface SavedConversation {
@@ -18,13 +19,13 @@ interface AiHistoryDrawerProps {
 export default function AiHistoryDrawer({
   history, onLoad, onDelete, dark = false,
 }: AiHistoryDrawerProps): React.ReactElement {
-  const itemBg      = dark ? 'rgba(255,255,255,0.04)' : 'var(--win-surface)'
-  const itemHoverBg = dark ? 'rgba(139,92,246,0.12)'  : 'var(--win-surface-2)'
-  const itemBorder  = dark ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--win-border)'
-  const titleColor  = dark ? 'rgba(255,255,255,0.8)'  : 'var(--win-text)'
-  const metaColor   = dark ? 'rgba(255,255,255,0.52)' : 'var(--win-text-muted)'
-  const delColor    = dark ? 'rgba(255,255,255,0.45)' : 'var(--win-text-muted)'
-  const emptyColor  = dark ? 'rgba(255,255,255,0.58)' : 'var(--win-text-muted)'
+  const itemBg      = dark ? rgba(T.fg, 0.04) : 'var(--win-surface)'
+  const itemHoverBg = dark ? rgba(T.gold, 0.12)  : 'var(--win-surface-2)'
+  const itemBorder  = dark ? `1px solid ${rgba(T.fg, 0.08)}` : '1px solid var(--win-border)'
+  const titleColor  = dark ? rgba(T.fg, 0.8)  : 'var(--win-text)'
+  const metaColor   = dark ? rgba(T.fg, 0.52) : 'var(--win-text-muted)'
+  const delColor    = dark ? rgba(T.fg, 0.45) : 'var(--win-text-muted)'
+  const emptyColor  = dark ? rgba(T.fg, 0.58) : 'var(--win-text-muted)'
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>

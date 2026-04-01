@@ -190,10 +190,11 @@ export default function SearchModal({
 
   return (
     <Modal title={title} onClose={onClose} asPanel={asPanel}>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3" role="search">
         <div className="flex gap-2 items-center">
-          <label className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--win-text-muted)' }}>검색 위치</label>
+          <label htmlFor="search-root-path" className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--win-text-muted)' }}>검색 위치</label>
           <input
+            id="search-root-path"
             className="win-input flex-1 text-xs"
             value={opts.rootPath}
             onChange={(e) => setOpts({ ...opts, rootPath: e.target.value })}
@@ -210,9 +211,10 @@ export default function SearchModal({
         </div>
 
         <div className="flex gap-2 items-center relative">
-          <label className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--win-text-muted)' }}>검색어</label>
+          <label htmlFor="search-query" className="text-xs w-16 flex-shrink-0" style={{ color: 'var(--win-text-muted)' }}>검색어</label>
           <div className="flex-1 relative">
             <input
+              id="search-query"
               ref={inputRef}
               className="win-input w-full text-xs"
               placeholder="파일명 또는 내용 검색..."
@@ -258,16 +260,16 @@ export default function SearchModal({
         {showAdvanced && (
           <div className="rounded p-3 space-y-2 text-xs" style={{ background: 'var(--win-surface-2)', border: '1px solid var(--win-border)' }}>
             <div className="flex gap-2 items-center">
-              <label className="w-20" style={{ color: 'var(--win-text-muted)' }}>확장자 (,로 구분)</label>
-              <input className="win-input flex-1 text-xs" placeholder=".jpg,.png,.pdf" value={opts.extensions} onChange={(e) => setOpts({ ...opts, extensions: e.target.value })} />
+              <label htmlFor="search-extensions" className="w-20" style={{ color: 'var(--win-text-muted)' }}>확장자 (,로 구분)</label>
+              <input id="search-extensions" className="win-input flex-1 text-xs" placeholder=".jpg,.png,.pdf" value={opts.extensions} onChange={(e) => setOpts({ ...opts, extensions: e.target.value })} />
             </div>
             <div className="flex gap-2 items-center">
-              <label className="w-20" style={{ color: 'var(--win-text-muted)' }}>최소 크기 (KB)</label>
-              <input className="win-input w-32 text-xs" type="number" placeholder="0" value={opts.minSize} onChange={(e) => setOpts({ ...opts, minSize: e.target.value })} />
+              <label htmlFor="search-min-size" className="w-20" style={{ color: 'var(--win-text-muted)' }}>최소 크기 (KB)</label>
+              <input id="search-min-size" className="win-input w-32 text-xs" type="number" placeholder="0" value={opts.minSize} onChange={(e) => setOpts({ ...opts, minSize: e.target.value })} />
             </div>
             <div className="flex gap-2 items-center">
-              <label className="w-20" style={{ color: 'var(--win-text-muted)' }}>최대 크기 (KB)</label>
-              <input className="win-input w-32 text-xs" type="number" placeholder="∞" value={opts.maxSize} onChange={(e) => setOpts({ ...opts, maxSize: e.target.value })} />
+              <label htmlFor="search-max-size" className="w-20" style={{ color: 'var(--win-text-muted)' }}>최대 크기 (KB)</label>
+              <input id="search-max-size" className="win-input w-32 text-xs" type="number" placeholder="∞" value={opts.maxSize} onChange={(e) => setOpts({ ...opts, maxSize: e.target.value })} />
             </div>
           </div>
         )}
@@ -332,7 +334,7 @@ export default function SearchModal({
             <div className="text-xs font-medium truncate" style={{ color: 'var(--win-text-sub)' }}>{selectedFile.name}</div>
 
             <div>
-              <div className="text-xs mb-1" style={{ color: 'var(--win-text-muted)' }}>태그</div>
+              <label htmlFor="search-file-tags" className="text-xs mb-1 block" style={{ color: 'var(--win-text-muted)' }}>태그</label>
               <div className="flex flex-wrap gap-1 mb-1.5">
                 {fileTags.map((tag) => (
                   <span key={tag} className="flex items-center gap-1 bg-[#0078d420] border border-[#0078d440] text-[#0078d4] px-2 py-0.5 rounded-full text-xs">
@@ -342,14 +344,14 @@ export default function SearchModal({
                 ))}
               </div>
               <div className="flex gap-1">
-                <input className="win-input flex-1 text-xs" placeholder="태그 추가..." value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTag()} />
+                <input id="search-file-tags" className="win-input flex-1 text-xs" placeholder="태그 추가..." value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addTag()} />
                 <button className="win-btn-secondary text-xs px-2" onClick={addTag}>+</button>
               </div>
             </div>
 
             <div>
-              <div className="text-xs mb-1" style={{ color: 'var(--win-text-muted)' }}>메모</div>
-              <textarea className="win-input w-full text-xs resize-none" rows={2} value={fileNote} onChange={(e) => setFileNote(e.target.value)} placeholder="메모..." />
+              <label htmlFor="search-file-note" className="text-xs mb-1 block" style={{ color: 'var(--win-text-muted)' }}>메모</label>
+              <textarea id="search-file-note" className="win-input w-full text-xs resize-none" rows={2} value={fileNote} onChange={(e) => setFileNote(e.target.value)} placeholder="메모..." />
               <button className="win-btn-secondary text-xs mt-1" onClick={saveNote}>저장</button>
             </div>
           </div>
@@ -373,6 +375,27 @@ function CheckOpt({ label, checked, onChange }: { label: string; checked: boolea
 }
 
 export function Modal({ title, onClose, children, wide, asPanel }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean; asPanel?: boolean }): React.ReactElement {
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (asPanel) return // only trap in modal mode
+    const container = modalRef.current
+    if (!container) return
+    const focusable = container.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable.length === 0) return
+    const first = focusable[0], last = focusable[focusable.length - 1]
+    const trap = (e: KeyboardEvent): void => {
+      if (e.key !== 'Tab') return
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus() } }
+      else { if (document.activeElement === last) { e.preventDefault(); first.focus() } }
+    }
+    container.addEventListener('keydown', trap)
+    first.focus()
+    return () => container.removeEventListener('keydown', trap)
+  }, [asPanel])
+
   if (asPanel) {
     return (
       <div className="flex flex-col flex-1 overflow-hidden h-full">
@@ -384,14 +407,19 @@ export function Modal({ title, onClose, children, wide, asPanel }: { title: stri
   return (
     <div className="modal-overlay p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
         className={`modal-panel flex-col ${wide ? 'w-full max-w-4xl' : 'w-full max-w-2xl'}`}
         style={{ maxHeight: '85vh' }}
       >
         {/* Header */}
         <div className="modal-header">
-          <span className="font-semibold text-[13px] tracking-tight" style={{ color: 'var(--win-text)' }}>{title}</span>
+          <span id="modal-title" className="tracking-tight" style={{ color: 'var(--win-text)', fontSize: 15, fontWeight: 700 }}>{title}</span>
           <button
             onClick={onClose}
+            aria-label="닫기"
             className="w-6 h-6 rounded-md flex items-center justify-center transition-colors"
             style={{ background: 'transparent', color: 'var(--win-text-muted)' }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--win-surface-3)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text)' }}

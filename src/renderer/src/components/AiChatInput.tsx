@@ -1,4 +1,5 @@
 import React from 'react'
+import { T, rgba } from '../utils/theme'
 
 interface AiChatInputProps {
   input: string
@@ -15,12 +16,12 @@ interface AiChatInputProps {
 export default function AiChatInput({
   input, setInput, streaming, onSend, onCancel, onKeyDown, inputRef, dark = false,
 }: AiChatInputProps): React.ReactElement {
-  const bg    = dark ? 'rgba(20,18,36,0.9)'          : 'var(--win-surface-2)'
-  const border = dark ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--win-border)'
-  const inputBg = dark ? 'rgba(255,255,255,0.05)'    : 'var(--win-surface)'
-  const color = dark ? 'rgba(255,255,255,0.85)'       : 'var(--win-text)'
-  const accent = dark ? 'rgba(139,92,246,0.8)'        : 'var(--win-accent)'
-  const mutedColor = dark ? 'rgba(255,255,255,0.48)'  : 'var(--win-text-muted)'
+  const bg    = dark ? rgba(T.bg, 0.9)                : 'var(--win-surface-2)'
+  const border = dark ? `1px solid ${rgba(T.fg, 0.08)}` : '1px solid var(--win-border)'
+  const inputBg = dark ? rgba(T.fg, 0.05)    : 'var(--win-surface)'
+  const color = dark ? rgba(T.fg, 0.85)       : 'var(--win-text)'
+  const accent = dark ? rgba(T.gold, 0.8)        : 'var(--win-accent)'
+  const mutedColor = dark ? rgba(T.fg, 0.48)  : 'var(--win-text-muted)'
 
   return (
     <div style={{ padding: '10px 14px 14px', borderTop: border, background: bg, flexShrink: 0 }}>
@@ -44,7 +45,7 @@ export default function AiChatInput({
             onClick={onCancel}
             style={{
               height: 54, width: 50, borderRadius: 6, border: 'none', cursor: 'pointer',
-              background: '#c0392b', color: '#fff', fontSize: 18, flexShrink: 0,
+              background: T.danger, color: T.fg, fontSize: 18, flexShrink: 0,
             }}
             aria-label="스트리밍 중단"
           >⏹</button>
@@ -55,8 +56,8 @@ export default function AiChatInput({
             style={{
               height: 54, width: 50, borderRadius: 6, border: 'none',
               cursor: input.trim() ? 'pointer' : 'default',
-              background: input.trim() ? accent : (dark ? 'rgba(255,255,255,0.05)' : 'var(--win-surface)'),
-              color: input.trim() ? '#fff' : mutedColor,
+              background: input.trim() ? accent : (dark ? rgba(T.fg, 0.05) : 'var(--win-surface)'),
+              color: input.trim() ? T.fg : mutedColor,
               fontSize: 18, flexShrink: 0,
               transition: 'background 0.12s ease',
             }}

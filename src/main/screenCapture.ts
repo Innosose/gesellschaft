@@ -5,7 +5,7 @@ import { load as loadConfig } from './aiAssistant'
 
 const VALID_IDS     = new Set(Object.keys(TOOL_DESCRIPTIONS))
 const API_TIMEOUT_MS = 30_000
-const HIDE_DELAY_MS  = 380    // wait for window to disappear before screenshot
+const HIDE_DELAY_MS  = 500    // wait for window to disappear before screenshot (increased for slow machines)
 
 interface RawItem { id: string; reason?: string }
 
@@ -70,7 +70,10 @@ export function registerScreenCaptureHandlers(mainWindow: BrowserWindow): void {
 
       if (!sources.length) return { success: false, error: '화면을 찾을 수 없습니다.', recommendations: [], reasons: {} }
 
-      const screenshot = sources[0].thumbnail.toDataURL()
+      const source = sources[0]
+      if (!source?.thumbnail) return { success: false, error: 'No source found', recommendations: [], reasons: {} }
+
+      const screenshot = source.thumbnail.toDataURL()
       if (!screenshot || screenshot === 'data:,') {
         return { success: false, error: '화면 캡처에 실패했습니다.', recommendations: [], reasons: {} }
       }
@@ -88,22 +91,24 @@ export function registerScreenCaptureHandlers(mainWindow: BrowserWindow): void {
         .map(([id, desc]) => `  "${id}": "${desc}"`)
         .join('\n')
 
-      const prompt = `당신은 업무용 PC 화면을 분석해서 유용한 도구를 추천하는 전문 어시스턴트입니다.
+      const prompt = `사용자의 PC 화면을 분석하여 지금 바로 쓸 수 있는 도구를 추천합니다.
 
-지금 사용자가 하고 있는 작업을 파악하고, 아래 도구 중 현재 상황에서 가장 도움이 될 도구를 최대 3개 추천해주세요.
+화면에 보이는 것들을 정확히 파악하세요:
+- 열린 앱, 브라우저 탭, 파일 탐색기, 문서 등
+- 작업 중인 내용의 종류 (코딩, 문서 작성, 웹 검색, 디자인 등)
+- 파일 확장자, 텍스트 내용, UI 요소
 
 사용 가능한 도구:
 ${toolList}
 
-추천 기준:
-- 현재 화면에 보이는 파일, 앱, 작업 내용을 기반으로 판단
-- 지금 당장 사용하면 가장 효율을 높일 수 있는 도구 우선
-- 추천이 없으면 빈 배열 반환
+추천 규칙:
+1. 화면에 직접 관련된 도구만 추천 (최대 3개)
+2. 가장 유용한 순서대로 정렬
+3. 화면과 무관한 도구는 절대 추천하지 마세요
+4. 확실하지 않으면 빈 배열 반환
 
-응답 형식 (JSON 배열만, 설명 없이):
-[{"id": "toolId", "reason": "한 줄 추천 이유 (20자 이내)"}]
-
-예시: [{"id": "pdfTool", "reason": "PDF 파일 작업 중"}, {"id": "translate", "reason": "영문 문서 번역 필요"}]`
+JSON 배열만 반환:
+[{"id": "toolId", "reason": "추천 이유 (15자 이내)"}]`
 
       let ids: string[] = []
       let reasons: Record<string, string> = {}
@@ -114,7 +119,7 @@ ${toolList}
         const client = new OpenAI({ apiKey: cfg.apiKey })
         const response = await withTimeout(
           client.chat.completions.create({
-            model: 'gpt-4o',
+            model: cfg.model || 'gpt-4o',
             messages: [{
               role: 'user',
               content: [
@@ -127,7 +132,7 @@ ${toolList}
           }),
           API_TIMEOUT_MS
         )
-        const text = response.choices[0]?.message?.content ?? ''
+        const text = (response as { choices: { message: { content: string } }[] }).choices[0]?.message?.content ?? ''
         // response_format:json_object wraps in object — unwrap if needed
         const inner = text.match(/\[[\s\S]*?\]/)
         const result = parseRecommendations(inner ? text : `[${text}]`)
@@ -147,7 +152,7 @@ ${toolList}
 
         const response = await withTimeout(
           client.messages.create({
-            model: 'claude-sonnet-4-6',
+            model: cfg.model || 'claude-sonnet-4-6',
             max_tokens: 200,
             messages: [{
               role: 'user',
@@ -159,7 +164,7 @@ ${toolList}
           }),
           API_TIMEOUT_MS
         )
-        const text = (response.content[0] as { text?: string }).text ?? ''
+        const text = ((response as { content: { text?: string }[] }).content[0])?.text ?? ''
         const result = parseRecommendations(text)
         ids = result.ids; reasons = result.reasons
       }

@@ -1,7 +1,11 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, screen, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import log from './logger'
+import log, { logIpcError } from './logger'
+
+process.on('uncaughtException', (err) => {
+  logIpcError('uncaughtException', err)
+})
 import { registerFileSystemHandlers } from './fileSystem'
 import { registerSearchHandlers } from './search'
 import { registerCadConvertHandlers } from './cadConvert'
@@ -67,11 +71,11 @@ function createWindow(): void {
               "default-src 'self'",
               "script-src 'self'",
               // Tailwind/inline styles require unsafe-inline for style-src
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob:",
-              "font-src 'self' data:",
-              // AI provider APIs
-              "connect-src 'self' https://api.openai.com https://api.anthropic.com",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              // AI provider APIs + Google Fonts
+              "connect-src 'self' https://api.openai.com https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com",
               "worker-src blob:",
               "object-src 'none'",
               "base-uri 'self'",
@@ -112,18 +116,35 @@ function createWindow(): void {
   })
 
   // Login item (Windows auto-start)
-  ipcMain.handle('app:getLoginItem', () => app.getLoginItemSettings().openAtLogin)
+  ipcMain.handle('app:getLoginItem', () => {
+    try {
+      return app.getLoginItemSettings().openAtLogin
+    } catch (err) {
+      logIpcError('app:getLoginItem', err)
+      return false
+    }
+  })
   ipcMain.handle('app:setLoginItem', (_: Electron.IpcMainInvokeEvent, enable: boolean) => {
-    app.setLoginItemSettings({ openAtLogin: enable, name: '게젤샤프트' })
-    return { success: true }
+    try {
+      app.setLoginItemSettings({ openAtLogin: enable, name: '게젤샤프트' })
+      return { success: true }
+    } catch (err) {
+      logIpcError('app:setLoginItem', err)
+      return { success: false, error: err instanceof Error ? err.message : String(err) }
+    }
   })
 
   // Dialog
   ipcMain.handle('dialog:openDirectory', async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openDirectory']
-    })
-    return result.canceled ? null : result.filePaths[0]
+    try {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory']
+      })
+      return result.canceled ? null : result.filePaths[0]
+    } catch (err) {
+      logIpcError('dialog:openDirectory', err)
+      return null
+    }
   })
 
   // Screen capture + AI analysis (needs mainWindow to hide/show around screenshot)

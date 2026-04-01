@@ -196,7 +196,7 @@ export function ImageConvertContent(): React.ReactElement {
           </div>
 
           {done && (
-            <div style={{ padding: '10px 14px', background: 'var(--win-success)', color: '#fff', borderRadius: 6, fontSize: 13 }}>
+            <div style={{ padding: '10px 14px', background: 'var(--win-success)', color: T.fg, borderRadius: 6, fontSize: 13 }}>
               ✅ 변환 완료 — 완료: {files.filter(f => f.status === 'done').length}, 오류: {files.filter(f => f.status === 'error').length}
             </div>
           )}

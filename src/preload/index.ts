@@ -1,5 +1,69 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+// ─── IPC payload types (mirrors main-process interfaces) ────
+export interface SearchFilesOptions {
+  query: string
+  rootPath: string
+  includeFiles: boolean
+  includeDirs: boolean
+  extensions?: string[]
+  minSize?: number
+  maxSize?: number
+  modifiedAfter?: number
+  modifiedBefore?: number
+  caseSensitive?: boolean
+  regex?: boolean
+  contentSearch?: boolean
+}
+
+export interface OrganizeRulePayload {
+  id: string
+  name: string
+  enabled: boolean
+  sourceDir: string
+  conditions: {
+    type: 'extension' | 'name_contains' | 'size_gt' | 'size_lt' | 'older_than' | 'newer_than'
+    value: string
+  }[]
+  action: {
+    type: 'move' | 'copy'
+    targetDir: string
+    createSubfolder?: string
+  }
+}
+
+export interface DisplaySettingsPatch {
+  hubSize?: number
+  overlayOpacity?: number
+  spiralScale?: number
+  animSpeed?: 'slow' | 'normal' | 'fast'
+}
+
+export interface AiConfigPatch {
+  provider?: 'openai' | 'anthropic' | 'ollama'
+  model?: string
+  systemPrompt?: string
+  ollamaUrl?: string
+  apiKeyRaw?: string
+}
+
+export interface SmartFolderPayload {
+  id: string
+  name: string
+  options: {
+    query: string
+    rootPath: string
+    extensions?: string[]
+    minSize?: number
+    maxSize?: number
+    includeFiles: boolean
+    includeDirs: boolean
+    caseSensitive?: boolean
+    regex?: boolean
+    contentSearch?: boolean
+  }
+}
+
 const api = {
   // Window controls
   window: {
@@ -46,7 +110,7 @@ const api = {
 
   // Search
   search: {
-    files: (options: unknown) => ipcRenderer.invoke('search:files', options),
+    files: (options: SearchFilesOptions) => ipcRenderer.invoke('search:files', options),
     cancel: () => ipcRenderer.send('search:cancel'),
     onProgress: (cb: (count: number) => void) => {
       const handler = (_: Electron.IpcRendererEvent, count: number): void => cb(count)
@@ -87,15 +151,15 @@ const api = {
   // Auto organize
   organize: {
     getRules: () => ipcRenderer.invoke('organize:getRules'),
-    saveRule: (rule: unknown) => ipcRenderer.invoke('organize:saveRule', rule),
+    saveRule: (rule: OrganizeRulePayload) => ipcRenderer.invoke('organize:saveRule', rule),
     deleteRule: (ruleId: string) => ipcRenderer.invoke('organize:deleteRule', ruleId),
-    runRule: (rule: unknown) => ipcRenderer.invoke('organize:runRule', rule)
+    runRule: (rule: OrganizeRulePayload) => ipcRenderer.invoke('organize:runRule', rule)
   },
 
   // Smart Folders
   smartFolders: {
     get: () => ipcRenderer.invoke('smartFolders:get'),
-    save: (folder: unknown) => ipcRenderer.invoke('smartFolders:save', folder),
+    save: (folder: SmartFolderPayload) => ipcRenderer.invoke('smartFolders:save', folder),
     delete: (id: string) => ipcRenderer.invoke('smartFolders:delete', id)
   },
 
@@ -134,7 +198,9 @@ const api = {
       ipcRenderer.invoke('todo:add', item),
     toggle: (id: string) => ipcRenderer.invoke('todo:toggle', id),
     delete: (id: string) => ipcRenderer.invoke('todo:delete', id),
-    clearDone: () => ipcRenderer.invoke('todo:clearDone')
+    clearDone: () => ipcRenderer.invoke('todo:clearDone'),
+    update: (id: string, text: string, priority: 'high' | 'normal', dueDate?: string) =>
+      ipcRenderer.invoke('todo:update', id, text, priority, dueDate)
   },
 
   // Quick Notes
@@ -181,7 +247,7 @@ const api = {
     getTheme: () => ipcRenderer.invoke('settings:getTheme'),
     setTheme: (color: string) => ipcRenderer.invoke('settings:setTheme', color),
     getDisplay: () => ipcRenderer.invoke('settings:getDisplay'),
-    setDisplay: (patch: Record<string, unknown>) => ipcRenderer.invoke('settings:setDisplay', patch),
+    setDisplay: (patch: DisplaySettingsPatch) => ipcRenderer.invoke('settings:setDisplay', patch),
   },
 
   // Screen Capture + AI Analysis
@@ -216,7 +282,7 @@ const api = {
   // AI Assistant
   ai: {
     getConfig: () => ipcRenderer.invoke('ai:getConfig'),
-    setConfig: (patch: Record<string, unknown>) => ipcRenderer.invoke('ai:setConfig', patch),
+    setConfig: (patch: AiConfigPatch) => ipcRenderer.invoke('ai:setConfig', patch),
     getPresetModels: () => ipcRenderer.invoke('ai:getPresetModels'),
     getOllamaModels: () => ipcRenderer.invoke('ai:getOllamaModels'),
     chat: (messages: { role: string; content: string }[]) => ipcRenderer.invoke('ai:chat', messages),

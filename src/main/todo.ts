@@ -1,7 +1,7 @@
 import { ipcMain, app } from 'electron'
 import { join } from 'path'
 import { z } from 'zod'
-import log, { logIpcError } from './logger'
+import log from './logger'
 import { readJsonSync, writeJsonLocked } from './jsonStore'
 
 export interface TodoItem {
@@ -114,8 +114,4 @@ export function registerTodoHandlers(): void {
     return todos
   })
 
-  // 예외 감시 (미처리 에러 로깅용)
-  process.on('uncaughtException', (err) => {
-    logIpcError('uncaughtException', err)
-  })
 }

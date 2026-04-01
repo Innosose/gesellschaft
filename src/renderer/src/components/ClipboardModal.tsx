@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { T, rgba } from '../utils/theme'
 import { Modal } from './SearchModal'
 
 const PIN_KEY = 'gesellschaft-clipboard-pins'
@@ -123,7 +124,7 @@ export default function ClipboardModal({ onClose, asPanel }: { onClose: () => vo
                     </button>
                     <button
                       className="text-xs px-2 py-0.5 rounded transition-colors"
-                      style={isCopied ? { background: '#1e7e34', color: 'var(--win-text)' } : { background: 'var(--win-surface)', color: 'var(--win-text-muted)' }}
+                      style={isCopied ? { background: rgba(T.success, 0.8), color: 'var(--win-text)' } : { background: 'var(--win-surface)', color: 'var(--win-text-muted)' }}
                       onMouseEnter={(e) => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text)' }}
                       onMouseLeave={(e) => { if (!isCopied) (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)' }}
                       onClick={e => { e.stopPropagation(); copy(item) }}

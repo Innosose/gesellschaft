@@ -1,653 +1,688 @@
 import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react'
 
-interface Tool {
-  id: string
-  icon: string
-  label: string
-  color: string
-}
+// ═══════════════════════════════════════════════
+// SECTION: Types & Constants
+// ═══════════════════════════════════════════════
 
+interface Tool { id: string; icon: string; label: string; color: string; description?: string }
 interface SpiralMenuProps {
   tools: Tool[]
-  recommended: string[]
-  reasons?: Record<string, string>
-  spiralScale: number
-  animSpeed: 'slow' | 'normal' | 'fast'
-  filterQuery: string
-  onSelectTool: (id: string) => void
+  spiralScale: number; animSpeed: 'slow' | 'normal' | 'fast' | 'none'
+  filterQuery: string; onSelectTool: (id: string) => void
 }
 
-const ANIM_MS: Record<string, number> = { slow: 540, normal: 300, fast: 140 }
-const STAGGER_MS: Record<string, number> = { slow: 40, normal: 22, fast: 9 }
-const CARD_W = 104
-const CARD_H = 156
+const ANIM_MS: Record<string, number> = { slow: 600, normal: 350, fast: 180, none: 0 }
+const STAGGER_MS: Record<string, number> = { slow: 50, normal: 30, fast: 12, none: 0 }
+/* Responsive card size — scales with viewport */
+function getCardSize(vw: number, vh: number): { w: number; h: number } {
+  const ar = getCurrentTheme().shape.aspectRatio
+  const w = Math.round(Math.min(Math.max(vw * 0.085, 90), 150))
+  const h = Math.round(w / ar)
+  return { w, h }
+}
 const TOTAL_ARC_DEG = 160
-const VISIBLE_COUNT = 9
+const VISIBLE_COUNT = 7
 const RECENT_KEY = 'gesellschaft-recent-tools'
 const MAX_RECENT = 5
+import { T, useTheme, getCurrentTheme, rgba } from '../utils/theme'
 
-// 카테고리 정의
+/** Theme primary color (hex) */
+function getGOLD(): string { return getCurrentTheme().primary }
+/** Theme accent color (hex) */
+function getTEAL(): string { return getCurrentTheme().accent }
+
 const CATEGORIES: { label: string; ids: string[] }[] = [
-  { label: '업무·협업',  ids: ['ai', 'todo', 'clipboard', 'memoAlarm', 'docTemplate', 'translate', 'meetingTimer'] },
-  { label: '날짜·재무',  ids: ['dateTools', 'salaryCalc', 'calculator'] },
-  { label: '파일·문서',  ids: ['pdfTool', 'excelTool', 'imageTools'] },
-  { label: '텍스트·변환', ids: ['textTools'] },
-  { label: '파일 관리',  ids: ['fileManager', 'cadConvert'] },
+  { label: 'Core',       ids: ['ai','clipboard','jot','haste'] },
+  { label: 'Overlay',    ids: ['notepin','whiteboard','ruler','xcolor','zone'] },
+  { label: 'Quick Use',  ids: ['quickCalc','generator','type','upload','keyboard'] },
+  { label: 'Schedule',   ids: ['memoAlarm','organizer','stopwatch','launcher'] },
+  { label: 'Documents',  ids: ['pdfTool','excelTool','imageTools','diff','batch','finder'] },
+  { label: 'System',     ids: ['vault','yourInfo'] },
 ]
 
-function getRecentTools(): string[] {
-  try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') } catch { return [] }
-}
+function getRecentTools(): string[] { try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') } catch { return [] } }
+function addRecentTool(id: string): void { const p = getRecentTools().filter(x => x !== id); localStorage.setItem(RECENT_KEY, JSON.stringify([id, ...p].slice(0, MAX_RECENT))) }
 
-function addRecentTool(id: string): void {
-  const prev = getRecentTools().filter(x => x !== id)
-  localStorage.setItem(RECENT_KEY, JSON.stringify([id, ...prev].slice(0, MAX_RECENT)))
-}
+const FAV_KEY = 'gs-favorites'
+function getFavorites(): string[] { try { return JSON.parse(localStorage.getItem(FAV_KEY) ?? '[]') } catch { return [] } }
+function toggleFavorite(id: string): string[] { const f = getFavorites(); const next = f.includes(id) ? f.filter(x => x !== id) : [...f, id]; localStorage.setItem(FAV_KEY, JSON.stringify(next)); return next }
+function getArcParams(vw: number, vh: number, scale: number) { const r = Math.min(vh * 0.62 * scale, 820); return { radius: r, arcCenterX: vw / 2, arcCenterY: vh * 0.55 + r } }
+function cardPosition(deg: number, r: number, cx: number, cy: number) { const rad = (deg * Math.PI) / 180; return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) } }
 
-function getArcParams(vw: number, vh: number, scale: number) {
-  const radius = Math.min(vh * 0.66 * scale, 880)
-  const arcCenterX = vw / 2
-  const arcCenterY = vh / 2 + radius
-  return { radius, arcCenterX, arcCenterY }
-}
+// ═══════════════════════════════════════════════
+// SECTION: Card Ornament SVG
+// ═══════════════════════════════════════════════
 
-function cardPosition(angleDeg: number, radius: number, cx: number, cy: number) {
-  const rad = (angleDeg * Math.PI) / 180
-  return { x: cx + radius * Math.sin(rad), y: cy - radius * Math.cos(rad) }
-}
+/* Card ornament SVG — switches style per theme, respects card shape */
+const CardOrnament = memo(function CardOrnament({ color, borderColor }: { color: string; borderColor?: string }): React.ReactElement {
+  const theme = getCurrentTheme()
+  const style = theme.ornament
+  const { borderRadius, clipPath } = theme.shape
+  /* SVG sits inside card and is clipped to same shape */
+  const wrap: React.CSSProperties = {
+    position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none',
+    borderRadius, clipPath, overflow: 'hidden',
+  }
+  /* Inset margin (% of viewBox) to keep strokes inside rounded/clipped edges.
+     Computed per shape: hexagon needs 17, blob/leaf shapes need 12-17, circle 18, mild rounding 8 */
+  const m = (() => {
+    if (clipPath?.includes('50% 0%')) return 17     // hexagon (violet)
+    if (clipPath) return 14                          // octagon (crimson)
+    if (borderRadius === '50%') return 18            // circle (rose)
+    if (borderRadius.includes('/')) return 17         // elliptical blob (arctic: 50%/40%/60%)
+    if (borderRadius.includes('40%')) return 13      // leaf shape (emerald: 40% top corners)
+    const pct = parseInt(borderRadius)               // e.g. '22%' → 22
+    if (pct >= 30) return 17                         // large % radius
+    return 8                                         // mild rounding (ruina, sunset, mono)
+  })()
+  const x1 = m, y1 = m, x2 = 100 - m, y2 = 100 - m
+  const cx = 50, cy = 50
+  return (
+    <div aria-hidden="true" style={wrap}>
+    <svg viewBox="0 0 100 100" fill="none" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+      {/* Shape-following border — SVG polygon matches clipPath exactly */}
+      {borderColor && clipPath && (() => {
+        /* Parse "polygon(8% 0%, 92% 0%, ...)" → SVG points "8,0 92,0 ..." */
+        const pts = clipPath.replace(/polygon\(|\)/g, '').split(',')
+          .map(p => p.trim().split(/\s+/).map(v => parseFloat(v)).join(',')).join(' ')
+        return <polygon points={pts} stroke={borderColor} strokeWidth="1.8" fill="none" vectorEffect="non-scaling-stroke" />
+      })()}
+      {borderColor && !clipPath && (
+        <rect x="0.5" y="0.5" width="99" height="99" rx="4" stroke={borderColor} strokeWidth="1" fill="none" vectorEffect="non-scaling-stroke" />
+      )}
 
-// ─── FanCard ──────────────────────────────────────────────────────────────────
+      {style === 'book' && <>
+        {/* Double frame */}
+        <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1} rx="2" stroke={color} strokeWidth="0.5" opacity="0.18" />
+        <rect x={x1 + 3} y={y1 + 3} width={x2 - x1 - 6} height={y2 - y1 - 6} rx="1.5" stroke={color} strokeWidth="0.25" opacity="0.1" />
+        {/* Corner filigree */}
+        <path d={`M${x1 + 2} ${y1 + 2} Q${x1 + 2} ${y1 + 9} ${x1 + 7} ${y1 + 10} Q${x1 + 4} ${y1 + 10} ${x1 + 2} ${y1 + 15}`} stroke={color} strokeWidth="0.5" fill="none" opacity="0.22" />
+        <path d={`M${x2 - 2} ${y1 + 2} Q${x2 - 2} ${y1 + 9} ${x2 - 7} ${y1 + 10} Q${x2 - 4} ${y1 + 10} ${x2 - 2} ${y1 + 15}`} stroke={color} strokeWidth="0.5" fill="none" opacity="0.22" />
+        <path d={`M${x1 + 2} ${y2 - 2} Q${x1 + 2} ${y2 - 9} ${x1 + 7} ${y2 - 10} Q${x1 + 4} ${y2 - 10} ${x1 + 2} ${y2 - 15}`} stroke={color} strokeWidth="0.5" fill="none" opacity="0.22" />
+        <path d={`M${x2 - 2} ${y2 - 2} Q${x2 - 2} ${y2 - 9} ${x2 - 7} ${y2 - 10} Q${x2 - 4} ${y2 - 10} ${x2 - 2} ${y2 - 15}`} stroke={color} strokeWidth="0.5" fill="none" opacity="0.22" />
+        <path d={`M${cx} ${y1 + 4} L${cx} ${y1 + 18}`} stroke={color} strokeWidth="0.35" opacity="0.12" strokeLinecap="round" />
+        <circle cx={cx} cy={y2 - 10} r="6" stroke={color} strokeWidth="0.35" opacity="0.12" />
+        <circle cx={cx} cy={y2 - 10} r="3.5" stroke={color} strokeWidth="0.25" opacity="0.08" />
+        <line x1={x1 + 4} y1={y1 + 18} x2={x1 + 4} y2={y2 - 18} stroke={color} strokeWidth="0.4" opacity="0.08" />
+        <path d={`M${x1 + 15} ${cy} Q${cx - 8} ${cy - 4} ${cx} ${cy} Q${cx + 8} ${cy - 4} ${x2 - 15} ${cy}`} stroke={color} strokeWidth="0.35" fill="none" opacity="0.07" />
+      </>}
+
+      {style === 'crack' && <>
+        {/* Cracked glass / lava veins */}
+        <path d={`M${cx} ${y1} L${cx - 2} ${y1 + 18} L${cx + 2} ${cy - 8} L${cx - 4} ${cy} L${cx + 4} ${cy + 15} L${cx - 2} ${y2 - 12} L${cx} ${y2}`} stroke={color} strokeWidth="0.4" opacity="0.2" />
+        <path d={`M${cx - 2} ${y1 + 18} L${x1 + 12} ${y1 + 26} M${cx + 2} ${cy - 8} L${x2 - 12} ${cy - 14} M${cx - 4} ${cy} L${x1 + 8} ${cy + 5}`} stroke={color} strokeWidth="0.3" opacity="0.12" />
+        <path d={`M${x1} ${cy} L${x1 + 16} ${cy - 2} L${cx - 8} ${cy + 2}`} stroke={color} strokeWidth="0.3" opacity="0.15" />
+        <path d={`M${x2} ${cy} L${x2 - 16} ${cy + 2} L${cx + 8} ${cy - 2}`} stroke={color} strokeWidth="0.3" opacity="0.15" />
+        <circle cx={cx - 2} cy={y1 + 18} r="1.5" fill={color} opacity="0.1" />
+        <circle cx={cx + 4} cy={cy + 15} r="1.5" fill={color} opacity="0.1" />
+      </>}
+
+      {style === 'vine' && <>
+        {/* Vine and leaves — inside safe area */}
+        <path d={`M${x1 + 4} ${y2 - 4} Q${x1 + 4} ${cy} ${x1 + 18} ${cy - 8} Q${cx - 8} ${y1 + 18} ${cx} ${y1 + 14} Q${cx + 12} ${y1 + 10} ${x2 - 8} ${y1 + 4}`} stroke={color} strokeWidth="0.5" fill="none" opacity="0.18" />
+        <path d={`M${x1 + 18} ${cy - 8} Q${x1 + 10} ${cy - 14} ${x1 + 8} ${y1 + 22}`} stroke={color} strokeWidth="0.3" fill="none" opacity="0.12" />
+        <ellipse cx={x1 + 8} cy={y1 + 22} rx="3.5" ry="2" fill={color} opacity="0.06" transform={`rotate(-30 ${x1 + 8} ${y1 + 22})`} />
+        <ellipse cx={x2 - 10} cy={y1 + 6} rx="3" ry="1.8" fill={color} opacity="0.05" transform={`rotate(15 ${x2 - 10} ${y1 + 6})`} />
+        <path d={`M${x2 - 6} ${y2 - 10} Q${x2 - 14} ${cy + 10} ${cx + 4} ${cy + 8} Q${cx - 4} ${cy + 6} ${cx - 8} ${cy + 10}`} stroke={color} strokeWidth="0.3" fill="none" opacity="0.1" />
+        <ellipse cx={cx - 8} cy={cy + 10} rx="3" ry="1.8" fill={color} opacity="0.04" transform={`rotate(-10 ${cx - 8} ${cy + 10})`} />
+      </>}
+
+      {style === 'frost' && <>
+        {/* Ice crystals — centered, within safe area */}
+        <path d={`M${cx} ${y1 + 6} L${cx} ${y2 - 6} M${x1 + 6} ${cy} L${x2 - 6} ${cy}`} stroke={color} strokeWidth="0.3" opacity="0.1" />
+        <path d={`M${x1 + 12} ${y1 + 12} L${x2 - 12} ${y2 - 12} M${x2 - 12} ${y1 + 12} L${x1 + 12} ${y2 - 12}`} stroke={color} strokeWidth="0.2" opacity="0.06" />
+        <path d={`M${cx} ${y1 + 16} L${cx - 5} ${y1 + 10} M${cx} ${y1 + 16} L${cx + 5} ${y1 + 10}`} stroke={color} strokeWidth="0.3" opacity="0.12" />
+        <path d={`M${cx} ${y2 - 16} L${cx - 5} ${y2 - 10} M${cx} ${y2 - 16} L${cx + 5} ${y2 - 10}`} stroke={color} strokeWidth="0.3" opacity="0.12" />
+        <path d={`M${x1 + 16} ${cy} L${x1 + 10} ${cy - 5} M${x1 + 16} ${cy} L${x1 + 10} ${cy + 5}`} stroke={color} strokeWidth="0.3" opacity="0.12" />
+        <path d={`M${x2 - 16} ${cy} L${x2 - 10} ${cy - 5} M${x2 - 16} ${cy} L${x2 - 10} ${cy + 5}`} stroke={color} strokeWidth="0.3" opacity="0.12" />
+        <circle cx={cx} cy={cy} r="8" stroke={color} strokeWidth="0.3" opacity="0.08" />
+        <circle cx={cx} cy={cy} r="3" stroke={color} strokeWidth="0.3" opacity="0.12" />
+      </>}
+
+      {style === 'gem' && <>
+        {/* Crystal facets — centered diamond */}
+        <path d={`M${cx} ${y1 + 6} L${x1 + 8} ${cy - 8} L${cx} ${cy} L${x2 - 8} ${cy - 8} Z`} stroke={color} strokeWidth="0.4" fill="none" opacity="0.15" />
+        <path d={`M${cx} ${cy} L${x1 + 8} ${cy + 8} L${cx} ${y2 - 6} L${x2 - 8} ${cy + 8} Z`} stroke={color} strokeWidth="0.4" fill="none" opacity="0.12" />
+        <path d={`M${x1 + 8} ${cy - 8} L${x1 + 8} ${cy + 8} M${x2 - 8} ${cy - 8} L${x2 - 8} ${cy + 8}`} stroke={color} strokeWidth="0.25" opacity="0.08" />
+        <line x1={cx} y1={y1 + 6} x2={cx} y2={y2 - 6} stroke={color} strokeWidth="0.2" opacity="0.06" />
+        <circle cx={cx} cy={cy} r="2" fill={color} opacity="0.12" />
+      </>}
+
+      {style === 'minimal' && <>
+        {/* Clean corner brackets */}
+        <line x1={x1 + 2} y1={y1 + 2} x2={x1 + 14} y2={y1 + 2} stroke={color} strokeWidth="0.4" opacity="0.15" />
+        <line x1={x1 + 2} y1={y1 + 2} x2={x1 + 2} y2={y1 + 14} stroke={color} strokeWidth="0.4" opacity="0.15" />
+        <line x1={x2 - 14} y1={y1 + 2} x2={x2 - 2} y2={y1 + 2} stroke={color} strokeWidth="0.4" opacity="0.15" />
+        <line x1={x2 - 2} y1={y1 + 2} x2={x2 - 2} y2={y1 + 14} stroke={color} strokeWidth="0.4" opacity="0.15" />
+        <line x1={x1 + 2} y1={y2 - 2} x2={x1 + 14} y2={y2 - 2} stroke={color} strokeWidth="0.4" opacity="0.15" />
+        <line x1={x1 + 2} y1={y2 - 14} x2={x1 + 2} y2={y2 - 2} stroke={color} strokeWidth="0.4" opacity="0.15" />
+        <line x1={x2 - 14} y1={y2 - 2} x2={x2 - 2} y2={y2 - 2} stroke={color} strokeWidth="0.4" opacity="0.15" />
+        <line x1={x2 - 2} y1={y2 - 14} x2={x2 - 2} y2={y2 - 2} stroke={color} strokeWidth="0.4" opacity="0.15" />
+      </>}
+
+      {style === 'flame' && <>
+        {/* Rising flames — within safe area */}
+        <path d={`M${cx - 16} ${y2 - 4} Q${cx - 18} ${cy + 4} ${cx - 12} ${cy - 6} Q${cx - 8} ${cy - 16} ${cx - 10} ${y1 + 14}`} stroke={color} strokeWidth="0.4" fill="none" opacity="0.15" />
+        <path d={`M${cx} ${y2 - 4} Q${cx + 2} ${cy - 4} ${cx - 2} ${cy - 16} Q${cx - 4} ${y1 + 14} ${cx} ${y1 + 4}`} stroke={color} strokeWidth="0.5" fill="none" opacity="0.18" />
+        <path d={`M${cx + 16} ${y2 - 4} Q${cx + 18} ${cy + 4} ${cx + 12} ${cy - 6} Q${cx + 8} ${cy - 16} ${cx + 10} ${y1 + 14}`} stroke={color} strokeWidth="0.4" fill="none" opacity="0.15" />
+        <circle cx={cx - 10} cy={y1 + 12} r="2" fill={color} opacity="0.06" />
+        <circle cx={cx} cy={y1 + 3} r="2.5" fill={color} opacity="0.08" />
+        <circle cx={cx + 10} cy={y1 + 12} r="2" fill={color} opacity="0.06" />
+      </>}
+
+      {style === 'wave' && <>
+        {/* Ocean waves — horizontal, inside safe area */}
+        <path d={`M${x1} ${cy - 16} Q${x1 + 14} ${cy - 22} ${cx - 12} ${cy - 16} Q${cx} ${cy - 10} ${cx + 12} ${cy - 16} Q${x2 - 14} ${cy - 22} ${x2} ${cy - 16}`} stroke={color} strokeWidth="0.4" fill="none" opacity="0.15" />
+        <path d={`M${x1} ${cy} Q${x1 + 14} ${cy - 6} ${cx - 12} ${cy} Q${cx} ${cy + 6} ${cx + 12} ${cy} Q${x2 - 14} ${cy - 6} ${x2} ${cy}`} stroke={color} strokeWidth="0.35" fill="none" opacity="0.12" />
+        <path d={`M${x1} ${cy + 16} Q${x1 + 14} ${cy + 10} ${cx - 12} ${cy + 16} Q${cx} ${cy + 22} ${cx + 12} ${cy + 16} Q${x2 - 14} ${cy + 10} ${x2} ${cy + 16}`} stroke={color} strokeWidth="0.3" fill="none" opacity="0.1" />
+        <circle cx={x1 + 12} cy={y1 + 10} r="1" fill={color} opacity="0.08" />
+        <circle cx={x2 - 12} cy={y2 - 10} r="1.5" fill={color} opacity="0.06" />
+      </>}
+    </svg>
+    </div>
+  )
+})
+
+/** Base scale at the far edge of the fan arc */
+const CARD_MIN_SCALE = 0.42
+/** Scale boost at the center of the fan arc */
+const CARD_SCALE_PEAK = 1.15
+/** Gaussian falloff rate for card scale from center */
+const CARD_SCALE_FALLOFF = 2.6
+/** Minimum opacity for cards at the edges */
+const CARD_MIN_OPACITY = 0.3
+/** Maximum blur (px) applied to edge cards */
+const CARD_MAX_BLUR = 1.5
+/** 3D perspective depth for card transforms */
+const CARD_PERSPECTIVE = 600
+
+// ═══════════════════════════════════════════════
+// SECTION: FanCard (individual tool card on the arc)
+// ═══════════════════════════════════════════════
+
 interface FanCardProps {
-  tool: Tool
-  slotIndex: number       // 0~8, 슬롯 고정 → 회전 시 언마운트 없음
-  total: number
-  radius: number
-  arcCenterX: number
-  arcCenterY: number
-  isRecommended: boolean
-  reason?: string
-  isCenter: boolean
-  animDuration: number
-  staggerMs: number
-  onSelect: () => void
-  onRotateTo: (steps: number) => void
+  tool: Tool; slotIndex: number; total: number; radius: number
+  arcCenterX: number; arcCenterY: number
+  isFavorite: boolean; isCenter: boolean; animDuration: number
+  staggerMs: number; cardW: number; cardH: number
+  onSelect: (id: string) => void; onRotateTo: (dir: number) => void
+}
+
+/* Typewriter text — starts after delay so book opens fully first */
+function useTypewriter(text: string, active: boolean, speed = 30, delay = 500): string {
+  const [displayed, setDisplayed] = useState('')
+  const cancelled = useRef(false)
+  useEffect(() => {
+    cancelled.current = false
+    if (!active) { setDisplayed(''); return }
+    setDisplayed('')
+    let i = 0
+    let iv: ReturnType<typeof setInterval> | null = null
+    const dt = setTimeout(() => {
+      if (cancelled.current) return
+      iv = setInterval(() => {
+        if (cancelled.current) { if (iv) clearInterval(iv); return }
+        i++
+        if (i > text.length) { if (iv) clearInterval(iv); return }
+        setDisplayed(text.slice(0, i))
+      }, speed)
+    }, delay)
+    return () => { cancelled.current = true; clearTimeout(dt); if (iv) clearInterval(iv) }
+  }, [text, active, speed, delay])
+  return displayed
 }
 
 const FanCard = memo(function FanCard({
   tool, slotIndex, total, radius, arcCenterX, arcCenterY,
-  isRecommended, reason, isCenter, animDuration, staggerMs, onSelect, onRotateTo,
+  isFavorite, isCenter, animDuration, staggerMs, cardW, cardH, onSelect, onRotateTo,
 }: FanCardProps) {
   const [hovered, setHovered] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [contentFade, setContentFade] = useState(false)
   const prevId = useRef(tool.id)
+  const typedDesc = useTypewriter(tool.description ?? '', isCenter && hovered, 25, 550)
 
-  // 최초 마운트 페이드인 (스태거)
+  useEffect(() => { const t = setTimeout(() => setMounted(true), slotIndex * staggerMs + 20); return () => clearTimeout(t) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), slotIndex * staggerMs + 20)
-    return () => clearTimeout(t)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 회전 시 콘텐츠 전환 (짧은 플래시)
-  useEffect(() => {
-    if (prevId.current !== tool.id) {
-      prevId.current = tool.id
-      setContentFade(true)
-      const t = setTimeout(() => setContentFade(false), 90)
-      return () => clearTimeout(t)
-    }
+    if (prevId.current !== tool.id) { prevId.current = tool.id; setContentFade(true); const t = setTimeout(() => setContentFade(false), 180); return () => clearTimeout(t) }
   }, [tool.id])
 
   const midIndex = (total - 1) / 2
   const distFromCenter = Math.abs(slotIndex - midIndex)
   const tNorm = midIndex > 0 ? distFromCenter / midIndex : 0
-
-  const baseScale = 0.38 + 1.27 * Math.exp(-2.8 * tNorm)
-  const activeScale = hovered ? baseScale * 1.07 : baseScale
-  const baseOpacity = Math.max(0.42, 1.0 - 0.58 * tNorm)
-  const blurPx = tNorm * 4.5                               // 9. depth blur
-  const showContent = true
+  const baseScale = CARD_MIN_SCALE + CARD_SCALE_PEAK * Math.exp(-CARD_SCALE_FALLOFF * tNorm)
+  const activeScale = hovered ? baseScale * 1.06 : isCenter ? baseScale : baseScale * (1 - tNorm * 0.03)
+  const baseOpacity = Math.max(CARD_MIN_OPACITY, 1.0 - 0.5 * tNorm * tNorm) // quadratic falloff — gentler
+  const blurPx = tNorm * tNorm * CARD_MAX_BLUR // quadratic — sharp center, gentle edges
   const stepsToCenter = slotIndex - Math.floor(total / 2)
-
-  const angleDeg = (() => {
-    if (total <= 1) return 0
-    const step = TOTAL_ARC_DEG / (total - 1)
-    return -TOTAL_ARC_DEG / 2 + slotIndex * step
-  })()
+  const angleDeg = total <= 1 ? 0 : -TOTAL_ARC_DEG / 2 + slotIndex * (TOTAL_ARC_DEG / (total - 1))
   const { x, y } = cardPosition(angleDeg, radius, arcCenterX, arcCenterY)
+  const handleClick = isCenter ? () => onSelect(tool.id) : () => onRotateTo(stepsToCenter)
+  const open = isCenter && hovered
 
-  const handleClick = isCenter ? onSelect : () => onRotateTo(stepsToCenter)
+  const enterDelay = slotIndex * staggerMs
 
   return (
-    <div
-      onClick={handleClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <div role="button" tabIndex={0} aria-label={tool.label} onClick={handleClick} onKeyDown={e => e.key === 'Enter' && handleClick()} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
         position: 'fixed',
-        left: x - CARD_W / 2,
-        top: y - CARD_H / 2,
-        width: CARD_W,
-        height: CARD_H,
-        transform: `scale(${activeScale})`,
-        transformOrigin: 'center center',
+        left: x - cardW / 2,
+        top: y - cardH / 2,
+        width: cardW, height: cardH,
+        transform: mounted
+          ? `scale(${activeScale})`
+          : 'scale(0.7) translateY(30px)',
+        transformOrigin: 'center',
+        opacity: mounted ? (hovered ? 1 : contentFade ? 0.15 : baseOpacity) : 0,
+        filter: blurPx > 0.1 ? `blur(${blurPx}px)` : undefined,
         cursor: isCenter ? 'pointer' : stepsToCenter < 0 ? 'w-resize' : 'e-resize',
-        borderRadius: 10,
-        background: isCenter ? `linear-gradient(175deg, #2a2318, #1e1a10)` : `linear-gradient(175deg, #1e1a12, #151208)`,
-        border: isRecommended && !isCenter
-          ? `2px solid ${hovered ? '#fbbf24cc' : '#fbbf2455'}`
-          : `2px solid ${tool.color + (isCenter ? 'dd' : hovered ? 'bb' : '44')}`,
-        boxShadow: isCenter
-          ? `0 0 20px ${tool.color}55, 0 8px 24px rgba(0,0,0,0.7)`
-          : isRecommended
-            ? `0 0 ${hovered ? 22 : 10}px rgba(251,191,36,${hovered ? 0.45 : 0.2}), 0 2px 10px rgba(0,0,0,0.5)`
-            : hovered
-              ? `0 0 16px ${tool.color}55`
-              : `0 2px 10px rgba(0,0,0,0.5)`,
-        // 1. 중앙 카드 pulse: animation은 아래 style에서
-        animation: isCenter ? 'centerPulse 2.8s ease-in-out infinite' : undefined,
-        filter: blurPx > 0.1 ? `blur(${blurPx}px)` : undefined,  // 9. depth blur
-        transition: `transform ${animDuration * 0.65}ms cubic-bezier(0.22,1,0.36,1),
-                     opacity ${animDuration * 0.5}ms ease,
-                     filter ${animDuration * 0.4}ms ease`,
-        opacity: mounted ? (hovered ? 1 : baseOpacity) : 0,
+        perspective: CARD_PERSPECTIVE,
+        transition: [
+          `left ${animDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`,
+          `top ${animDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`,
+          `transform ${animDuration}ms cubic-bezier(0.34, 1.2, 0.64, 1)`,
+          `opacity ${animDuration * 0.6}ms ease`,
+          `filter ${animDuration * 0.5}ms ease`,
+        ].join(', '),
+        transitionDelay: mounted ? '0ms' : `${enterDelay}ms`,
         zIndex: hovered ? 25 : isCenter ? 16 : 12,
-        display: 'flex', flexDirection: 'column', alignItems: 'stretch',
-        userSelect: 'none', overflow: 'hidden',
-        willChange: 'transform, opacity',
-      }}
-    >
-      {/* Top color strip */}
-      <div style={{
-        background: isRecommended && !isCenter
-          ? `linear-gradient(90deg, #fbbf24, #f59e0b88)`
-          : `linear-gradient(90deg, ${tool.color}, ${tool.color}aa)`,
-        height: isCenter ? 6 : 3, flexShrink: 0,
-      }} />
+        userSelect: 'none', willChange: 'left, top, transform, opacity',
+      } as React.CSSProperties}>
 
-      {/* Content */}
-      {showContent ? (
+      {/* ── Inner page (always behind cover) ── */}
+      {(() => {
+        /* Compute safe inset % for inner content — matches CardOrnament margin logic per shape */
+        const _cp = getCurrentTheme().shape.clipPath
+        const _br = getCurrentTheme().shape.borderRadius
+        const inPct = _cp?.includes('50% 0%') ? '17%' : _cp ? '14%' : _br === '50%' ? '20%' : _br.includes('/') ? '18%' : _br.includes('40%') ? '14%' : '10%'
+        return (
         <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          gap: 10, padding: '10px 8px 12px', position: 'relative',
-          opacity: contentFade ? 0.2 : 1,
-          transition: `opacity ${contentFade ? 30 : 120}ms ease`,
+          position: 'absolute', inset: 0,
+          borderRadius: getCurrentTheme().shape.borderRadius, clipPath: getCurrentTheme().shape.clipPath,
+          background: `linear-gradient(170deg, ${getCurrentTheme().surface} 0%, ${getCurrentTheme().bg} 100%)`,
+          border: _cp ? 'none' : `1.5px solid ${rgba(getTEAL(), 0.1)}`,
+          overflow: 'hidden',
         }}>
-          {isRecommended && hovered && (
-            <div style={{ position: 'absolute', top: 8, right: 7 }}>
-              <div style={{
-                fontSize: 9, fontWeight: 700, color: '#fbbf24',
-                background: 'rgba(251,191,36,0.18)',
-                border: '1px solid rgba(251,191,36,0.5)',
-                borderRadius: 4, padding: '1px 5px',
-                animation: 'fadeIn 0.12s ease both',
-              }}>AI ✦</div>
-              {reason && (
-                <div style={{
-                  position: 'absolute', top: '100%', right: 0, marginTop: 4,
-                  fontSize: 9, color: 'rgba(255,255,255,0.9)',
-                  background: 'rgba(20,16,8,0.92)',
-                  border: '1px solid rgba(251,191,36,0.35)',
-                  borderRadius: 4, padding: '3px 7px',
-                  whiteSpace: 'nowrap', zIndex: 50,
-                  pointerEvents: 'none',
-                  animation: 'fadeIn 0.15s ease both',
-                }}>{reason}</div>
-              )}
-            </div>
-          )}
-          <span style={{
-            fontSize: isCenter ? 32 : Math.max(16, 28 - distFromCenter * 3),
-            lineHeight: 1,
-            filter: isCenter ? `drop-shadow(0 2px 8px ${tool.color}99)` : undefined,
-          }}>{tool.icon}</span>
-          <span style={{
-            fontSize: isCenter ? 12 : Math.max(9, 11 - distFromCenter * 0.5),
-            fontWeight: 700,
-            color: isCenter ? 'rgba(255,255,255,0.95)' : `rgba(255,255,255,${Math.max(0.5, 0.85 - distFromCenter * 0.1)})`,
-            textAlign: 'center', lineHeight: 1.3, wordBreak: 'keep-all',
-          }}>{tool.label}</span>
+          {/* Inner pattern — theme dependent */}
+          {getCurrentTheme().ornament === 'book' && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} style={{ position: 'absolute', left: inPct, right: inPct, top: `calc(${inPct} + ${i * 20}px)`, height: 1, background: `linear-gradient(90deg, ${rgba(getGOLD(), 0.06)}, transparent 85%)` }} />
+            ))}
+            <div style={{ position: 'absolute', left: inPct, top: inPct, bottom: inPct, width: 1, background: rgba(getGOLD(), 0.06) }} />
+          </div>}
+          {getCurrentTheme().ornament === 'crack' && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', inset: inPct, border: `1px solid ${rgba(getGOLD(), 0.04)}`, borderRadius: 2 }} />
+            <div style={{ position: 'absolute', left: '50%', top: inPct, bottom: inPct, width: 1, background: rgba(getGOLD(), 0.03) }} />
+          </div>}
+          {getCurrentTheme().ornament === 'gem' && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', left: '50%', top: '50%', width: '55%', height: '55%', transform: 'translate(-50%,-50%) rotate(45deg)', border: `1px solid ${rgba(getGOLD(), 0.04)}` }} />
+          </div>}
+          {getCurrentTheme().ornament === 'frost' && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} style={{ position: 'absolute', left: '50%', top: '50%', width: `${40 + i * 16}%`, height: `${40 + i * 16}%`, transform: 'translate(-50%,-50%)', borderRadius: '50%', border: `1px solid ${rgba(getGOLD(), 0.03)}` }} />
+            ))}
+          </div>}
+          {getCurrentTheme().ornament === 'minimal' && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', left: inPct, right: inPct, top: '50%', height: 1, background: rgba(getGOLD(), 0.04) }} />
+          </div>}
+          {(getCurrentTheme().ornament === 'vine' || getCurrentTheme().ornament === 'flame' || getCurrentTheme().ornament === 'wave') && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', inset: inPct, borderRadius: getCurrentTheme().shape.borderRadius, border: `1px solid ${rgba(getGOLD(), 0.03)}` }} />
+          </div>}
+
+          {/* Typed text — uses safe inset */}
+          <div style={{
+            position: 'absolute', left: inPct, right: inPct, top: inPct, bottom: inPct,
+            display: 'flex', alignItems: 'center',
+            fontFamily: getCurrentTheme().bodyFont,
+            color: rgba(getGOLD(), 0.8),
+            opacity: open ? 1 : 0,
+            transition: open ? 'opacity 0.2s ease 0.5s' : 'opacity 0.1s ease',
+            overflow: 'hidden',
+            lineHeight: '20px',
+            textAlign: 'justify', wordBreak: 'keep-all', overflowWrap: 'break-word',
+          }}>
+            {typedDesc && (
+              <span style={{ fontSize: 11, letterSpacing: '0.02em', display: 'block', width: '100%' }}>{typedDesc}</span>
+            )}
+            {open && typedDesc.length < (tool.description?.length ?? 0) && (
+              <span style={{ color: rgba(getTEAL(), 0.5), fontSize: 10, animation: 'blink 0.8s step-end infinite' }}>|</span>
+            )}
+          </div>
         </div>
-      ) : (
-        // 3. 비중앙 hover: 회전 방향 화살표
+        )
+      })()}
+
+      {/* ── Book cover — computes border, shadow, and open/close transform per theme shape ── */}
+      {(() => {
+        const cp = getCurrentTheme().shape.clipPath
+        const br = getCurrentTheme().shape.borderRadius
+        const bw = isCenter ? 2 : 1.5
+        const borderCol = rgba(hovered ? getTEAL() : getGOLD(), isCenter ? (open ? 0.15 : 0.3) : (hovered ? 0.25 : 0.08))
+        const shadowFilter = isCenter && !open
+          ? `drop-shadow(0 0 12px ${rgba(getTEAL(), 0.08)}) drop-shadow(0 4px 16px rgba(0,0,0,0.5))`
+          : !isCenter && hovered
+            ? `drop-shadow(0 0 8px ${rgba(getTEAL(), 0.06)}) drop-shadow(0 3px 12px rgba(0,0,0,0.35))`
+            : !isCenter ? 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' : 'none'
+        return (
+      <div style={{ position: 'absolute', inset: 0, filter: shadowFilter, transition: 'filter 0.3s ease' }}>
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: br, clipPath: cp,
+        background: getCurrentTheme().coverGradient,
+        border: cp ? 'none' : `${bw}px solid ${borderCol}`,
+        boxShadow: !cp && isCenter ? `inset 0 1px 0 ${rgba(getGOLD(), 0.06)}` : 'none',
+        transformOrigin: getCurrentTheme().ornament === 'book' ? 'left center' : 'center center',
+        transform: open
+          ? getCurrentTheme().ornament === 'book' ? 'rotateY(-150deg)' : 'scale(0.85) rotateZ(3deg) translateY(-4px)'
+          : 'none',
+        transition: open
+          ? `transform ${getCurrentTheme().openDuration ?? 500}ms cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease 0.1s, box-shadow 0.3s ease, border-color 0.2s ease`
+          : `transform ${(getCurrentTheme().openDuration ?? 500) * 0.7}ms cubic-bezier(0.25, 1, 0.5, 1), opacity 0.15s ease, box-shadow 0.3s ease, border-color 0.2s ease`,
+        opacity: open ? 0 : 1,
+        display: 'flex', flexDirection: 'column', alignItems: 'stretch',
+        overflow: 'hidden',
+        backfaceVisibility: 'hidden',
+      }}>
+        <CardOrnament color={isCenter ? getTEAL() : rgba(getGOLD(), 0.3)} borderColor={borderCol} />
+
+        {/* Spine — book only */}
+        {getCurrentTheme().ornament === 'book' && <div aria-hidden="true" style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0, width: isCenter ? 7 : 4,
+          background: isCenter
+            ? `linear-gradient(180deg, ${rgba(getGOLD(), 0.3)}, ${rgba(getGOLD(), 0.15)}, ${rgba(getGOLD(), 0.3)})`
+            : `linear-gradient(180deg, ${rgba(getGOLD(), 0.08)}, ${rgba(getGOLD(), 0.03)}, ${rgba(getGOLD(), 0.08)})`,
+          borderRadius: '3px 0 0 3px',
+          boxShadow: isCenter ? 'inset -2px 0 4px rgba(0,0,0,0.3)' : 'none',
+        }} />}
+
+        {/* Edge accent — all themes, uses accent color */}
+        <div aria-hidden="true" style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: isCenter ? 3 : 1.5,
+          background: isCenter
+            ? `linear-gradient(90deg, ${rgba(getTEAL(), 0.5)}, ${rgba(getGOLD(), 0.15)} 60%, transparent)`
+            : `linear-gradient(90deg, ${rgba(getTEAL(), 0.1)}, transparent)`,
+        }} />
+
+        {/* Title — editorial book cover layout, padding adapts to clipPath */}
         <div style={{
-          flex: 1,
-          background: `linear-gradient(175deg, ${tool.color}18, ${tool.color}06)`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+          padding: cp?.includes('50% 0%') ? '22% 18%'  /* hexagon */
+            : cp ? '12% 14%'                            /* octagon */
+            : br === '50%' ? '24% 16%'                  /* circle */
+            : br.includes('/') ? '20% 16%'              /* blob */
+            : br.includes('40%') ? '18% 14%'            /* leaf */
+            : isCenter ? '20px 20px' : '16px 14px',     /* mild rounding */
+          position: 'relative', zIndex: 1, gap: isCenter ? 8 : 6,
         }}>
-          {hovered && (
-            <span style={{
-              fontSize: 22, color: `${tool.color}cc`,
-              animation: 'arrowPulse 0.6s ease-in-out infinite alternate',
-            }}>
-              {stepsToCenter < 0 ? '‹' : '›'}
-            </span>
-          )}
+          {/* Top ornament line */}
+          <div aria-hidden="true" style={{
+            width: isCenter ? '50%' : '35%', height: 1,
+            background: `linear-gradient(90deg, transparent, ${isCenter ? rgba(getTEAL(), 0.3) : rgba(getTEAL(), 0.1)}, transparent)`,
+          }} />
+
+          {/* Title — drop cap first letter, single words stay inline */}
+          {(() => {
+            const label = tool.label
+            const words = label.split(' ')
+            const isSingleWord = words.length === 1
+            const titleColor = isCenter ? rgba(getTEAL(), 0.95) : rgba(getCurrentTheme().fg, Math.max(0.25, 0.65 - distFromCenter * 0.1))
+            const capColor = isCenter ? rgba(getGOLD(), 0.9) : rgba(getGOLD(), Math.max(0.15, 0.45 - distFromCenter * 0.06))
+            const shrink = cp ? 0.8 : br === '50%' ? 0.75 : 1
+            const capSize = (isCenter ? 24 : Math.max(14, 20 - distFromCenter * 2)) * shrink
+            const restSize = (isCenter ? 10 : Math.max(7.5, 9 - distFromCenter * 0.4)) * shrink
+            const font = getCurrentTheme().titleFont
+
+            if (isSingleWord) {
+              return (
+                <div style={{ textAlign: 'center', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2 }}>
+                  <span style={{
+                    fontFamily: font, fontSize: capSize, fontWeight: 900, color: capColor,
+                    lineHeight: 1.1, letterSpacing: '0.06em',
+                    textShadow: isCenter ? `0 0 14px ${rgba(getGOLD(), 0.3)}` : 'none',
+                  }}>{label[0]}</span>
+                  <span style={{
+                    fontFamily: font, fontSize: restSize, fontWeight: 700, color: titleColor,
+                    textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: 1.3,
+                    textShadow: isCenter ? `0 0 8px ${rgba(getTEAL(), 0.15)}` : 'none',
+                  }}>{label.slice(1)}</span>
+                </div>
+              )
+            }
+
+            return (
+              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                {words.map((word, wi) => (
+                  <span key={wi} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1 }}>
+                    <span style={{
+                      fontFamily: font, fontSize: wi === 0 ? capSize : capSize * 0.7, fontWeight: 900, color: capColor,
+                      lineHeight: 1.1, letterSpacing: '0.06em',
+                      textShadow: isCenter ? `0 0 14px ${rgba(getGOLD(), 0.3)}` : 'none',
+                    }}>{word[0]}</span>
+                    <span style={{
+                      fontFamily: font, fontSize: restSize, fontWeight: 700, color: titleColor,
+                      textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: 1.3,
+                      textShadow: isCenter ? `0 0 8px ${rgba(getTEAL(), 0.15)}` : 'none',
+                    }}>{word.slice(1)}</span>
+                  </span>
+                ))}
+              </div>
+            )
+          })()}
+
+          {/* Bottom ornament line */}
+          <div aria-hidden="true" style={{
+            width: isCenter ? '40%' : '25%', height: 1,
+            background: `linear-gradient(90deg, transparent, ${isCenter ? rgba(getGOLD(), 0.25) : rgba(getGOLD(), 0.08)}, transparent)`,
+          }} />
+        </div>
+
+        {isFavorite && <div style={{ position: 'absolute', bottom: '12%', right: '12%', fontSize: 8, color: rgba(getGOLD(), 0.5), lineHeight: 1, pointerEvents: 'none' }}>★</div>}
+      </div>
+      </div>
+      )})()}
+
+      {hovered && !isCenter && tool.description && (
+        <div style={{
+          position: 'absolute', bottom: -28, left: '50%', transform: 'translateX(-50%)',
+          padding: '4px 10px', borderRadius: 4, fontSize: 10,
+          background: rgba(T.bg, 0.95), color: rgba(T.fg, 0.7),
+          border: `1px solid ${rgba(T.gold, 0.1)}`,
+          whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 30,
+        }}>
+          {tool.description}
         </div>
       )}
-
-      <div style={{
-        height: 14, flexShrink: 0,
-        background: `linear-gradient(to top, ${tool.color}22, transparent)`,
-      }} />
     </div>
   )
 })
 
-// ─── Overview Grid ────────────────────────────────────────────────────────────
-const OverviewGrid = memo(function OverviewGrid({
-  tools, recommended, reasons, recentIds, animDuration, onSelect, onClose,
-}: {
-  tools: Tool[]
-  recommended: string[]
-  reasons?: Record<string, string>
-  recentIds: string[]
-  animDuration: number
-  onSelect: (id: string) => void
-  onClose: () => void
+// ═══════════════════════════════════════════════
+// SECTION: Overview Grid (all-tools view)
+// ═══════════════════════════════════════════════
+const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds, animDuration, onSelect, onClose, onToggleFav }: {
+  tools: Tool[]; recentIds: string[]
+  favoriteIds: string[]; animDuration: number; onSelect: (id: string) => void; onClose: () => void
+  onToggleFav: (id: string) => void
 }) {
   const toolMap = useMemo(() => new Map(tools.map(t => [t.id, t])), [tools])
-  const recentTools = useMemo(
-    () => recentIds.map(id => toolMap.get(id)).filter(Boolean) as Tool[],
-    [recentIds, toolMap],
-  )
-
-  // 카테고리별로 도구를 분류
+  const recentTools = useMemo(() => recentIds.map(id => toolMap.get(id)).filter(Boolean) as Tool[], [recentIds, toolMap])
+  const favTools = useMemo(() => favoriteIds.map(id => toolMap.get(id)).filter(Boolean) as Tool[], [favoriteIds, toolMap])
   const categorized = useMemo(() => {
-    const placed = new Set<string>()
-    const groups: { label: string; tools: Tool[] }[] = []
-    for (const cat of CATEGORIES) {
-      const catTools = cat.ids.map(id => toolMap.get(id)).filter(Boolean) as Tool[]
-      if (catTools.length) { groups.push({ label: cat.label, tools: catTools }); catTools.forEach(t => placed.add(t.id)) }
-    }
-    const rest = tools.filter(t => !placed.has(t.id))
-    if (rest.length) groups.push({ label: '기타', tools: rest })
-    return groups
+    const placed = new Set<string>(); const groups: { label: string; tools: Tool[] }[] = []
+    for (const cat of CATEGORIES) { const ct = cat.ids.map(id => toolMap.get(id)).filter(Boolean) as Tool[]; if (ct.length) { groups.push({ label: cat.label, tools: ct }); ct.forEach(t => placed.add(t.id)) } }
+    const rest = tools.filter(t => !placed.has(t.id)); if (rest.length) groups.push({ label: '기타', tools: rest }); return groups
   }, [tools, toolMap])
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 40,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'fadeIn 0.18s ease both',
-      }}
-      onClick={onClose}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: 'min(700px, 94vw)', maxHeight: '80vh', overflowY: 'auto',
-          background: 'rgba(14,10,6,0.97)', backdropFilter: 'blur(28px)',
-          borderRadius: 18, border: '1px solid rgba(210,148,50,0.22)',
-          boxShadow: '0 32px 100px rgba(0,0,0,0.8)',
-          padding: '18px 16px 22px',
-          animation: 'popIn 0.2s cubic-bezier(0.22,1,0.36,1) both',
-        }}
-      >
-        {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 14, paddingBottom: 10,
-          borderBottom: '1px solid rgba(255,255,255,0.14)',
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,210,120,0.85)', letterSpacing: '0.04em' }}>
-            전체 기능 ({tools.length})
-          </span>
-          <button onClick={onClose} className="spiral-close-btn">✕</button>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.15s ease both' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: 'min(720px, 92vw)', maxHeight: '82vh', overflowY: 'auto',
+        background: rgba(T.bg, 0.98), backdropFilter: 'blur(40px)',
+        borderRadius: 6, border: `1px solid ${rgba(getGOLD(), 0.12)}`,
+        boxShadow: '0 32px 80px rgba(0,0,0,0.7)', padding: '16px 14px 20px',
+        animation: 'popIn 0.18s ease both',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${rgba(getGOLD(), 0.08)}` }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: rgba(getGOLD(), 0.5), letterSpacing: '0.06em' }}>{tools.length} 기능</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: rgba(getCurrentTheme().fg, 0.2), cursor: 'pointer', fontSize: 13, padding: '2px 4px' }}>x</button>
         </div>
 
-        {/* AI 추천 — scan 후에만 표시 */}
-        {recommended.length > 0 && (() => {
-          const recTools = recommended.map(id => toolMap.get(id)).filter(Boolean) as Tool[]
-          return recTools.length > 0 ? (
-            <div style={{ marginBottom: 18 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7,
-              }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: '#fbbf24', textTransform: 'uppercase' }}>AI 추천</span>
-                <span style={{ fontSize: 9, color: 'rgba(251,191,36,0.5)' }}>화면 분석 결과</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 7 }}>
-                {recTools.map(t => (
-                  <div key={t.id} style={{ position: 'relative' }}>
-                    <OverviewCard tool={t} isRecommended animDuration={animDuration} onSelect={() => onSelect(t.id)} />
-                    {reasons?.[t.id] && (
-                      <div style={{
-                        fontSize: 9, color: 'rgba(255,200,100,0.65)', textAlign: 'center',
-                        marginTop: 3, lineHeight: 1.2, wordBreak: 'keep-all',
-                      }}>{reasons[t.id]}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null
-        })()}
-
-        {/* 7. 최근 사용 */}
-        {recentTools.length > 0 && (
-          <div style={{ marginBottom: 18 }}>
-            <SectionLabel label="최근 사용" />
-            <OverviewRow tools={recentTools} recommended={recommended} animDuration={animDuration} onSelect={onSelect} />
+        {favTools.length > 0 && <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', color: rgba(getGOLD(), 0.5), marginBottom: 6, textTransform: 'uppercase' }}>즐겨찾기</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+            {favTools.map(t => <OvCard key={t.id} tool={t} fav onSelect={onSelect} onToggleFav={onToggleFav} />)}
           </div>
-        )}
+        </div>}
 
-        {/* 6. 카테고리 그룹 */}
-        {categorized.map(group => (
-          <div key={group.label} style={{ marginBottom: 16 }}>
-            <SectionLabel label={group.label} />
-            <OverviewRow tools={group.tools} recommended={recommended} animDuration={animDuration} onSelect={onSelect} />
-          </div>
-        ))}
+        {recentTools.length > 0 && <div style={{ marginBottom: 16 }}><Lbl text="최근" /><div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>{recentTools.map(t => <OvCard key={t.id} tool={t} fav={favoriteIds.includes(t.id)} onSelect={onSelect} onToggleFav={onToggleFav} />)}</div></div>}
+        {categorized.map(g => <div key={g.label} style={{ marginBottom: 14 }}><Lbl text={g.label} /><div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>{g.tools.map(t => <OvCard key={t.id} tool={t} fav={favoriteIds.includes(t.id)} onSelect={onSelect} onToggleFav={onToggleFav} />)}</div></div>)}
       </div>
     </div>
   )
 })
 
-const SectionLabel = memo(function SectionLabel({ label }: { label: string }) {
-  return (
-    <div style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
-      color: 'rgba(210,148,50,0.55)', marginBottom: 7,
-      textTransform: 'uppercase',
-    }}>{label}</div>
-  )
+const Lbl = memo(function Lbl({ text }: { text: string }) {
+  return <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', color: rgba(getGOLD(), 0.3), marginBottom: 5, textTransform: 'uppercase' }}>{text}</div>
 })
 
-const OverviewRow = memo(function OverviewRow({ tools, recommended, animDuration, onSelect }: {
-  tools: Tool[]; recommended: string[]; animDuration: number; onSelect: (id: string) => void
-}) {
+const OvCard = memo(function OvCard({ tool, fav, onSelect, onToggleFav }: { tool: Tool; fav?: boolean; onSelect: (id: string) => void; onToggleFav?: (id: string) => void }) {
+  const [h, setH] = useState(false)
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 7 }}>
-      {tools.map(t => (
-        <OverviewCard key={t.id} tool={t} isRecommended={recommended.includes(t.id)}
-          animDuration={animDuration} onSelect={() => onSelect(t.id)} />
-      ))}
-    </div>
-  )
-})
-
-const OverviewCard = memo(function OverviewCard({
-  tool, isRecommended, animDuration, onSelect,
-}: { tool: Tool; isRecommended: boolean; animDuration: number; onSelect: () => void }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <button
-      onClick={onSelect}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: 5, padding: '10px 6px 9px', borderRadius: 10, cursor: 'pointer',
-        background: hovered
-          ? `linear-gradient(160deg, ${tool.color}28, ${tool.color}10)`
-          : isRecommended ? 'rgba(251,191,36,0.06)' : 'rgba(255,255,255,0.08)',
-        border: `1.5px solid ${hovered ? tool.color + 'bb' : isRecommended ? 'rgba(251,191,36,0.45)' : 'rgba(255,255,255,0.18)'}`,
-        boxShadow: hovered ? `0 0 18px ${tool.color}44` : isRecommended ? '0 0 8px rgba(251,191,36,0.15)' : 'none',
-        transition: `all ${animDuration * 0.5}ms ease`,
-        position: 'relative', overflow: 'hidden',
-      }}
-    >
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-        background: isRecommended
-          ? `linear-gradient(90deg, #fbbf24, #f59e0b88)`
-          : `linear-gradient(90deg, ${tool.color}, ${tool.color}77)`,
-      }} />
-      <span style={{ fontSize: 22, lineHeight: 1, marginTop: 2 }}>{tool.icon}</span>
-      <span style={{
-        fontSize: 10, fontWeight: 600, textAlign: 'center', lineHeight: 1.3,
-        color: hovered ? '#fff' : 'rgba(255,255,255,0.72)', wordBreak: 'keep-all',
-      }}>{tool.label}</span>
-      {isRecommended && hovered && (
-        <div style={{
-          position: 'absolute', top: 6, right: 5,
-          fontSize: 8, fontWeight: 700, color: '#fbbf24',
-          background: 'rgba(251,191,36,0.18)',
-          border: '1px solid rgba(251,191,36,0.5)',
-          borderRadius: 3, padding: '0px 4px',
-          animation: 'fadeIn 0.12s ease both',
-        }}>AI ✦</div>
-      )}
+    <button onClick={() => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      title={tool.description} aria-label={tool.label + (tool.description ? ': ' + tool.description : '')} style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 4, cursor: 'pointer',
+        background: h ? rgba(getGOLD(), 0.06) : rgba(getCurrentTheme().fg, 0.015),
+        border: `1px solid ${rgba(getGOLD(), h ? 0.2 : 0.06)}`,
+        transition: 'all 0.15s ease', overflow: 'hidden', position: 'relative',
+      }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: tool.color, opacity: h ? 0.5 : 0.2, borderRadius: '4px 0 0 4px', transition: 'opacity 0.15s ease' }} />
+      <div style={{ width: 3, height: 3, borderRadius: '50%', background: tool.color, opacity: h ? 0.8 : 0.3, flexShrink: 0, marginLeft: 4 }} />
+      <span style={{ fontSize: 10, fontWeight: 500, color: h ? rgba(T.fg, 0.85) : rgba(T.fg, 0.45), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{tool.label}</span>
+      {onToggleFav && h && <span onClick={e => { e.stopPropagation(); onToggleFav(tool.id) }}
+        style={{ fontSize: 9, color: fav ? rgba(getGOLD(), 0.7) : rgba(T.fg, 0.2), cursor: 'pointer', flexShrink: 0, lineHeight: 1 }}
+        title={fav ? '즐겨찾기 해제' : '즐겨찾기 추가'}>{fav ? '★' : '☆'}</span>}
+      {!h && fav && <span style={{ fontSize: 9, color: rgba(getGOLD(), 0.4), flexShrink: 0, lineHeight: 1 }}>★</span>}
     </button>
   )
 })
 
-// ─── Search Grid ──────────────────────────────────────────────────────────────
-const GridCard = memo(function GridCard({
-  tool, isRecommended, animDuration, onSelect,
-}: { tool: Tool; isRecommended: boolean; animDuration: number; onSelect: () => void }) {
-  const [hovered, setHovered] = useState(false)
+// ═══════════════════════════════════════════════
+// SECTION: Search Card (filtered results)
+// ═══════════════════════════════════════════════
+const SearchCard = memo(function SearchCard({ tool, animDuration, onSelect }: { tool: Tool; animDuration: number; onSelect: (id: string) => void }) {
+  const [h, setH] = useState(false)
   return (
-    <button
-      onClick={onSelect}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
-        background: hovered ? `linear-gradient(135deg, ${tool.color}28, ${tool.color}12)` : isRecommended ? 'rgba(251,191,36,0.05)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${hovered ? tool.color + '99' : isRecommended ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`,
-        borderLeft: isRecommended && !hovered ? '2px solid rgba(251,191,36,0.55)' : undefined,
-        boxShadow: hovered ? `0 0 20px ${tool.color}33` : undefined,
-        transition: `all ${animDuration * 0.6}ms ease`,
-        textAlign: 'left', width: '100%', color: 'inherit',
-      }}
-    >
-      <span style={{ fontSize: 22, lineHeight: 1 }}>{tool.icon}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: hovered ? '#fff' : 'rgba(255,255,255,0.82)' }}>
-        {tool.label}
-      </span>
-      {isRecommended && hovered && (
-        <span style={{ marginLeft: 'auto', fontSize: 10, color: '#fbbf24', fontWeight: 600, animation: 'fadeIn 0.12s ease both' }}>AI ✦</span>
-      )}
+    <button onClick={() => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      title={tool.description} style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 4, cursor: 'pointer',
+        background: h ? rgba(getGOLD(), 0.05) : rgba(getCurrentTheme().fg, 0.01),
+        border: `1px solid ${rgba(getGOLD(), h ? 0.15 : 0.03)}`,
+        transition: `all ${animDuration * 0.5}ms ease`, textAlign: 'left', width: '100%', color: 'inherit',
+        position: 'relative',
+      }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: tool.color, opacity: h ? 0.5 : 0.2, borderRadius: '4px 0 0 4px' }} />
+      <div style={{ width: 4, height: 4, borderRadius: '50%', background: tool.color, opacity: h ? 0.7 : 0.3, flexShrink: 0, marginLeft: 4 }} />
+      <span style={{ fontSize: 12, fontWeight: 500, color: h ? rgba(T.fg, 0.85) : rgba(T.fg, 0.55), marginLeft: 4 }}>{tool.label}</span>
     </button>
   )
 })
 
-// ─── NavBtn ───────────────────────────────────────────────────────────────────
-const NavBtn = memo(function NavBtn({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button onClick={onClick} className="spiral-nav-btn">{label}</button>
-  )
-})
-
-// ─── Main SpiralMenu ──────────────────────────────────────────────────────────
-export default function SpiralMenu({
-  tools, recommended, reasons, spiralScale, animSpeed, filterQuery, onSelectTool,
-}: SpiralMenuProps): React.ReactElement {
+// ═══════════════════════════════════════════════
+// SECTION: Main SpiralMenu Component
+// ═══════════════════════════════════════════════
+export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery, onSelectTool }: SpiralMenuProps): React.ReactElement {
+  const theme = useTheme() // triggers re-render on theme change
   const [vw, setVw] = useState(window.innerWidth)
   const [vh, setVh] = useState(window.innerHeight)
-  const [centerIdx, setCenterIdx] = useState(() => {
-    const recent = getRecentTools()
-    if (recent.length === 0) return 0
-    const idx = tools.findIndex(t => t.id === recent[0])
-    return idx >= 0 ? idx : 0
-  })
+  const [centerIdx, setCenterIdx] = useState(0)
   const [showOverview, setShowOverview] = useState(false)
   const [recentIds, setRecentIds] = useState<string[]>(getRecentTools)
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(getFavorites)
   const wheelCooldown = useRef(false)
 
-  useEffect(() => {
-    const onResize = (): void => { setVw(window.innerWidth); setVh(window.innerHeight) }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
+  useEffect(() => { const h = (): void => { setVw(window.innerWidth); setVh(window.innerHeight) }; window.addEventListener('resize', h); return () => window.removeEventListener('resize', h) }, [])
 
   const animDuration = ANIM_MS[animSpeed] ?? 300
   const staggerMs = STAGGER_MS[animSpeed] ?? 22
   const { radius, arcCenterX, arcCenterY } = useMemo(() => getArcParams(vw, vh, spiralScale), [vw, vh, spiralScale])
+  const { w: cardW, h: cardH } = useMemo(() => getCardSize(vw, vh), [vw, vh])
   const isSearching = filterQuery.length > 0
-
   const filteredTools = useMemo(() => {
     if (!filterQuery) return tools
     const q = filterQuery.toLowerCase()
-    return tools.filter(t => t.label.toLowerCase().includes(q) || t.id.toLowerCase().includes(q))
+    // Check if query matches a category label exactly
+    const catMatch = CATEGORIES.find(c => c.label.toLowerCase() === q)
+    if (catMatch) return tools.filter(t => catMatch.ids.includes(t.id))
+    return tools.filter(t => t.label.toLowerCase().includes(q) || t.id.toLowerCase().includes(q) || (t.description ?? '').toLowerCase().includes(q))
   }, [tools, filterQuery])
+  const slotTools = useMemo(() => { if (isSearching) return filteredTools; const N = tools.length; const half = Math.floor(VISIBLE_COUNT / 2); return Array.from({ length: VISIBLE_COUNT }, (_, i) => tools[(centerIdx - half + i + N) % N]) }, [tools, centerIdx, isSearching, filteredTools])
+  const rotate = useCallback((dir: number) => setCenterIdx(i => (i + dir + tools.length) % tools.length), [tools.length])
 
-  // 슬롯 기반: slotIndex(0~8)를 key로, tool을 prop으로 → 회전 시 언마운트 없음
-  const slotTools = useMemo(() => {
-    if (isSearching) return filteredTools
-    const N = tools.length
-    const half = Math.floor(VISIBLE_COUNT / 2)
-    return Array.from({ length: VISIBLE_COUNT }, (_, i) =>
-      tools[(centerIdx - half + i + N) % N]
-    )
-  }, [tools, centerIdx, isSearching, filteredTools])
+  useEffect(() => { if (isSearching || showOverview) return; const h = (e: KeyboardEvent): void => { if (e.key === 'ArrowLeft') rotate(-1); else if (e.key === 'ArrowRight') rotate(1); else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); setShowOverview(s => !s) } else if (e.key === 'Home') { e.preventDefault(); setCenterIdx(0) } else if (e.key === 'End') { e.preventDefault(); setCenterIdx(tools.length - 1) } }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h) }, [rotate, isSearching, showOverview, tools.length])
+  useEffect(() => { if (isSearching || showOverview) return; const h = (e: WheelEvent): void => { if (wheelCooldown.current) return; wheelCooldown.current = true; rotate(e.deltaY > 0 ? 1 : -1); setTimeout(() => { wheelCooldown.current = false }, 250) }; window.addEventListener('wheel', h, { passive: true }); return () => window.removeEventListener('wheel', h) }, [rotate, isSearching, showOverview])
 
-  const rotate = useCallback((dir: number) => {
-    setCenterIdx(i => (i + dir + tools.length) % tools.length)
-  }, [tools.length])
-
-  useEffect(() => {
-    if (isSearching || showOverview) return
-    const handler = (e: KeyboardEvent): void => {
-      if (e.key === 'ArrowLeft') rotate(-1)
-      else if (e.key === 'ArrowRight') rotate(1)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [rotate, isSearching, showOverview])
-
-  useEffect(() => {
-    if (isSearching || showOverview) return
-    const handler = (e: WheelEvent): void => {
-      if (wheelCooldown.current) return
-      wheelCooldown.current = true
-      rotate(e.deltaY > 0 ? 1 : -1)
-      setTimeout(() => { wheelCooldown.current = false }, 120)
-    }
-    window.addEventListener('wheel', handler, { passive: true })
-    return () => window.removeEventListener('wheel', handler)
-  }, [rotate, isSearching, showOverview])
-
-  const handleSelect = useCallback((id: string) => {
-    addRecentTool(id)
-    setRecentIds(getRecentTools())
-    onSelectTool(id)
-  }, [onSelectTool])
-
+  const handleSelect = useCallback((id: string) => { addRecentTool(id); setRecentIds(getRecentTools()); onSelectTool(id) }, [onSelectTool])
+  const handleToggleFav = useCallback((id: string) => { setFavoriteIds(toggleFavorite(id)) }, [])
   const centerToolLabel = slotTools[Math.floor(slotTools.length / 2)]?.label ?? ''
 
-  // ── Search mode ───────────────────────────────────────────────────────────
-  if (isSearching) {
-    return (
-      <div style={{
-        position: 'fixed', inset: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 15, pointerEvents: 'none',
+  if (isSearching) return (
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15, pointerEvents: 'none' }}>
+      <div style={{ pointerEvents: 'auto', width: 'min(420px, 85vw)', maxHeight: '60vh', overflowY: 'auto',
+        background: rgba(T.bg, 0.98), backdropFilter: 'blur(32px)',
+        borderRadius: 6, border: `1px solid ${rgba(getGOLD(), 0.1)}`,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.7)', padding: 10,
+        display: 'flex', flexDirection: 'column', gap: 2, animation: 'fadeIn 0.12s ease both',
       }}>
-        <div style={{
-          pointerEvents: 'auto',
-          width: 460, maxHeight: '60vh', overflowY: 'auto',
-          background: 'rgba(18,12,6,0.96)', backdropFilter: 'blur(24px)',
-          borderRadius: 16, border: '1px solid rgba(210,148,50,0.2)',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.75)',
-          padding: 12,
-          display: 'flex', flexDirection: 'column', gap: 3,
-          animation: 'fadeIn 0.15s ease both',
-        }}>
-          {filteredTools.length === 0 ? (
-            <div style={{ padding: '24px 0', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
-              검색 결과가 없습니다
-            </div>
-          ) : filteredTools.map(t => (
-            <GridCard key={t.id} tool={t} isRecommended={recommended.includes(t.id)}
-              animDuration={animDuration} onSelect={() => handleSelect(t.id)} />
-          ))}
-        </div>
+        {filteredTools.length === 0
+          ? <div style={{ padding: '20px 0', textAlign: 'center', color: rgba(T.fg, 0.25), fontSize: 12 }}>결과 없음</div>
+          : filteredTools.map(t => <SearchCard key={t.id} tool={t} animDuration={animDuration} onSelect={handleSelect} />)}
       </div>
-    )
-  }
+    </div>
+  )
 
-  // ── Fan mode ──────────────────────────────────────────────────────────────
   return (
     <>
       {slotTools.map((tool, i) => (
-        <FanCard
-          key={i}                          // 슬롯 고정 key → 회전 시 언마운트 없음
-          tool={tool}
-          slotIndex={i}
-          total={slotTools.length}
-          radius={radius}
-          arcCenterX={arcCenterX}
-          arcCenterY={arcCenterY}
-          isRecommended={recommended.includes(tool.id)}
-          reason={reasons?.[tool.id]}
+        <FanCard key={`${theme.id}-${i}`} tool={tool} slotIndex={i} total={slotTools.length}
+          radius={radius} arcCenterX={arcCenterX} arcCenterY={arcCenterY}
+          isFavorite={favoriteIds.includes(tool.id)}
           isCenter={i === Math.floor(slotTools.length / 2)}
-          animDuration={animDuration}
-          staggerMs={staggerMs}
-          onSelect={() => handleSelect(tool.id)}
-          onRotateTo={(steps) => rotate(steps)}
-        />
+          animDuration={animDuration} staggerMs={staggerMs}
+          cardW={cardW} cardH={cardH}
+          onSelect={handleSelect} onRotateTo={rotate} />
       ))}
 
-      {/* 4/5. 회전 컨트롤 (힌트 통합) */}
       <div style={{
-        position: 'fixed', bottom: 148, left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 22,
+        position: 'fixed', bottom: 'clamp(100px, 14vh, 160px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-        pointerEvents: 'auto',
-        animation: 'slideUpFade 0.3s ease 0.2s both',
+        pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <NavBtn onClick={() => rotate(-1)} label="‹" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button onClick={() => rotate(-1)} className="spiral-nav-btn" aria-label="이전 도구">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M6 2L3 5l3 3"/></svg>
+          </button>
           <div style={{
-            fontSize: 12, fontWeight: 600, color: 'rgba(255,210,120,0.85)',
-            background: 'rgba(18,12,6,0.88)', border: '1px solid rgba(210,148,50,0.25)',
-            borderRadius: 20, padding: '5px 16px', backdropFilter: 'blur(10px)',
-            minWidth: 110, textAlign: 'center', letterSpacing: '0.02em',
-          }}>
-            {centerToolLabel}
-          </div>
-          <NavBtn onClick={() => rotate(1)} label="›" />
-
-          {/* 한눈에 보기 */}
-          <button
-            onClick={() => setShowOverview(true)}
-            title="전체 기능 보기"
-            className="spiral-overview-btn"
-          >⊞</button>
-        </div>
-
-        {/* 힌트: 컨트롤 바로 아래 통합 */}
-        <div style={{
-          fontSize: 10, color: 'rgba(255,200,100,0.55)',
-          letterSpacing: '0.04em', pointerEvents: 'none',
-        }}>
-          ← → 키 · 스크롤 · 클릭으로 회전
+            fontSize: 11, fontWeight: 500, color: rgba(getGOLD(), 0.7),
+            background: rgba(T.bg, 0.9), border: `1px solid ${rgba(getGOLD(), 0.1)}`,
+            borderRadius: 4, padding: '4px 14px', backdropFilter: 'blur(16px)',
+            minWidth: 100, textAlign: 'center', letterSpacing: '0.06em',
+            fontFamily: getCurrentTheme().titleFont, textTransform: 'uppercase',
+          }}>{centerToolLabel}</div>
+          <button onClick={() => rotate(1)} className="spiral-nav-btn" aria-label="다음 도구">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M4 2l3 3-3 3"/></svg>
+          </button>
+          <button onClick={() => setShowOverview(true)} title="전체" aria-label="전체 보기" className="spiral-overview-btn">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1"><rect x="1" y="1" width="3.5" height="3.5"/><rect x="5.5" y="1" width="3.5" height="3.5"/><rect x="1" y="5.5" width="3.5" height="3.5"/><rect x="5.5" y="5.5" width="3.5" height="3.5"/></svg>
+          </button>
         </div>
       </div>
 
-      {/* Overview modal */}
-      {showOverview && (
-        <OverviewGrid
-          tools={tools}
-          recommended={recommended}
-          reasons={reasons}
-          recentIds={recentIds}
-          animDuration={animDuration}
-          onSelect={(id) => { setShowOverview(false); handleSelect(id) }}
-          onClose={() => setShowOverview(false)}
-        />
-      )}
+      {showOverview && <OverviewGrid tools={tools} recentIds={recentIds}
+        favoriteIds={favoriteIds} animDuration={animDuration} onSelect={(id) => { setShowOverview(false); handleSelect(id) }}
+        onClose={() => setShowOverview(false)} onToggleFav={handleToggleFav} />}
 
       <style>{`
-        @keyframes centerPulse {
-          0%, 100% { box-shadow: 0 0 20px var(--tool-color, #fff4) , 0 8px 24px rgba(0,0,0,0.7); }
-          50%       { box-shadow: 0 0 36px var(--tool-color, #fff6), 0 8px 32px rgba(0,0,0,0.6); }
-        }
-        @keyframes arrowPulse {
-          from { opacity: 0.5; transform: scale(0.9); }
-          to   { opacity: 1.0; transform: scale(1.1); }
-        }
-        @keyframes slideUpFade {
-          from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
       `}</style>
     </>
   )

@@ -1,4 +1,8 @@
 import React from 'react'
+import { T, rgba } from '../utils/theme'
+import { logError } from '../utils/logger'
+
+const isDev = import.meta.env.DEV
 
 interface Props {
   children: React.ReactNode
@@ -24,7 +28,10 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
-    console.error('[ErrorBoundary]', error, info.componentStack)
+    logError('ErrorBoundary', error)
+    if (isDev) {
+      console.error('[ErrorBoundary] componentStack:', info.componentStack)
+    }
   }
 
   handleReset = (): void => {
@@ -45,35 +52,37 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             height: '100%',
             gap: 16,
             padding: 32,
-            color: 'rgba(255,255,255,0.8)',
-            background: 'rgba(14,12,26,0.97)',
+            color: rgba(T.fg, 0.8),
+            background: rgba(T.bg, 0.97),
           }}
         >
           <span style={{ fontSize: 32 }}>⚠</span>
           <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>
             이 기능을 불러오는 중 오류가 발생했습니다.
           </p>
-          <p
-            style={{
-              fontSize: 11,
-              color: 'rgba(255,100,100,0.75)',
-              maxWidth: 480,
-              textAlign: 'center',
-              margin: 0,
-              wordBreak: 'break-all',
-            }}
-          >
-            {this.state.error?.message}
-          </p>
+          {isDev && this.state.error?.message && (
+            <p
+              style={{
+                fontSize: 11,
+                color: rgba(T.danger, 0.75),
+                maxWidth: 480,
+                textAlign: 'center',
+                margin: 0,
+                wordBreak: 'break-all',
+              }}
+            >
+              {this.state.error.message}
+            </p>
+          )}
           <button
             onClick={this.handleReset}
             style={{
               marginTop: 8,
               padding: '8px 20px',
               borderRadius: 8,
-              border: '1px solid rgba(255,255,255,0.15)',
-              background: 'rgba(255,255,255,0.07)',
-              color: 'rgba(255,255,255,0.75)',
+              border: `1px solid ${rgba(T.fg, 0.15)}`,
+              background: rgba(T.fg, 0.07),
+              color: rgba(T.fg, 0.75),
               cursor: 'pointer',
               fontSize: 13,
             }}

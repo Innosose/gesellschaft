@@ -1,4 +1,5 @@
 import React from 'react'
+import { T, rgba } from '../utils/theme'
 import type { AiConfig } from '../../../shared/types'
 
 type Draft = Partial<AiConfig & { apiKeyRaw?: string }>
@@ -21,10 +22,10 @@ export default function AiConfigSection({
   config, draft, setDraft, loading, saved,
   models, provider, onSave, onLoadOllamaModels, dark = false,
 }: AiConfigSectionProps): React.ReactElement {
-  const bg       = dark ? 'rgba(20,18,36,0.9)'          : undefined
-  const color    = dark ? 'rgba(255,255,255,0.85)'       : 'var(--win-text)'
-  const border   = dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--win-border)'
-  const labelColor = dark ? 'rgba(255,255,255,0.68)'     : 'var(--win-text-muted)'
+  const bg       = dark ? rgba(T.bg, 0.9)                : undefined
+  const color    = dark ? rgba(T.fg, 0.85)       : 'var(--win-text)'
+  const border   = dark ? `1px solid ${rgba(T.fg, 0.16)}` : '1px solid var(--win-border)'
+  const labelColor = dark ? rgba(T.fg, 0.68)     : 'var(--win-text-muted)'
   const inputStyle: React.CSSProperties = {
     width: '100%', height: 30, fontSize: 12,
     background: bg ?? 'var(--win-surface-2)',
@@ -32,7 +33,7 @@ export default function AiConfigSection({
     padding: '0 8px', boxSizing: 'border-box',
   }
   const saveBtnStyle: React.CSSProperties = dark
-    ? { height: 34, fontSize: 12, background: 'rgba(139,92,246,0.2)', color: 'rgba(196,181,253,0.9)', border: '1px solid rgba(139,92,246,0.4)', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }
+    ? { height: 34, fontSize: 12, background: rgba(T.gold, 0.2), color: 'rgba(220,200,140,0.9)', border: `1px solid ${rgba(T.gold, 0.4)}`, borderRadius: 6, cursor: 'pointer', fontWeight: 600 }
     : undefined
 
   if (loading) {
@@ -69,7 +70,7 @@ export default function AiConfigSection({
             {provider === 'ollama' && (
               <button
                 onClick={onLoadOllamaModels}
-                style={{ marginLeft: 8, fontSize: 10, color: dark ? 'rgba(139,92,246,0.8)' : 'var(--win-accent)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                style={{ marginLeft: 8, fontSize: 10, color: dark ? rgba(T.gold, 0.8) : 'var(--win-accent)', background: 'transparent', border: 'none', cursor: 'pointer' }}
               >새로고침</button>
             )}
           </label>

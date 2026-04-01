@@ -42,6 +42,11 @@ async function svgToPdf(svgContent: string, outputPath: string): Promise<void> {
   // finally가 실행되는 시점에는 반드시 초기화되어 있음
   let timeoutId: ReturnType<typeof setTimeout> | undefined
 
+  // Sanitize SVG to prevent script injection
+  const safeSvg = svgContent
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/on\w+\s*=/gi, 'data-removed=')
+
   const html = `<!DOCTYPE html>
 <html><head><style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -49,7 +54,7 @@ async function svgToPdf(svgContent: string, outputPath: string): Promise<void> {
   .wrap { width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 8mm; }
   svg { max-width: 100%; max-height: 100%; object-fit: contain; }
 </style></head>
-<body><div class="wrap">${svgContent}</div></body></html>`
+<body><div class="wrap">${safeSvg}</div></body></html>`
 
   const promise = new Promise<void>((resolve, reject) => {
     let settled = false
@@ -164,6 +169,7 @@ export function registerCadConvertHandlers(): void {
 
   ipcMain.handle('cadConvert:openPdf', async (_, rawPath: unknown) => {
     if (typeof rawPath !== 'string' || !rawPath) return
+    if (!fs.existsSync(rawPath)) return
     const { shell } = await import('electron')
     await shell.openPath(rawPath)
   })

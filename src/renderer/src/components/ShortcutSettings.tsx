@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { rgba, THEMES } from '../utils/color'
+import { T, rgba } from '../utils/theme'
+import { THEMES } from '../utils/color'
 
 interface DisplaySettings {
   hubSize: number
@@ -53,17 +54,17 @@ function Slider({
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{label}</span>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontFamily: 'monospace' }}>{format(value)}</span>
+        <span style={{ fontSize: 12, color: rgba(T.fg, 0.6), fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 12, color: rgba(T.fg, 0.85), fontWeight: 700, fontFamily: 'monospace' }}>{format(value)}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
-        style={{ width: '100%', accentColor: 'var(--gs-accent, #8b5cf6)', cursor: 'pointer', height: 4 }}
+        style={{ width: '100%', cursor: 'pointer' }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)' }}>{format(min)}</span>
-        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)' }}>{format(max)}</span>
+        <span style={{ fontSize: 9, color: rgba(T.fg, 0.22) }}>{format(min)}</span>
+        <span style={{ fontSize: 9, color: rgba(T.fg, 0.22) }}>{format(max)}</span>
       </div>
     </div>
   )
@@ -78,6 +79,12 @@ export default function ShortcutSettings({
   // ── Drag state ──
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null)
+  const dragCleanupRef = useRef<(() => void) | null>(null)
+
+  // 언마운트 시 드래그 리스너 정리
+  useEffect(() => {
+    return () => { dragCleanupRef.current?.() }
+  }, [])
 
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement>): void => {
     if ((e.target as HTMLElement).closest('button, input, select, textarea')) return
@@ -88,9 +95,15 @@ export default function ShortcutSettings({
       if (!dragRef.current) return
       setPos({ x: dragRef.current.originX + ev.clientX - dragRef.current.startX, y: dragRef.current.originY + ev.clientY - dragRef.current.startY })
     }
-    const onUp = (): void => { dragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+    const onUp = (): void => {
+      dragRef.current = null
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      dragCleanupRef.current = null
+    }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
+    dragCleanupRef.current = onUp
   }
 
   // ── Theme state ──
@@ -216,18 +229,18 @@ export default function ShortcutSettings({
         {/* Header — drag handle */}
         <div
           onMouseDown={handleDragStart}
-          style={{ padding: '20px 24px 0', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0, cursor: 'grab', userSelect: 'none' }}
+          style={{ padding: '20px 24px 0', borderBottom: `1px solid ${rgba(T.fg, 0.07)}`, flexShrink: 0, cursor: 'grab', userSelect: 'none' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.92)' }}>⚙ 게젤샤프트 설정</span>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>✕</button>
+            <span style={{ fontSize: 15, fontWeight: 700, color: rgba(T.fg, 0.92) }}>⚙ 게젤샤프트 설정</span>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: rgba(T.fg, 0.35), cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>✕</button>
           </div>
           <div style={{ display: 'flex', gap: 2 }}>
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
                 padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 border: 'none', background: 'transparent',
-                color: tab === t.id ? hubColor : 'rgba(255,255,255,0.35)',
+                color: tab === t.id ? hubColor : rgba(T.fg, 0.35),
                 borderBottom: tab === t.id ? `2px solid ${hubColor}` : '2px solid transparent',
                 transition: 'color 0.15s, border-color 0.15s',
                 letterSpacing: '0.02em',
@@ -244,7 +257,7 @@ export default function ShortcutSettings({
           {/* ════ THEME TAB ════ */}
           {tab === 'theme' && (
             <div>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 18, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 11, color: rgba(T.fg, 0.35), marginBottom: 18, lineHeight: 1.6 }}>
                 허브 및 전체 UI 강조 색상을 선택합니다.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 20 }}>
@@ -255,8 +268,8 @@ export default function ShortcutSettings({
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
                         padding: '10px 4px', borderRadius: 10, cursor: 'pointer',
-                        border: isSel ? `2px solid ${theme.color}` : '2px solid rgba(255,255,255,0.07)',
-                        background: isSel ? rgba(theme.color, 0.12) : 'rgba(255,255,255,0.03)',
+                        border: isSel ? `2px solid ${theme.color}` : `2px solid ${rgba(T.fg, 0.07)}`,
+                        background: isSel ? rgba(theme.color, 0.12) : rgba(T.fg, 0.03),
                         transition: 'all 0.15s ease',
                         boxShadow: isSel ? `0 0 18px ${rgba(theme.color, 0.28)}` : 'none',
                       }}
@@ -266,7 +279,7 @@ export default function ShortcutSettings({
                         background: `radial-gradient(circle at 35% 35%, ${theme.color}, ${rgba(theme.color, 0.5)})`,
                         boxShadow: isSel ? `0 0 12px ${rgba(theme.color, 0.6)}` : '0 2px 6px rgba(0,0,0,0.4)',
                       }} />
-                      <span style={{ fontSize: 9, color: isSel ? theme.color : 'rgba(255,255,255,0.4)', fontWeight: 700 }}>
+                      <span style={{ fontSize: 9, color: isSel ? theme.color : rgba(T.fg, 0.4), fontWeight: 700 }}>
                         {theme.name}
                       </span>
                     </button>
@@ -275,12 +288,12 @@ export default function ShortcutSettings({
               </div>
 
               {/* Custom picker */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', marginBottom: 18 }}>
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', flex: 1 }}>커스텀 색상</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, border: `1px solid ${rgba(T.fg, 0.08)}`, background: rgba(T.fg, 0.03), marginBottom: 18 }}>
+                <span style={{ fontSize: 12, color: rgba(T.fg, 0.5), flex: 1 }}>커스텀 색상</span>
                 <input type="color" value={customColor} onChange={e => setCustomColor(e.target.value)}
                   onBlur={() => handleThemeSelect(customColor)}
-                  style={{ width: 36, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', cursor: 'pointer', padding: 2 }} />
-                <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'rgba(255,255,255,0.5)', width: 72 }}>{customColor.toUpperCase()}</span>
+                  style={{ width: 36, height: 28, borderRadius: 6, border: `1px solid ${rgba(T.fg, 0.15)}`, background: 'transparent', cursor: 'pointer', padding: 2 }} />
+                <span style={{ fontSize: 11, fontFamily: 'monospace', color: rgba(T.fg, 0.5), width: 72 }}>{customColor.toUpperCase()}</span>
                 <button onClick={() => handleThemeSelect(customColor)}
                   style={{ padding: '5px 12px', borderRadius: 6, border: `1px solid ${rgba(hubColor, 0.4)}`, background: rgba(hubColor, 0.12), color: rgba(hubColor, 0.95), fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
                   적용
@@ -289,7 +302,7 @@ export default function ShortcutSettings({
 
               {/* Preview */}
               <div style={{ padding: '14px 18px', borderRadius: 10, border: `1px solid ${rgba(selectedColor, 0.18)}`, background: rgba(selectedColor, 0.04) }}>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>미리보기</p>
+                <p style={{ fontSize: 10, color: rgba(T.fg, 0.3), marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>미리보기</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{
                     width: 48, height: 48, borderRadius: '50%',
@@ -314,7 +327,7 @@ export default function ShortcutSettings({
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: selectedColor, marginBottom: 4 }}>게젤샤프트</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>바탕화면 AI 어시스턴트</div>
+                    <div style={{ fontSize: 10, color: rgba(T.fg, 0.35) }}>바탕화면 AI 어시스턴트</div>
                   </div>
                   <div style={{ padding: '5px 12px', borderRadius: 14, border: `1px solid ${rgba(selectedColor, 0.4)}`, background: rgba(selectedColor, 0.1), fontSize: 10, fontWeight: 700, color: selectedColor }}>
                     ✦ AI 추천
@@ -327,7 +340,7 @@ export default function ShortcutSettings({
           {/* ════ DISPLAY TAB ════ */}
           {tab === 'display' && (
             <div>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 22, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 11, color: rgba(T.fg, 0.35), marginBottom: 22, lineHeight: 1.6 }}>
                 허브 크기, 오버레이 투명도, 나선 간격, 애니메이션 속도를 조절합니다.
               </p>
 
@@ -355,15 +368,15 @@ export default function ShortcutSettings({
 
               {/* Animation speed */}
               <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500, marginBottom: 10 }}>애니메이션 속도</div>
+                <div style={{ fontSize: 12, color: rgba(T.fg, 0.6), fontWeight: 500, marginBottom: 10 }}>애니메이션 속도</div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {(['slow', 'normal', 'fast'] as const).map(s => (
                     <button key={s} onClick={() => { setLocalAnim(s); saveDisplay({ animSpeed: s }) }}
                       style={{
                         flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                        border: localAnim === s ? `2px solid ${hubColor}` : '2px solid rgba(255,255,255,0.1)',
-                        background: localAnim === s ? rgba(hubColor, 0.15) : 'rgba(255,255,255,0.03)',
-                        color: localAnim === s ? hubColor : 'rgba(255,255,255,0.5)',
+                        border: localAnim === s ? `2px solid ${hubColor}` : `2px solid ${rgba(T.fg, 0.1)}`,
+                        background: localAnim === s ? rgba(hubColor, 0.15) : rgba(T.fg, 0.03),
+                        color: localAnim === s ? hubColor : rgba(T.fg, 0.5),
                         transition: 'all 0.15s ease',
                       }}>
                       {s === 'slow' ? '천천히' : s === 'normal' ? '보통' : '빠르게'}
@@ -373,12 +386,12 @@ export default function ShortcutSettings({
               </div>
 
               {/* Startup settings */}
-              <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 12 }}>기본 설정</div>
+              <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: `1px solid ${rgba(T.fg, 0.07)}`, background: rgba(T.fg, 0.03) }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: rgba(T.fg, 0.4), letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 12 }}>기본 설정</div>
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>Windows 시작 시 자동 실행</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
+                    <div style={{ fontSize: 12, color: rgba(T.fg, 0.75), fontWeight: 500 }}>Windows 시작 시 자동 실행</div>
+                    <div style={{ fontSize: 10, color: rgba(T.fg, 0.3), marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
                   </div>
                   <button
                     onClick={async () => {
@@ -388,7 +401,7 @@ export default function ShortcutSettings({
                     }}
                     style={{
                       width: 44, height: 24, borderRadius: 12, border: 'none',
-                      background: loginItem ? hubColor : 'rgba(255,255,255,0.12)',
+                      background: loginItem ? hubColor : rgba(T.fg, 0.12),
                       cursor: 'pointer', position: 'relative', flexShrink: 0,
                       transition: 'background 0.2s ease',
                       boxShadow: loginItem ? `0 0 10px ${rgba(hubColor, 0.4)}` : 'none',
@@ -413,7 +426,7 @@ export default function ShortcutSettings({
                   setLocalSpiral(Math.round(BEST.spiralScale * 100))
                   setLocalAnim(BEST.animSpeed)
                   saveDisplay(BEST)
-                  handleThemeSelect('#8b5cf6')
+                  handleThemeSelect(T.teal)
                 }}
                 style={{
                   fontSize: 12, fontWeight: 600,
@@ -434,25 +447,25 @@ export default function ShortcutSettings({
           {/* ════ SHORTCUT TAB ════ */}
           {tab === 'shortcut' && (
             <div>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 18, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 11, color: rgba(T.fg, 0.35), marginBottom: 18, lineHeight: 1.6 }}>
                 오버레이를 표시/숨기는 글로벌 단축키입니다. Ctrl, Alt, Shift 중 하나 이상 + 키 조합이 필요합니다.
               </p>
 
               <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>현재 단축키</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: rgba(T.fg, 0.35), marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>현재 단축키</div>
                 <KeyBadge keys={currentShortcut} color={hubColor} />
               </div>
 
               <div style={{ marginBottom: shortcutStatus ? 14 : 18 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>새 단축키</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: rgba(T.fg, 0.35), marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>새 단축키</div>
                 <div
                   ref={recorderRef} tabIndex={0}
                   onClick={() => { setRecording(true); setShortcutStatus(null) }}
                   style={{
                     padding: '14px 18px', borderRadius: 10, outline: 'none',
                     cursor: recording ? 'default' : 'pointer',
-                    border: recording ? `2px solid ${rgba(hubColor, 0.8)}` : shortcutChanged ? '2px solid rgba(99,174,120,0.55)' : '1.5px solid rgba(255,255,255,0.1)',
-                    background: recording ? rgba(hubColor, 0.07) : 'rgba(255,255,255,0.03)',
+                    border: recording ? `2px solid ${rgba(hubColor, 0.8)}` : shortcutChanged ? '2px solid rgba(99,174,120,0.55)' : `1.5px solid ${rgba(T.fg, 0.1)}`,
+                    background: recording ? rgba(hubColor, 0.07) : rgba(T.fg, 0.03),
                     boxShadow: recording ? `0 0 20px ${rgba(hubColor, 0.12)}` : 'none',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                     transition: 'all 0.15s ease',
@@ -462,12 +475,12 @@ export default function ShortcutSettings({
                     ? <span style={{ fontSize: 12, color: rgba(hubColor, 0.8), fontStyle: 'italic' }}>키 조합을 입력하세요...</span>
                     : <KeyBadge keys={pendingShortcut || currentShortcut} color={hubColor} inline />
                   }
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, color: rgba(T.fg, 0.22), flexShrink: 0 }}>
                     {recording ? '입력 대기 중' : '클릭하여 변경'}
                   </span>
                 </div>
                 {recording && (
-                  <button onClick={() => setRecording(false)} style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  <button onClick={() => setRecording(false)} style={{ marginTop: 6, fontSize: 11, color: rgba(T.fg, 0.28), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                     취소
                   </button>
                 )}
@@ -487,7 +500,7 @@ export default function ShortcutSettings({
           {/* ════ AI TAB ════ */}
           {tab === 'ai' && (
             <div>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 20, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 11, color: rgba(T.fg, 0.35), marginBottom: 20, lineHeight: 1.6 }}>
                 AI 기능(채팅, 화면 분석)에 사용할 공급자와 API 키를 설정합니다.
               </p>
 
@@ -502,9 +515,9 @@ export default function ShortcutSettings({
                       <button key={p} onClick={() => setAiDraft(d => ({ ...d, provider: p, model: '' }))}
                         style={{
                           flex: 1, padding: '9px 0', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600,
-                          border: isSel ? `2px solid ${hubColor}` : '2px solid rgba(255,255,255,0.1)',
-                          background: isSel ? rgba(hubColor, 0.14) : 'rgba(255,255,255,0.03)',
-                          color: isSel ? hubColor : 'rgba(255,255,255,0.5)',
+                          border: isSel ? `2px solid ${hubColor}` : `2px solid ${rgba(T.fg, 0.1)}`,
+                          background: isSel ? rgba(hubColor, 0.14) : rgba(T.fg, 0.03),
+                          color: isSel ? hubColor : rgba(T.fg, 0.5),
                           transition: 'all 0.15s ease',
                         }}>
                         {names[p]}
@@ -534,13 +547,13 @@ export default function ShortcutSettings({
               {/* API Key */}
               {provider !== 'ollama' && (
                 <div style={{ marginBottom: 16 }}>
-                  <Label>API 키 {aiConfig?.apiKey ? <span style={{ color: 'rgba(34,197,94,0.8)', fontSize: 10 }}>● 저장됨</span> : <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>● 미설정</span>}</Label>
+                  <Label>API 키 {aiConfig?.apiKey ? <span style={{ color: 'rgba(34,197,94,0.8)', fontSize: 10 }}>● 저장됨</span> : <span style={{ color: rgba(T.fg, 0.3), fontSize: 10 }}>● 미설정</span>}</Label>
                   <input className="win-input" type="password"
                     value={aiDraft.apiKeyRaw ?? ''}
                     onChange={e => setAiDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
                     placeholder="sk-... 또는 sk-ant-... (저장 후 마스킹됨)"
                     style={{ marginTop: 8, fontSize: 12, height: 34 }} />
-                  <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 5 }}>
+                  <p style={{ fontSize: 10, color: rgba(T.fg, 0.25), marginTop: 5 }}>
                     키는 로컬 파일에만 저장되며 외부로 전송되지 않습니다.
                   </p>
                 </div>
@@ -551,7 +564,7 @@ export default function ShortcutSettings({
                 <Label>모델</Label>
                 {availableModels.length > 0 ? (
                   <select className="win-select" value={aiDraft.model ?? ''} onChange={e => setAiDraft(d => ({ ...d, model: e.target.value }))}
-                    style={{ marginTop: 8, fontSize: 12, height: 34, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.85)' }}>
+                    style={{ marginTop: 8, fontSize: 12, height: 34, background: rgba(T.fg, 0.05), color: rgba(T.fg, 0.85) }}>
                     <option value="">모델 선택...</option>
                     {availableModels.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
@@ -592,15 +605,15 @@ export default function ShortcutSettings({
 // ── Small reusable sub-components ──
 
 function Label({ children }: { children: React.ReactNode }): React.ReactElement {
-  return <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{children}</div>
+  return <div style={{ fontSize: 11, fontWeight: 700, color: rgba(T.fg, 0.45), letterSpacing: '0.06em', textTransform: 'uppercase' }}>{children}</div>
 }
 
 function StatusMsg({ ok, msg }: { ok: boolean; msg: string }): React.ReactElement {
   return (
     <div style={{
       marginBottom: 14, padding: '10px 14px', borderRadius: 8, fontSize: 12,
-      background: ok ? 'rgba(34,197,94,0.09)' : 'rgba(239,68,68,0.09)',
-      border: `1px solid ${ok ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)'}`,
+      background: ok ? 'rgba(34,197,94,0.09)' : rgba(T.danger, 0.09),
+      border: `1px solid ${ok ? 'rgba(34,197,94,0.22)' : rgba(T.danger, 0.22)}`,
       color: ok ? 'rgba(134,239,172,0.9)' : 'rgba(252,165,165,0.9)',
     }}>
       {msg}
@@ -610,7 +623,7 @@ function StatusMsg({ ok, msg }: { ok: boolean; msg: string }): React.ReactElemen
 
 function GhostBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }): React.ReactElement {
   return (
-    <button onClick={onClick} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.55)', fontSize: 13, cursor: 'pointer' }}>
+    <button onClick={onClick} style={{ padding: '8px 18px', borderRadius: 8, border: `1px solid ${rgba(T.fg, 0.1)}`, background: rgba(T.fg, 0.04), color: rgba(T.fg, 0.55), fontSize: 13, cursor: 'pointer' }}>
       {children}
     </button>
   )
@@ -621,7 +634,7 @@ function AccentBtn({ onClick, disabled, color, children }: { onClick: () => void
     <button onClick={onClick} disabled={disabled} style={{
       padding: '8px 22px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600,
       background: disabled ? rgba(color, 0.22) : rgba(color, 0.88),
-      color: disabled ? 'rgba(255,255,255,0.3)' : 'white',
+      color: disabled ? rgba(T.fg, 0.3) : T.fg,
       cursor: disabled ? 'default' : 'pointer', transition: 'background 0.12s ease',
     }}>
       {children}
@@ -641,7 +654,7 @@ function KeyBadge({ keys, color, inline }: { keys: string; color: string; inline
           }}>
             {k}
           </span>
-          {i < parts.length - 1 && <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: 10 }}>+</span>}
+          {i < parts.length - 1 && <span style={{ color: rgba(T.fg, 0.22), fontSize: 10 }}>+</span>}
         </React.Fragment>
       ))}
     </div>

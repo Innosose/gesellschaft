@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Modal } from './SearchModal'
 import { formatSize, formatDate, getFileIcon } from '../utils/format'
+import { T, rgba } from '../utils/theme'
 
 // ─── Types shared across tabs ───────────────────────────────────────────────
 
@@ -48,10 +49,10 @@ interface CompareEntry {
 type FilterType = 'all' | 'only_a' | 'only_b' | 'modified' | 'same'
 
 const STATUS_STYLE = {
-  only_a:   { label: 'A만 존재', bg: 'bg-[#3b82f620]', text: 'text-[#3b82f6]', dot: '#3b82f6' },
-  only_b:   { label: 'B만 존재', bg: 'bg-[#22c55e20]', text: 'text-[#22c55e]', dot: '#22c55e' },
-  modified: { label: '내용 다름', bg: 'bg-[#f9731620]', text: 'text-[#f97316]', dot: '#f97316' },
-  same:     { label: '동일',     bg: '',                text: '',               dot: 'var(--win-text-muted)' },
+  only_a:   { label: 'A만 존재', bgColor: rgba(T.teal, 0.12), textColor: T.teal, dot: T.teal },
+  only_b:   { label: 'B만 존재', bgColor: rgba(T.success, 0.12), textColor: T.success, dot: T.success },
+  modified: { label: '내용 다름', bgColor: rgba(T.warning, 0.12), textColor: T.warning, dot: T.warning },
+  same:     { label: '동일',     bgColor: '',                textColor: '',               dot: 'var(--win-text-muted)' },
 }
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
@@ -471,7 +472,7 @@ function BulkRenameTab(): React.ReactElement {
                   정규식 사용
                 </label>
                 {regexError && (
-                  <div className="text-xs px-2 py-1 rounded" style={{ background: '#c42b1c20', color: '#c42b1c', border: '1px solid #c42b1c40' }}>
+                  <div className="text-xs px-2 py-1 rounded" style={{ background: rgba(T.danger, 0.12), color: T.danger, border: `1px solid ${rgba(T.danger, 0.25)}` }}>
                     ⚠️ 잘못된 정규식: {regexError}
                   </div>
                 )}
@@ -519,7 +520,7 @@ function BulkRenameTab(): React.ReactElement {
           </div>
 
           {results && (
-            <div className={`text-xs px-3 py-2 rounded ${results.failed > 0 ? 'bg-[#c42b1c20] text-[#c42b1c]' : 'bg-[#0078d420] text-[#0078d4]'}`}>
+            <div className="text-xs px-3 py-2 rounded" style={{ background: results.failed > 0 ? rgba(T.danger, 0.12) : rgba(T.teal, 0.12), color: results.failed > 0 ? T.danger : T.teal }}>
               완료: {results.success}개 성공{results.failed > 0 ? ` · ${results.failed}개 실패` : ''}
             </div>
           )}
@@ -673,13 +674,13 @@ function FolderCompareTab(): React.ReactElement {
                 return (
                   <div
                     key={i}
-                    className={`grid grid-cols-[20px_1fr_140px_140px] gap-2 px-3 py-1.5 text-xs items-center ${s.bg}`}
-                    style={{ borderBottom: '1px solid var(--win-surface)' }}
+                    className="grid grid-cols-[20px_1fr_140px_140px] gap-2 px-3 py-1.5 text-xs items-center"
+                    style={{ borderBottom: '1px solid var(--win-surface)', background: s.bgColor || undefined }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'var(--win-surface-2)' }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = '' }}
                   >
                     <span title={s.label} style={{ color: s.dot }}>●</span>
-                    <span className={`truncate ${s.text}`} title={entry.relativePath}>{entry.relativePath}</span>
+                    <span className="truncate" style={{ color: s.textColor || undefined }} title={entry.relativePath}>{entry.relativePath}</span>
                     <span className="truncate" style={{ color: 'var(--win-text-muted)' }}>
                       {entry.sizeA !== undefined && entry.modifiedA !== undefined
                         ? `${formatSize(entry.sizeA)} · ${formatDate(entry.modifiedA)}`
@@ -731,7 +732,7 @@ export default function FileManagerModal({
   return (
     <Modal title="파일 관리" onClose={onClose} wide asPanel={asPanel}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
         {TABS.map(t => (
           <button
             key={t.id}
@@ -743,8 +744,8 @@ export default function FileManagerModal({
               cursor: 'pointer',
               fontSize: 12,
               fontWeight: 600,
-              background: tab === t.id ? 'rgba(255,255,255,0.12)' : 'transparent',
-              color: tab === t.id ? '#fff' : 'rgba(255,255,255,0.45)',
+              background: tab === t.id ? rgba(T.fg, 0.12) : 'transparent',
+              color: tab === t.id ? T.fg : rgba(T.fg, 0.45),
               transition: 'all 0.15s',
             }}
           >

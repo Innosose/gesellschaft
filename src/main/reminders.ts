@@ -2,7 +2,7 @@ import { ipcMain, app, Notification, shell, BrowserWindow } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { z } from 'zod'
-import log, { logIpcError } from './logger'
+import log from './logger'
 import { REMINDER_CHECK_INTERVAL } from '../shared/constants'
 
 export interface Reminder {
@@ -52,15 +52,23 @@ function checkAndNotify(): void {
   const reminders = loadReminders()
   const now = Date.now()
   let changed = false
+  // 앱 재시작 후 1분 이내의 과거 알림만 표시, 너무 오래된 건 조용히 완료 처리
+  const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000 // 24시간
 
   for (const r of reminders) {
     if (!r.done && r.remindAt <= now) {
       r.done = true
       changed = true
 
+      const age = now - r.remindAt
+      if (age > STALE_THRESHOLD_MS) {
+        log.info(`[reminders] 24시간 이상 경과한 알림 자동 완료: "${r.fileName}"`)
+        continue
+      }
+
       if (Notification.isSupported()) {
         const notif = new Notification({
-          title: '📄 파일 리마인더',
+          title: '파일 리마인더',
           body: `${r.fileName}${r.note ? `\n${r.note}` : ''}`
         })
         notif.on('click', () => {
@@ -76,7 +84,12 @@ function checkAndNotify(): void {
   if (changed) saveReminders(reminders)
 }
 
+let registered = false
+
 export function registerRemindersHandlers(): void {
+  if (registered) return
+  registered = true
+
   ipcMain.handle('reminders:get', () => loadReminders())
 
   ipcMain.handle('reminders:add', (_, raw: unknown) => {

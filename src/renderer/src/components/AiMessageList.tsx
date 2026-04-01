@@ -1,4 +1,5 @@
 import React, { memo } from 'react'
+import { T, rgba } from '../utils/theme'
 import ReactMarkdown from 'react-markdown'
 import type { ChatMessage } from '../../../shared/types'
 
@@ -7,12 +8,12 @@ function CodeBlock({ code }: { code: string }): React.ReactElement {
   const [copied, setCopied] = React.useState(false)
   return (
     <div style={{ position: 'relative', margin: '6px 0' }}>
-      <pre style={{ margin: 0, padding: '10px 12px', borderRadius: 6, overflowX: 'auto', fontSize: 11, lineHeight: 1.6, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <pre style={{ margin: 0, padding: '10px 12px', borderRadius: 6, overflowX: 'auto', fontSize: 11, lineHeight: 1.6, background: rgba(T.bg, 0.35), border: `1px solid ${rgba(T.fg, 0.08)}` }}>
         <code style={{ fontFamily: 'ui-monospace, monospace' }}>{code}</code>
       </pre>
       <button
         onClick={() => { navigator.clipboard.writeText(code).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
-        style={{ position: 'absolute', top: 4, right: 4, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: copied ? '#1e7e34' : 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)' }}
+        style={{ position: 'absolute', top: 4, right: 4, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer', background: copied ? rgba(T.success, 0.8) : rgba(T.fg, 0.12), color: rgba(T.fg, 0.7) }}
       >{copied ? '✓' : '복사'}</button>
     </div>
   )
@@ -20,8 +21,8 @@ function CodeBlock({ code }: { code: string }): React.ReactElement {
 
 // ── Memoized markdown renderer ─────────────────────────────────────────────
 export const MarkdownMessage = memo(function MarkdownMessage({ content, dark }: { content: string; dark?: boolean }): React.ReactElement {
-  const textColor  = dark ? 'rgba(255,255,255,0.85)' : 'var(--win-text)'
-  const mutedColor = dark ? 'rgba(255,255,255,0.5)'  : 'var(--win-text-muted)'
+  const textColor  = dark ? rgba(T.fg, 0.85) : 'var(--win-text)'
+  const mutedColor = dark ? rgba(T.fg, 0.5)  : 'var(--win-text-muted)'
   return (
     <ReactMarkdown
       components={{
@@ -37,11 +38,11 @@ export const MarkdownMessage = memo(function MarkdownMessage({ content, dark }: 
         code:       ({ children, className }) => {
           const isBlock = className?.startsWith('language-') || (typeof children === 'string' && (children as string).includes('\n'))
           if (isBlock) return <CodeBlock code={String(children).trimEnd()} />
-          return <code style={{ fontSize: 11, padding: '1px 4px', borderRadius: 3, background: dark ? 'rgba(255,255,255,0.12)' : 'var(--win-surface-3)', fontFamily: 'ui-monospace, monospace', color: textColor }}>{children}</code>
+          return <code style={{ fontSize: 11, padding: '1px 4px', borderRadius: 3, background: dark ? rgba(T.fg, 0.12) : 'var(--win-surface-3)', fontFamily: 'ui-monospace, monospace', color: textColor }}>{children}</code>
         },
         pre:        ({ children }) => <>{children}</>,
-        blockquote: ({ children }) => <blockquote style={{ margin: '4px 0', paddingLeft: 10, borderLeft: '3px solid rgba(139,92,246,0.5)', color: mutedColor }}>{children}</blockquote>,
-        hr:         () => <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '6px 0' }} />,
+        blockquote: ({ children }) => <blockquote style={{ margin: '4px 0', paddingLeft: 10, borderLeft: `3px solid ${rgba(T.gold, 0.5)}`, color: mutedColor }}>{children}</blockquote>,
+        hr:         () => <hr style={{ border: 'none', borderTop: `1px solid ${rgba(T.fg, 0.1)}`, margin: '6px 0' }} />,
       }}
     >{content}</ReactMarkdown>
   )
@@ -66,27 +67,27 @@ export default function AiMessageList({
   onShowAll, onSave, onExport, onClear,
   bottomRef, dark = false,
 }: AiMessageListProps): React.ReactElement {
-  const border = dark ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--win-border)'
-  const userBg     = dark ? 'rgba(139,92,246,0.25)' : 'var(--win-accent-dim)'
-  const userBorder = dark ? '1px solid rgba(139,92,246,0.4)' : '1px solid var(--win-border)'
-  const assistBg   = dark ? 'rgba(255,255,255,0.05)' : 'var(--win-surface-2)'
-  const avatarUserBg = dark ? 'rgba(139,92,246,0.4)' : 'var(--win-accent)'
-  const avatarAsstBg = dark ? 'rgba(255,255,255,0.08)' : 'var(--win-surface-2)'
-  const textColor  = dark ? 'rgba(255,255,255,0.85)' : 'var(--win-text)'
-  const mutedColor = dark ? 'rgba(255,255,255,0.62)' : 'var(--win-text-muted)'
-  const cursorBg   = dark ? 'rgba(139,92,246,0.8)' : 'var(--win-accent)'
-  const foldBorder = dark ? '1px solid rgba(139,92,246,0.3)' : '1px solid var(--win-border)'
-  const foldBg     = dark ? 'rgba(139,92,246,0.08)'          : 'var(--win-surface-2)'
-  const foldColor  = dark ? 'rgba(196,181,253,0.8)'          : 'var(--win-text-sub)'
-  const btnColor   = dark ? 'rgba(255,255,255,0.58)' : 'var(--win-text-muted)'
-  const saveColor  = dark ? 'rgba(139,92,246,0.9)'   : 'var(--win-accent)'
+  const border = dark ? `1px solid ${rgba(T.fg, 0.08)}` : '1px solid var(--win-border)'
+  const userBg     = dark ? rgba(T.gold, 0.25) : 'var(--win-accent-dim)'
+  const userBorder = dark ? `1px solid ${rgba(T.gold, 0.4)}` : '1px solid var(--win-border)'
+  const assistBg   = dark ? rgba(T.fg, 0.05) : 'var(--win-surface-2)'
+  const avatarUserBg = dark ? rgba(T.gold, 0.4) : 'var(--win-accent)'
+  const avatarAsstBg = dark ? rgba(T.fg, 0.08) : 'var(--win-surface-2)'
+  const textColor  = dark ? rgba(T.fg, 0.85) : 'var(--win-text)'
+  const mutedColor = dark ? rgba(T.fg, 0.62) : 'var(--win-text-muted)'
+  const cursorBg   = dark ? rgba(T.gold, 0.8) : 'var(--win-accent)'
+  const foldBorder = dark ? `1px solid ${rgba(T.gold, 0.3)}` : '1px solid var(--win-border)'
+  const foldBg     = dark ? rgba(T.gold, 0.08)          : 'var(--win-surface-2)'
+  const foldColor  = dark ? 'rgba(220,200,140,0.8)'          : 'var(--win-text-sub)'
+  const btnColor   = dark ? rgba(T.fg, 0.58) : 'var(--win-text-muted)'
+  const saveColor  = dark ? rgba(T.gold, 0.9)   : 'var(--win-accent)'
 
   return (
     <>
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', color: mutedColor, fontSize: 12, marginTop: 40 }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>🤖</div>
+            <div style={{ fontSize: 14, marginBottom: 10, color: rgba(T.fg, 0.3) }}>AI</div>
             <div>무엇이든 질문해보세요</div>
             <div style={{ marginTop: 6, fontSize: 11 }}>Shift+Enter로 줄바꿈</div>
           </div>

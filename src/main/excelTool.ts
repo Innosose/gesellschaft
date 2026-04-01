@@ -1,7 +1,14 @@
-import { ipcMain, dialog, app, BrowserWindow } from 'electron'
+import { ipcMain, dialog, app } from 'electron'
+import { getWinFromEvent } from './windowUtil'
 import * as fs from 'fs'
 import * as path from 'path'
-import ExcelJS from 'exceljs'
+import type ExcelJS from 'exceljs'
+// Lazy-loaded to avoid startup cost — exceljs is heavy
+let _ExcelJS: typeof ExcelJS | null = null
+async function getExcelJS(): Promise<typeof ExcelJS> {
+  if (!_ExcelJS) { _ExcelJS = (await import('exceljs')).default as unknown as typeof ExcelJS }
+  return _ExcelJS
+}
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 
@@ -22,7 +29,7 @@ function cellToString(v: ExcelJS.CellValue): string {
   if (typeof v === 'number' || typeof v === 'boolean') return String(v)
   if (v instanceof Date) return v.toLocaleDateString('ko-KR')
   if (typeof v === 'object') {
-    const obj = v as Record<string, unknown>
+    const obj = v as unknown as Record<string, unknown>
     if ('result' in obj) return cellToString(obj.result as ExcelJS.CellValue)
     if ('richText' in obj && Array.isArray(obj.richText)) {
       return (obj.richText as Array<{ text?: string }>).map(r => r.text ?? '').join('')
@@ -34,7 +41,8 @@ function cellToString(v: ExcelJS.CellValue): string {
 }
 
 async function readWorkbook(filePath: string): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook()
+  const Excel = await getExcelJS()
+  const workbook = new Excel.Workbook()
   const ext = path.extname(filePath).toLowerCase()
   if (ext === '.csv') {
     await workbook.csv.readFile(filePath)
@@ -56,8 +64,8 @@ function worksheetToRows(ws: ExcelJS.Worksheet): string[][] {
 
 export function registerExcelToolHandlers(): void {
   ipcMain.handle('excelTool:openFiles', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const result = await dialog.showOpenDialog(win!, {
+    const win = getWinFromEvent(event)
+    const result = await dialog.showOpenDialog(win, {
       filters: [{ name: 'Spreadsheet', extensions: ['xlsx', 'csv'] }],
       properties: ['openFile'],
     })
@@ -88,25 +96,27 @@ export function registerExcelToolHandlers(): void {
   ipcMain.handle('excelTool:loadSheet', async (_, rawPath: unknown, rawSheet: unknown) => {
     const pathParsed = FilePathSchema.safeParse(rawPath)
     const sheetParsed = z.string().safeParse(rawSheet)
-    if (!pathParsed.success || !sheetParsed.success) return []
+    if (!pathParsed.success || !sheetParsed.success) {
+      return { success: false as const, error: '유효하지 않은 파일 경로 또는 시트 이름' }
+    }
     const filePath = pathParsed.data
     const sheetName = sheetParsed.data
     try {
       const workbook = await readWorkbook(filePath)
       const ws = workbook.getWorksheet(sheetName)
-      if (!ws) return []
-      return worksheetToRows(ws)
+      if (!ws) return { success: false as const, error: '시트를 찾을 수 없습니다' }
+      return { success: true as const, data: worksheetToRows(ws) }
     } catch (err) {
       logIpcError('excelTool:loadSheet', err, { filePath, sheetName })
-      return []
+      return { success: false as const, error: err instanceof Error ? err.message : String(err) }
     }
   })
 
   ipcMain.handle('excelTool:openOutputPath', async (event, rawFormat: unknown) => {
     const formatParsed = z.enum(['csv', 'xlsx']).safeParse(rawFormat)
     const format = formatParsed.success ? formatParsed.data : 'csv'
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const result = await dialog.showSaveDialog(win!, {
+    const win = getWinFromEvent(event)
+    const result = await dialog.showSaveDialog(win, {
       defaultPath: path.join(app.getPath('desktop'), `output.${format}`),
       filters: format === 'csv'
         ? [{ name: 'CSV', extensions: ['csv'] }]
@@ -147,7 +157,8 @@ export function registerExcelToolHandlers(): void {
       const dir = path.dirname(outputPath)
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
 
-      const outWb = new ExcelJS.Workbook()
+      const Excel = await getExcelJS()
+      const outWb = new Excel.Workbook()
       const outWs = outWb.addWorksheet('Sheet1')
       outRows.forEach(row => outWs.addRow(row))
 
@@ -155,7 +166,7 @@ export function registerExcelToolHandlers(): void {
         const csvPath = outputPath.endsWith('.csv') ? outputPath : outputPath + '.csv'
         // Write as buffer then prepend BOM for Korean Excel compatibility
         const buffer = await outWb.csv.writeBuffer()
-        fs.writeFileSync(csvPath, Buffer.concat([Buffer.from('\uFEFF', 'utf8'), buffer as Buffer]))
+        fs.writeFileSync(csvPath, Buffer.concat([Buffer.from('\uFEFF', 'utf8'), buffer as unknown as Buffer]))
         log.info(`[excelTool:export] CSV → ${csvPath}`)
       } else {
         const xlsxPath = outputPath.endsWith('.xlsx') ? outputPath : outputPath + '.xlsx'

@@ -1,8 +1,10 @@
-/** 앱 전체에서 공유하는 상수 — 메인/렌더러 양쪽에서 import 가능 */
-
-// ──────────────────────────────────────────────
-// Tool 정의
-// ──────────────────────────────────────────────
+/**
+ * 앱 전체에서 공유하는 상수 — 메인/렌더러 양쪽에서 import 가능
+ *
+ * Tool metadata defined here (ALL_TOOLS).
+ * Tool component registry in src/renderer/src/components/ToolPanel.tsx (TOOL_REGISTRY).
+ * To add a new tool: 1) Add entry to ALL_TOOLS  2) Add lazy import to TOOL_REGISTRY
+ */
 
 export interface ToolDef {
   id: string
@@ -13,34 +15,36 @@ export interface ToolDef {
 }
 
 export const ALL_TOOLS: ToolDef[] = [
-  // ─── 업무 핵심 ───────────────────────────────
-  { id: 'ai',           icon: '✦',  label: 'AI 어시스턴트', color: '#a78bfa', description: 'AI와 대화하며 업무 질문, 문서 작성, 요약' },
-  { id: 'todo',         icon: '✅', label: '할일 목록',     color: '#498205', description: '마감일·우선순위·완료율 통계 포함 할일 관리' },
-  { id: 'clipboard',    icon: '📋', label: '클립보드 기록', color: '#107c41', description: '복사한 내용 히스토리 조회·즐겨찾기·재사용' },
-  { id: 'memoAlarm',    icon: '📝', label: '메모 & 알림',   color: '#0099bc', description: '빠른 메모 작성 + 업무 리마인더 알림 설정' },
-  { id: 'docTemplate',  icon: '📑', label: '문서 템플릿',   color: '#8e44ad', description: '이메일 양식·상용구 통합 관리 및 빠른 복사' },
-  // ─── 회의·일정 ────────────────────────────────
-  { id: 'meetingTimer', icon: '⏱️', label: '회의 타이머',   color: '#e67e22', description: '회의 시간·참석자별 발언 배분·안건 메모' },
-  { id: 'dateTools',    icon: '📅', label: '날짜 도구',     color: '#3498db', description: 'D-Day·날짜계산·업무일 + 연차 계산 통합' },
-  { id: 'translate',    icon: '🌐', label: '번역기',        color: '#2980b9', description: '한영·영한 즉시 번역' },
-  // ─── 재무·세금 ────────────────────────────────
-  { id: 'salaryCalc',   icon: '💰', label: '급여 계산기',   color: '#f39c12', description: '세전↔세후 실수령액, 연봉 역산, 4대보험' },
-  { id: 'calculator',   icon: '🧮', label: '계산기',        color: '#1abc9c', description: '부가세·환율·단위 변환 통합 계산기' },
-  // ─── 문서·파일 ────────────────────────────────
-  { id: 'pdfTool',      icon: '📄', label: 'PDF 병합 / 분할', color: '#e74c3c', description: 'PDF 합치기, 나누기, 페이지 편집' },
-  { id: 'excelTool',    icon: '📊', label: 'Excel / CSV',   color: '#217346', description: 'Excel·CSV 파일 열기, 필터, 내보내기' },
-  { id: 'imageTools',   icon: '🖼️', label: '이미지 도구',   color: '#9b59b6', description: 'OCR·이미지변환·QR코드·색상 피커 통합' },
-  // ─── 텍스트·변환 ───────────────────────────────
-  { id: 'textTools',    icon: '🔤', label: '텍스트 도구',   color: '#7a7574', description: '전화번호·금액·주민번호 포맷, 공백 정리 등' },
-  // ─── 파일 관리 ────────────────────────────────
-  { id: 'fileManager',  icon: '📂', label: '파일 관리',     color: '#0078d4', description: '파일 검색·일괄 이름 변경·폴더 비교 통합' },
-  { id: 'cadConvert',   icon: '📐', label: 'CAD → PDF',     color: '#8764b8', description: 'DWG/DXF CAD 도면을 PDF로 변환' },
-  // ─── 생산성 ──────────────────────────────────
-  { id: 'pomodoro',    icon: '🍅', label: '포모도로',       color: '#e74c3c', description: '25분 집중/5분 휴식 포모도로 타이머와 통계' },
-  { id: 'devTools',    icon: '🛠️', label: '개발자 도구',    color: '#00bcd4', description: 'JSON·Base64·URL·해시·JWT·타임스탬프 유틸리티' },
+  // A–Z 알파벳 순서
+  { id: 'ai',           icon: '', label: 'AI Assistant',   color: '#c9a84c', description: '화면 분석, 질문, 문서 작성, 요약, 번역' },
+  { id: 'batch',        icon: '', label: 'Batch',           color: '#e0a060', description: '여러 파일의 이름을 규칙에 맞춰 일괄 변경' },
+  { id: 'clipboard',    icon: '', label: 'Clipboard',      color: '#5ec9a0', description: '복사한 내용을 자동으로 기록하고 재사용' },
+  { id: 'diff',         icon: '', label: 'Diff',            color: '#60a0e0', description: '두 텍스트를 나란히 비교하고 차이점 강조' },
+  { id: 'excelTool',    icon: '', label: 'Excel / CSV',    color: '#50a070', description: 'Excel·CSV 파일 열기, 필터, 내보내기' },
+  { id: 'finder',       icon: '', label: 'Finder',          color: '#50a070', description: '컴퓨터 파일을 빠르게 검색하고 바로 열기' },
+  { id: 'generator',    icon: '', label: 'Generator',       color: '#c97080', description: '안전한 비밀번호와 랜덤 숫자를 즉시 생성' },
+  { id: 'haste',        icon: '', label: 'Haste',           color: '#e0a060', description: '텍스트 공백·줄바꿈 정리, 중복 제거, 정렬' },
+  { id: 'imageTools',   icon: '', label: 'Image Tools',    color: '#a070c0', description: 'OCR 텍스트 인식, 이미지 변환, QR코드' },
+  { id: 'jot',          icon: '', label: 'Jot',             color: '#8090b0', description: '임시 메모패드, 작업 끝나면 자동으로 사라짐' },
+  { id: 'keyboard',     icon: '', label: 'Keyboard',       color: '#60c0a0', description: '단축키 목록 조회 및 커스텀 매크로 설정' },
+  { id: 'launcher',     icon: '', label: 'Launcher',       color: '#c0a060', description: '자주 쓰는 앱, 폴더, URL을 빠르게 실행' },
+  { id: 'memoAlarm',    icon: '', label: 'Memo & Alarm',   color: '#60a0c0', description: '빠른 메모 작성과 시간 기반 리마인더' },
+  { id: 'notepin',      icon: '', label: 'Notepin',        color: '#60a0c0', description: '화면 위에 떠다니는 메모를 고정' },
+  { id: 'organizer',    icon: '', label: 'Organizer',      color: '#5ec9a0', description: '할일 목록, 템플릿, 상용구 통합 관리' },
+  { id: 'pdfTool',      icon: '', label: 'PDF Tools',      color: '#e06060', description: 'PDF 합치기, 나누기, 페이지 편집' },
+  { id: 'quickCalc',    icon: '', label: 'Quick Calc',     color: '#5ec9a0', description: '수식을 입력하면 즉시 계산 결과' },
+  { id: 'ruler',        icon: '', label: 'Ruler',           color: '#c09060', description: '화면 위 요소의 픽셀 크기와 거리 측정' },
+  { id: 'stopwatch',    icon: '', label: 'Stopwatch',      color: '#e0a060', description: '타이머, 포모도로, 스톱워치, 휴식 알림' },
+  { id: 'type',         icon: '', label: 'Type',            color: '#6090c0', description: '특수문자, 화살표, 수학기호, 이모지 빠른 입력' },
+  { id: 'upload',       icon: '', label: 'Upload',          color: '#70a0a0', description: '파일 크기, 형식, 해상도를 업로드 전에 확인' },
+  { id: 'vault',        icon: '', label: 'Vault',           color: '#a07080', description: '비밀번호와 중요 메모를 안전하게 보관' },
+  { id: 'whiteboard',   icon: '', label: 'Whiteboard',      color: '#7090c0', description: '화면 위에 자유롭게 펜으로 그리고 표시' },
+  { id: 'xcolor',       icon: '', label: 'X-Color',        color: '#c06080', description: '화면에서 색상 추출, 팔레트 만들기' },
+  { id: 'yourInfo',     icon: '', label: 'Your Info',       color: '#80a070', description: '내 PC의 IP주소, 저장공간, 메모리, OS 정보' },
+  { id: 'zone',          icon: '', label: 'Zone',            color: '#6080a0', description: '화면을 영역별로 분할하고 창 배치를 관리' },
 ]
 
-/** id → description 매핑 (screenCapture 등에서 사용) */
+/** id → description 매핑 */
 export const TOOL_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
   ALL_TOOLS.map(t => [t.id, t.description])
 )
@@ -49,9 +53,9 @@ export const TOOL_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
 // 앱 설정 기본값
 // ──────────────────────────────────────────────
 
-export const DEFAULT_THEME_COLOR = '#8b5cf6'
+export const DEFAULT_THEME_COLOR = '#4de8c2'
 export const DEFAULT_SHORTCUT    = 'Ctrl+Shift+G'
-export const DEFAULT_HUB_SIZE    = 114
+export const DEFAULT_HUB_SIZE    = 140
 export const DEFAULT_OVERLAY_OPACITY = 0.88
 export const DEFAULT_SPIRAL_SCALE   = 1.0
 export const DEFAULT_ANIM_SPEED     = 'normal' as const
@@ -60,19 +64,89 @@ export const DEFAULT_ANIM_SPEED     = 'normal' as const
 // 기능별 한계값
 // ──────────────────────────────────────────────
 
-/** 클립보드 히스토리 최대 보관 개수 */
 export const CLIPBOARD_HISTORY_LIMIT = 50
-/** 클립보드 폴링 간격 (ms) */
 export const CLIPBOARD_POLL_INTERVAL = 500
-/** 리마인더 확인 주기 (ms) */
 export const REMINDER_CHECK_INTERVAL = 60 * 1000
-/** 클립보드 항목 최대 길이 */
 export const CLIPBOARD_MAX_LENGTH = 10_000
 
-/** 빠른 메모 기본 배경색 목록 */
-export const QUICK_NOTE_COLORS = ['#2d2d2d', '#1a3a2a', '#1a1a3a', '#3a1a1a', '#2a2a1a'] as const
+// ──────────────────────────────────────────────
+// localStorage key 레지스트리
+// ──────────────────────────────────────────────
 
-// Windows 예약 파일명 (대소문자 무관)
+/** localStorage keys used across the app — single source of truth */
+export const STORAGE_KEYS = {
+  // Core app
+  theme:              'gs-theme',
+  favorites:          'gs-favorites',
+  recentTools:        'gesellschaft-recent-tools',
+  toolOrder:          'gs-tool-order',
+
+  // Productivity
+  goals:              'gs-goals',
+  yearly:             'gs-yearly-events',
+  bookmarks:          'gs-bookmarks',
+  assignments:        'gs-assignments',
+  countdowns:         'gs-countdowns',
+  kanban:             'gs-kanban',
+  diary:              'gs-diary',
+  wishlist:           'gs-wishlist',
+  contacts:           'gs-contacts',
+  widgetBoard:        'gs-widget-board',
+  organizer: {
+    todos:            'gs-organizer-todos',
+    templates:        'gs-organizer-templates',
+  },
+  focusSessions:      'gs-focus-sessions',
+  launcherItems:      'gs-launcher-items',
+  customShortcuts:    'gs-custom-shortcuts',
+  zoneLayouts:        'gs-zone-layouts',
+  mindmaps:           'gs-mindmaps',
+  screenPins:         'gs-screen-pins',
+  markdownDocs:       'gs-markdown-docs',
+  codeSnippets:       'gs-code-snippets',
+  colorPalettes:      'gs-color-palettes',
+  quickCalcHistory:   'gs-quick-calc-history',
+  weeklyReview:       'gs-weekly-review',
+  expenses:           'gs-expenses',
+  breakTimer:         'gs-break-timer',
+  water:              'gs-water',
+  stretch:            'gs-stretch',
+  motivationFavs:     'gs-motivation-favs',
+  worldClock:         'gs-world-clock',
+  typeRecent:         'gs-type-recent',
+  colorHistory:       'gs_color_history',
+
+  // AI
+  aiConversationHistory: 'ai-conversation-history',
+
+  // Study
+  studyLog:           'gesellschaft-study-log',
+  studyStreak:        'gs-study-streak',
+  studyGoals:         'gs-study-goals',
+  studyGroups:        'gs-study-groups',
+  habits:             'gs-habits',
+  flashcards:         'gesellschaft-flashcards',
+  formulas:           'gs-formulas',
+  examSchedule:       'gs-exam-schedule',
+  lectureNotes:       'gs-lecture-notes',
+  reviewPlanner:      'gs-review-planner',
+  timetable:          'gesellschaft-timetable',
+  wrongNotes:         'gesellschaft-wrong-notes',
+  readingLog:         'gs-reading-log',
+
+  // Health
+  sleep:              'gs-sleep',
+  meals:              'gs-meals',
+  exercise:           'gs-exercise',
+
+  // Other
+  clipboardPins:      'gesellschaft-clipboard-pins',
+  recentSearches:     'gesellschaft-recent-searches',
+  translateHistory:   'gesellschaft-translate-history',
+} as const
+
+export const QUICK_NOTE_COLORS = ['#12121e', '#0e1a28', '#0e0e28', '#1e0e18', '#181818'] as const
+
 export const WINDOWS_RESERVED_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL',
   'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',

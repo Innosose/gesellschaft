@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 import { OcrContent } from './OcrModal'
 import { ImageConvertContent } from './ImageConvertModal'
 import { QrCodeContent } from './QrCodeModal'
@@ -26,7 +27,7 @@ export default function ImageToolsModal({ onClose, asPanel }: ImageToolsModalPro
     <Modal title="이미지 도구" onClose={onClose} wide asPanel={asPanel}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Tab bar */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
           {TABS.map(t => (
             <button
               key={t.id}
@@ -34,8 +35,8 @@ export default function ImageToolsModal({ onClose, asPanel }: ImageToolsModalPro
               style={{
                 padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
                 fontSize: 12, fontWeight: 600,
-                background: tab === t.id ? 'rgba(255,255,255,0.12)' : 'transparent',
-                color: tab === t.id ? '#fff' : 'rgba(255,255,255,0.45)',
+                background: tab === t.id ? rgba(T.fg, 0.12) : 'transparent',
+                color: tab === t.id ? T.fg : rgba(T.fg, 0.45),
                 transition: 'all 0.15s',
               }}
             >

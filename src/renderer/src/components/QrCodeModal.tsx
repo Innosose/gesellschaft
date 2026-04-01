@@ -61,9 +61,11 @@ export function QrCodeContent(): React.ReactElement {
         setTimeout(() => setCopied(false), 1500)
       } catch {
         // fallback: copy as text
-        await navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 1500)
+        try {
+          await navigator.clipboard.writeText(text)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        } catch { /* clipboard unavailable */ }
       }
     }, 'image/png')
   }
@@ -151,7 +153,7 @@ export function QrCodeContent(): React.ReactElement {
           </div>
 
           {error && (
-            <div style={{ padding: '8px 12px', background: 'var(--win-danger)', color: '#fff', borderRadius: 6, fontSize: 12 }}>
+            <div style={{ padding: '8px 12px', background: 'var(--win-danger)', color: T.fg, borderRadius: 6, fontSize: 12 }}>
               ⚠️ {error}
             </div>
           )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 
 const PRESETS = [5, 10, 15, 20, 30, 45, 60]
 
@@ -51,9 +52,9 @@ const PHASE_LABELS: Record<PomoPhase, string> = {
   long:  '긴 휴식',
 }
 const PHASE_COLORS: Record<PomoPhase, string> = {
-  work:  '#a78bfa',
-  short: '#34d399',
-  long:  '#60a5fa',
+  work:  T.gold,
+  short: T.success,
+  long:  T.teal,
 }
 const PHASE_SECS: Record<PomoPhase, number> = {
   work:  POMO_WORK,
@@ -188,12 +189,12 @@ function PomodoroTab(): React.ReactElement {
                 width: 10, height: 10, borderRadius: '50%',
                 background: i < session - (phase !== 'work' ? 0 : 0) || (phase === 'long')
                   ? color
-                  : 'rgba(255,255,255,0.18)',
+                  : rgba(T.fg, 0.18),
                 transition: 'background 0.3s ease',
               }}
             />
           ))}
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginLeft: 4 }}>
+          <span style={{ fontSize: 11, color: rgba(T.fg, 0.5), marginLeft: 4 }}>
             {phase === 'long' ? '긴 휴식' : `${session}/${SESSIONS_BEFORE_LONG} 세션`}
           </span>
         </div>
@@ -299,10 +300,10 @@ function PomodoroTab(): React.ReactElement {
           적용
         </button>
 
-        <div style={{ marginTop: 8, padding: '10px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 11, color: 'var(--win-text-muted)', lineHeight: 1.7 }}>
+        <div style={{ marginTop: 8, padding: '10px 12px', borderRadius: 8, background: rgba(T.fg, 0.04), border: `1px solid ${rgba(T.fg, 0.08)}`, fontSize: 11, color: 'var(--win-text-muted)', lineHeight: 1.7 }}>
           <div>집중 × 4세션</div>
           <div>→ 긴 휴식</div>
-          <div style={{ marginTop: 6, color: 'rgba(255,255,255,0.35)', fontSize: 10 }}>
+          <div style={{ marginTop: 6, color: rgba(T.fg, 0.35), fontSize: 10 }}>
             총 ~2시간 사이클
           </div>
         </div>
@@ -373,7 +374,7 @@ function MeetingTimerTab(): React.ReactElement {
   const progress    = totalSecs > 0 ? (totalSecs - remaining) / totalSecs : 0
   const isWarning   = remaining <= 60 && remaining > 0
   const isNearEnd   = remaining <= 300 && remaining > 60
-  const timerColor  = done ? '#e74c3c' : isWarning ? '#e74c3c' : isNearEnd ? '#f39c12' : '#a78bfa'
+  const timerColor  = done ? T.danger : isWarning ? T.danger : isNearEnd ? T.warning : T.gold
   const circumference = 2 * Math.PI * 54
   const dashOffset    = circumference * (1 - progress)
 
@@ -426,8 +427,8 @@ function MeetingTimerTab(): React.ReactElement {
             <span style={{ fontSize: 32, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: timerColor, letterSpacing: '0.04em', transition: 'color 0.5s ease' }}>
               {fmt(remaining)}
             </span>
-            {done && <span style={{ fontSize: 10, color: '#e74c3c', fontWeight: 600 }}>종료</span>}
-            {isWarning && !done && <span style={{ fontSize: 10, color: '#e74c3c', fontWeight: 600, animation: 'pulse 1s infinite' }}>곧 종료</span>}
+            {done && <span style={{ fontSize: 10, color: T.danger, fontWeight: 600 }}>종료</span>}
+            {isWarning && !done && <span style={{ fontSize: 10, color: T.danger, fontWeight: 600, animation: 'pulse 1s infinite' }}>곧 종료</span>}
           </div>
         </div>
 
@@ -448,7 +449,7 @@ function MeetingTimerTab(): React.ReactElement {
         </div>
 
         {done && (
-          <div style={{ padding: '10px 20px', background: 'rgba(231,76,60,0.15)', border: '1px solid #e74c3c', borderRadius: 8, fontSize: 14, color: '#e74c3c', fontWeight: 600, textAlign: 'center' }}>
+          <div style={{ padding: '10px 20px', background: rgba(T.danger, 0.15), border: `1px solid ${T.danger}`, borderRadius: 8, fontSize: 14, color: T.danger, fontWeight: 600, textAlign: 'center' }}>
             🔔 회의 시간이 종료되었습니다!
           </div>
         )}
@@ -471,7 +472,7 @@ function MeetingTimerTab(): React.ReactElement {
         <button
           className="win-btn-secondary"
           style={{ fontSize: 12, padding: '4px 10px' }}
-          onClick={async () => { if (!agenda) return; await navigator.clipboard.writeText(agenda) }}
+          onClick={async () => { if (!agenda) return; try { await navigator.clipboard.writeText(agenda) } catch { /* clipboard unavailable */ } }}
           disabled={!agenda}
         >
           메모 복사
@@ -502,12 +503,12 @@ export default function MeetingTimerModal({
   return (
     <Modal title="타이머" onClose={onClose} asPanel={asPanel}>
       {/* 탭 바 */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            background: tab === t.id ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: tab === t.id ? '#fff' : 'rgba(255,255,255,0.45)',
+            background: tab === t.id ? rgba(T.fg, 0.12) : 'transparent',
+            color: tab === t.id ? T.fg : rgba(T.fg, 0.45),
             transition: 'all 0.15s',
           }}>
             {t.label}

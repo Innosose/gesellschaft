@@ -1,37 +1,73 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import React, { memo, useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import CenterHub from './components/CenterHub'
 import SpiralMenu from './components/SpiralMenu'
 import ToolPanel from './components/ToolPanel'
+import RecommendOverlay from './components/RecommendOverlay'
 import { useAppStore } from './store/appStore'
 import { ALL_TOOLS } from '../../shared/constants'
+import { loadSavedTheme, T, rgba, useTheme, PARTICLE_CONFIGS } from './utils/theme'
 
-interface Tool {
-  id: string
-  icon: string
-  label: string
-  color: string
-}
-
+interface Tool { id: string; icon: string; label: string; color: string }
 type UIState = 'hub' | 'menu' | 'tool'
-
-interface Notification {
-  id: number
-  message: string
-  type: 'info' | 'error' | 'success'
-}
+interface Notification { id: number; message: string; type: 'info' | 'error' | 'success' }
 
 let notifIdCounter = 0
 
-// 컴포넌트 밖 상수 — 매 렌더마다 재생성되지 않음
-const NOTIF_COLORS: Record<'info' | 'error' | 'success', { bg: string; border: string; color: string; dot: string }> = {
-  info:    { bg: 'rgba(18,14,34,0.97)',  border: 'rgba(139,92,246,0.45)',  color: 'rgba(196,181,253,0.95)', dot: '#8b5cf6' },
-  error:   { bg: 'rgba(22,8,8,0.97)',    border: 'rgba(220,38,38,0.45)',   color: 'rgba(252,165,165,0.95)', dot: '#ef4444' },
-  success: { bg: 'rgba(6,18,12,0.97)',   border: 'rgba(34,197,94,0.40)',   color: 'rgba(134,239,172,0.95)', dot: '#22c55e' },
+const NC: Record<string, { bg: string; border: string; color: string; dot: string }> = {
+  info:    { bg: 'rgba(14,12,8,0.97)', border: rgba(T.gold, 0.3), color: 'rgba(220,200,160,0.9)', dot: T.gold },
+  error:   { bg: 'rgba(20,10,10,0.96)', border: 'rgba(224,84,104,0.2)', color: 'rgba(255,160,175,0.9)', dot: '#e05468' },
+  success: { bg: 'rgba(10,18,16,0.96)', border: rgba(T.teal, 0.2), color: 'rgba(140,230,200,0.9)', dot: T.teal },
 }
 
-export default function App(): React.ReactElement {
-  const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, loadFromAPI } = useAppStore()
+/** Particle seed data — stable across renders */
+const PARTICLE_SEEDS = [
+  { left: '10%', bottom: '5%', size: 8, dur: '8s', delay: '0s', anim: 1 },
+  { left: '25%', bottom: '10%', size: 6, dur: '10s', delay: '1.5s', anim: 2 },
+  { left: '45%', bottom: '0%', size: 10, dur: '9s', delay: '0.8s', anim: 3 },
+  { left: '65%', bottom: '8%', size: 7, dur: '11s', delay: '2.2s', anim: 1 },
+  { left: '80%', bottom: '3%', size: 9, dur: '8.5s', delay: '0.3s', anim: 2 },
+  { left: '15%', bottom: '15%', size: 5, dur: '12s', delay: '3s', anim: 3 },
+  { left: '55%', bottom: '12%', size: 8, dur: '9.5s', delay: '1s', anim: 1 },
+  { left: '90%', bottom: '6%', size: 6, dur: '10.5s', delay: '2.8s', anim: 2 },
+  { left: '35%', bottom: '2%', size: 7, dur: '7.5s', delay: '0.5s', anim: 3 },
+  { left: '72%', bottom: '18%', size: 5, dur: '13s', delay: '3.5s', anim: 1 },
+  { left: '5%', bottom: '20%', size: 6, dur: '11.5s', delay: '1.8s', anim: 2 },
+  { left: '48%', bottom: '16%', size: 4, dur: '14s', delay: '4s', anim: 3 },
+  { left: '85%', bottom: '12%', size: 7, dur: '9s', delay: '0.6s', anim: 1 },
+  { left: '30%', bottom: '8%', size: 5, dur: '12.5s', delay: '2.5s', anim: 2 },
+  { left: '60%', bottom: '22%', size: 4, dur: '15s', delay: '3.8s', anim: 3 },
+  { left: '95%', bottom: '15%', size: 6, dur: '10s', delay: '1.2s', anim: 1 },
+] as const
 
+const PARTICLE_CONTAINER_STYLE: React.CSSProperties = {
+  position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 11, overflow: 'hidden',
+}
+
+/** Memoized particle layer — only re-renders when theme identity changes */
+const Particles = memo(function Particles({ theme }: {
+  theme: { id: string; particle: string; particleCount: number; particleColor: string }
+}) {
+  const pc = PARTICLE_CONFIGS[theme.particle]
+  return (
+    <div aria-hidden="true" style={PARTICLE_CONTAINER_STYLE}>
+      {PARTICLE_SEEDS.slice(0, theme.particleCount).map((p, i) => (
+        <div key={`${theme.id}-p${i}`} style={{
+          position: 'absolute', left: p.left, bottom: p.bottom,
+          width: pc.width(p.size), height: pc.height(p.size),
+          background: theme.particleColor,
+          borderRadius: pc.borderRadius,
+          transform: `rotate(${pc.rotate}deg)`,
+          animation: `${pc.animation}${p.anim} ${p.dur} ease-in-out ${p.delay} infinite`,
+          filter: pc.blur > 0 ? `blur(${pc.blur}px)` : undefined,
+        }} />
+      ))}
+    </div>
+  )
+})
+
+export default function App(): React.ReactElement {
+  const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, autoScan, loadFromAPI } = useAppStore()
+  const theme = useTheme() // re-render entire app on theme change
   const [uiState, setUiState] = useState<UIState>('hub')
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
   const [recommended, setRecommended] = useState<string[]>([])
@@ -40,433 +76,298 @@ export default function App(): React.ReactElement {
   const [scanning, setScanning] = useState(false)
   const [toolSearch, setToolSearch] = useState('')
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showRecommend, setShowRecommend] = useState(false)
+  const [dismissing, setDismissing] = useState<Set<number>>(new Set())
   const dismissTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
 
-  // 설정 초기 로드
-  useEffect(() => { loadFromAPI() }, [loadFromAPI])
+  useEffect(() => { loadFromAPI(); loadSavedTheme() }, [loadFromAPI])
+
+  const removeNotification = useCallback((id: number) => {
+    setDismissing(prev => { const next = new Set(prev); next.add(id); return next })
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      setDismissing(prev => { const next = new Set(prev); next.delete(id); return next })
+    }, 200)
+  }, [])
 
   const addNotification = useCallback((message: string, type: Notification['type'] = 'info') => {
     const id = ++notifIdCounter
     setNotifications(prev => [...prev, { id, message, type }])
     const timer = setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id))
+      removeNotification(id)
       dismissTimers.current.delete(id)
     }, 4000)
     dismissTimers.current.set(id, timer)
-  }, [])
+  }, [removeNotification])
 
   const dismissNotification = useCallback((id: number) => {
     const timer = dismissTimers.current.get(id)
     if (timer) { clearTimeout(timer); dismissTimers.current.delete(id) }
-    setNotifications(prev => prev.filter(n => n.id !== id))
-  }, [])
+    removeNotification(id)
+  }, [removeNotification])
 
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      dismissTimers.current.forEach(t => clearTimeout(t))
-      if (recommendClearTimer.current) clearTimeout(recommendClearTimer.current)
-    }
-  }, [])
-
-  const handleHubClick = useCallback(() => {
-    setUiState(s => (s === 'menu' ? 'hub' : 'menu'))
+  useEffect(() => () => {
+    dismissTimers.current.forEach(t => clearTimeout(t))
+    if (recommendClearTimer.current) clearTimeout(recommendClearTimer.current)
   }, [])
 
   const handleToolSelect = useCallback((id: string) => {
     const tool = ALL_TOOLS.find(t => t.id === id) ?? null
-    setActiveTool(tool)
-    setUiState('tool')
-    // Clear AI recommendations once user picks a tool
+    setActiveTool(tool); setUiState('tool')
     if (recommendClearTimer.current) clearTimeout(recommendClearTimer.current)
-    setRecommended([])
-    setReasons({})
+    setRecommended([]); setReasons({})
   }, [])
 
-  const handleBack = useCallback(() => {
-    setActiveTool(null)
-    setUiState('menu')
-    setToolSearch('')
-  }, [])
-
-  // Memoize hub color RGB components for search bar background
-  const hubRgb = useMemo(() => ({
-    r: parseInt(hubColor.slice(1, 3), 16),
-    g: parseInt(hubColor.slice(3, 5), 16),
-    b: parseInt(hubColor.slice(5, 7), 16),
-  }), [hubColor])
+  const handleBack = useCallback(() => { setActiveTool(null); setUiState('menu'); setToolSearch('') }, [])
 
   const handleScan = useCallback(async () => {
     setScanning(true)
     try {
       const result = await window.api.screen.captureAndAnalyze()
       if (result.success) {
-        setRecommended(result.recommendations)
-        setReasons(result.reasons ?? {})
-        // Auto-clear recommendations after 60s
+        setRecommended(result.recommendations); setReasons(result.reasons ?? {})
         if (recommendClearTimer.current) clearTimeout(recommendClearTimer.current)
-        recommendClearTimer.current = setTimeout(() => {
-          setRecommended([])
-          setReasons({})
-        }, 60_000)
+        recommendClearTimer.current = setTimeout(() => { setRecommended([]); setReasons({}) }, 300_000)
         setUiState('menu')
-        if (result.recommendations.length === 0) {
-          addNotification('화면에서 추천 기능을 찾지 못했습니다.', 'info')
+        if (result.recommendations.length > 0) {
+          setShowRecommend(true)
         } else {
-          addNotification(`${result.recommendations.length}개 기능을 추천합니다.`, 'success')
+          addNotification('추천 기능을 찾지 못했습니다.', 'info')
         }
       } else {
         setUiState('menu')
-        const msg = result.error?.includes('API 키')
-          ? '⚙ 설정 > AI 탭에서 API 키를 등록해주세요.'
-          : `분석 실패: ${result.error ?? '알 수 없는 오류'}`
-        addNotification(msg, 'error')
+        addNotification(result.error?.includes('API 키') ? '설정에서 API 키를 등록해주세요.' : `분석 실패: ${result.error ?? '오류'}`, 'error')
       }
-    } catch {
-      addNotification('화면 분석 중 오류가 발생했습니다.', 'error')
-    } finally {
-      setScanning(false)
-    }
+    } catch { addNotification('분석 중 오류가 발생했습니다.', 'error') }
+    finally { setScanning(false) }
   }, [addNotification])
 
-  const handleHide = useCallback(() => {
-    window.api.window.hide()
-  }, [])
-
-  const handleClose = useCallback(() => {
-    window.api.window.close()
-  }, [])
-
-  const handleOpenSettings = useCallback(() => {
-    setActiveTool({ id: 'settings', icon: '⚙', label: '설정', color: '#6366f1' })
-    setUiState('tool')
-  }, [])
-
-  // functional setState로 uiState 의존성 제거
-  const handleBackdropClick = useCallback(() => {
-    setUiState(s => s === 'menu' ? 'hub' : s)
-  }, [])
-
-  const handleMenuSelect = useCallback((id: string) => {
-    setToolSearch('')
-    handleToolSelect(id)
-  }, [handleToolSelect])
-
-  // Click-through: hub 상태에서 배경 클릭이 다른 앱으로 통과되도록
-  useEffect(() => {
-    if (uiState !== 'hub') {
-      window.api.window.setIgnoreMouseEvents(false)
-      return
+  const handleHubClick = useCallback(() => {
+    if (uiState === 'hub') {
+      setUiState('menu')
+      if (autoScan && recommended.length === 0 && !scanning) {
+        handleScan()
+      }
+    } else if (uiState === 'menu') {
+      setToolSearch(''); setUiState('hub')
     }
+  }, [uiState, autoScan, recommended.length, scanning, handleScan])
+
+  const handleHide = useCallback(() => window.api.window.hide(), [])
+  const handleOpenSettings = useCallback(() => {
+    setActiveTool({ id: 'settings', icon: '', label: '설정', color: T.gold }); setUiState('tool')
+  }, [])
+  const handleBackdropClick = useCallback(() => setUiState(s => s === 'menu' ? 'hub' : s), [])
+  const handleMenuSelect = useCallback((id: string) => { setToolSearch(''); handleToolSelect(id) }, [handleToolSelect])
+
+  useEffect(() => {
+    if (uiState !== 'hub') { window.api.window.setIgnoreMouseEvents(false); return }
     window.api.window.setIgnoreMouseEvents(true, { forward: true })
-    let lastCall = 0
-    let lastHit = false
+    let lastCall = 0, lastHit = false
     const onMove = (e: MouseEvent): void => {
-      const now = Date.now()
-      if (now - lastCall < 16) return
-      lastCall = now
+      const now = Date.now(); if (now - lastCall < 16) return; lastCall = now
       const el = document.elementFromPoint(e.clientX, e.clientY)
       const hit = el?.closest('button, input, a, [data-interactive]') != null
-      if (hit !== lastHit) {
-        lastHit = hit
-        window.api.window.setIgnoreMouseEvents(!hit, { forward: true })
-      }
+      if (hit !== lastHit) { lastHit = hit; window.api.window.setIgnoreMouseEvents(!hit, { forward: true }) }
     }
     window.addEventListener('mousemove', onMove)
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.api.window.setIgnoreMouseEvents(false)
-    }
+    return () => { window.removeEventListener('mousemove', onMove); window.api.window.setIgnoreMouseEvents(false) }
   }, [uiState])
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
-        if (uiState === 'tool') { handleBack(); return }
-        if (uiState === 'menu') { setToolSearch(''); setUiState('hub'); return }
+        if (showShortcuts) { setShowShortcuts(false); return }
+        if (uiState === 'tool') handleBack()
+        else if (uiState === 'menu') { setToolSearch(''); setUiState('hub') }
       }
+      if (e.key === '?' && uiState !== 'tool') setShowShortcuts(s => !s)
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [uiState, handleBack])
+  }, [uiState, handleBack, showShortcuts])
 
   return (
-    <div
-      style={{
-        width: '100vw',
-        height: '100vh',
-        position: 'relative',
-        overflow: 'hidden',
-        fontFamily: "'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif",
-      }}
-    >
-      {/* Dark backdrop */}
-      <div
-        className={`app-backdrop ${uiState !== 'hub' ? 'active' : ''}`}
-        style={uiState !== 'hub' ? { background: `rgba(8, 5, 18, ${Math.min(overlayOpacity + 0.04, 0.97)})` } : undefined}
-        onClick={handleBackdropClick}
-      />
+    <div role="application" style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden',
+      fontFamily: "'Pretendard', 'Segoe UI Variable', system-ui, sans-serif" }}>
 
-      {/* Center Hub — visible in hub + menu states */}
+      <a href="#main-content" style={{
+        position: 'absolute', left: '-9999px', top: 'auto',
+        width: '1px', height: '1px', overflow: 'hidden',
+        zIndex: 9999,
+      }} onFocus={e => { e.currentTarget.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9999;padding:8px 16px;border-radius:6px;background:var(--win-accent);color:#fff;font-size:13px;font-weight:600;outline:none;' }}
+         onBlur={e => { e.currentTarget.style.cssText = 'position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;' }}
+      >메인 콘텐츠로 건너뛰기</a>
+
+      {/* Live region for tool selection announcements */}
+      <div aria-live="assertive" style={{ position: 'absolute', left: '-9999px' }}>{activeTool ? `${activeTool.label} 도구가 열렸습니다` : ''}</div>
+      <div id="gs-sr-announce" role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }} />
+
+      <div className={`app-backdrop ${uiState !== 'hub' ? 'active' : ''}`}
+        style={uiState !== 'hub' ? {
+          background: `${theme.bg}e0`,
+          backdropFilter: `blur(${theme.blurStrength}px) saturate(1.3) brightness(${theme.brightness})`,
+          WebkitBackdropFilter: `blur(${theme.blurStrength}px) saturate(1.3) brightness(${theme.brightness})`,
+        } : undefined}
+        onClick={handleBackdropClick} />
+
+      {/* Floating particles — theme-driven, memoized to avoid re-renders from App state */}
+      {uiState === 'menu' && <Particles theme={theme} />}
+
       {uiState !== 'tool' && (
-        <CenterHub
-          isOpen={uiState === 'menu'}
-          scanning={scanning}
-          recommendedCount={recommended.length}
-          hubColor={hubColor}
-          hubSize={hubSize}
-          onClick={handleHubClick}
-          onScan={handleScan}
-          onHide={handleHide}
-        />
+        <CenterHub key={theme.id} isOpen={uiState === 'menu'} scanning={scanning}
+          hubColor={hubColor} hubSize={hubSize}
+          onClick={handleHubClick} onScan={handleScan} />
       )}
 
-      {/* Spiral Menu */}
       {uiState === 'menu' && (
-        <SpiralMenu
-          tools={ALL_TOOLS}
-          recommended={recommended}
-          reasons={reasons}
-          spiralScale={spiralScale}
-          animSpeed={animSpeed}
-          filterQuery={toolSearch}
-          onSelectTool={handleMenuSelect}
-        />
+        <SpiralMenu tools={ALL_TOOLS}
+          spiralScale={spiralScale} animSpeed={animSpeed} filterQuery={toolSearch}
+          onSelectTool={handleMenuSelect} />
       )}
 
-      {/* Search bar — bottom center when menu is open */}
+      {/* Search */}
       {uiState === 'menu' && (
-        <div
-          style={{
-            position: 'fixed',
-            left: '50%',
-            bottom: 36,
-            transform: 'translateX(-50%)',
-            zIndex: 22,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 10,
-            pointerEvents: 'none',
-            animation: 'slideUp 0.32s cubic-bezier(0.25,1,0.5,1) 0.15s both',
-          }}
-        >
+        <div style={{ position: 'fixed', left: '50%', bottom: 'clamp(24px, 4vh, 50px)', transform: 'translateX(-50%)',
+          zIndex: 22, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+          pointerEvents: 'none', animation: 'slideUp 0.3s cubic-bezier(0.25,1,0.5,1) 0.12s both' }}>
           <div style={{ position: 'relative', pointerEvents: 'auto' }}>
-            <span
-              style={{
-                position: 'absolute',
-                left: 14,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: 14,
-                color: 'rgba(180,145,90,0.82)',
-                pointerEvents: 'none',
-                userSelect: 'none',
-              }}
-            >
-              🔍
-            </span>
-            <input
-              autoFocus
-              value={toolSearch}
-              onChange={e => setToolSearch(e.target.value)}
-              placeholder="기능 검색..."
-              style={{
-                width: 210,
-                padding: '10px 16px 10px 38px',
-                borderRadius: 26,
-                border: `1.5px solid ${toolSearch ? `${hubColor}99` : 'rgba(255,255,255,0.13)'}`,
-                background: toolSearch
-                  ? `rgba(${hubRgb.r},${hubRgb.g},${hubRgb.b},0.10)`
-                  : 'rgba(10,8,22,0.75)',
-                color: 'rgba(255,255,255,0.92)',
-                fontSize: 13,
-                fontWeight: 500,
-                backdropFilter: 'blur(16px)',
-                outline: 'none',
-                textAlign: 'left',
-                transition: 'border-color 0.15s ease, background 0.15s ease',
-                boxShadow: toolSearch ? `0 0 20px ${hubColor}33` : '0 4px 20px rgba(0,0,0,0.4)',
-              }}
-            />
+            <input autoFocus value={toolSearch} onChange={e => setToolSearch(e.target.value)}
+              aria-label="도구 검색" placeholder="Search the Library..." style={{
+                width: 'min(280px, 50vw)', padding: '9px 32px 9px 14px', borderRadius: 4,
+                border: `1px solid ${toolSearch ? rgba(T.gold, 0.25) : rgba(T.gold, 0.1)}`,
+                fontFamily: theme.titleFont,
+                background: 'rgba(10,10,8,0.88)', color: rgba(T.fg, 0.88),
+                fontSize: 12, fontWeight: 500, backdropFilter: 'blur(20px)', outline: 'none',
+                transition: 'border-color 0.15s ease',
+              }} />
             {toolSearch && (
-              <button
-                onClick={() => setToolSearch('')}
-                style={{
-                  position: 'absolute',
-                  right: 10,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(160,120,65,0.75)',
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  lineHeight: 1,
-                  padding: 2,
-                }}
-              >
-                ✕
-              </button>
+              <button onClick={() => setToolSearch('')} style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', color: rgba(T.fg, 0.3),
+                cursor: 'pointer', fontSize: 11, lineHeight: 1, padding: 2,
+              }}>x</button>
             )}
           </div>
-
-          {/* AI 추천 버튼 */}
-          <button
-            className="app-scan-btn"
-            onClick={handleScan}
-            disabled={scanning}
-            style={{
-              '--hub-bg':           `${hubColor}14`,
-              '--hub-bg-hover':     `${hubColor}28`,
-              '--hub-border':       `${hubColor}66`,
-              '--hub-border-hover': `${hubColor}cc`,
-              '--hub-text':         `${hubColor}ee`,
-              cursor: scanning ? 'wait' : 'pointer',
-              opacity: scanning ? 0.6 : 1,
-              pointerEvents: 'auto',
-            } as React.CSSProperties}
-          >
-            {scanning ? '⟳ 분석중...' : '✦ AI 화면 분석'}
-          </button>
+          {/* Category filter chips */}
+          <div style={{ display: 'flex', gap: 4, pointerEvents: 'auto', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {['Core', 'Overlay', 'Quick Use', 'Schedule', 'Documents', 'System'].map(cat => (
+              <button key={cat} onClick={() => setToolSearch(toolSearch === cat ? '' : cat)}
+                style={{
+                  fontSize: 9, padding: '2px 8px', borderRadius: 3, cursor: 'pointer',
+                  border: `1px solid ${toolSearch === cat ? rgba(T.gold, 0.3) : rgba(T.gold, 0.08)}`,
+                  background: toolSearch === cat ? rgba(T.gold, 0.12) : 'rgba(10,10,8,0.7)',
+                  color: toolSearch === cat ? T.gold : rgba(T.fg, 0.35),
+                  fontWeight: 500, letterSpacing: '0.04em', transition: 'all 0.12s ease',
+                  backdropFilter: 'blur(10px)',
+                }}>{cat}</button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Notification stack — top right (8. 버튼과 겹치지 않도록 top 조정) */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 52,
-          right: 90,
-          zIndex: 300,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          alignItems: 'flex-end',
-          pointerEvents: 'none',
-        }}
-      >
+      {/* AI Recommendation overlay */}
+      {showRecommend && recommended.length > 0 && (
+        <RecommendOverlay
+          recommendations={recommended}
+          reasons={reasons}
+          onSelect={(id) => { setShowRecommend(false); setRecommended([]); setReasons({}); handleMenuSelect(id) }}
+          onDismiss={() => { setShowRecommend(false); setRecommended([]); setReasons({}) }}
+        />
+      )}
+
+      {/* Notifications */}
+      <div aria-live="polite" style={{ position: 'fixed', top: 'clamp(32px, 4vh, 56px)', right: 'clamp(20px, 5vw, 80px)', zIndex: 300,
+        display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end', pointerEvents: 'none' }}>
         {notifications.map(n => {
-          const c = NOTIF_COLORS[n.type]
+          const c = NC[n.type]
+          const isDismissing = dismissing.has(n.id)
           return (
-            <div
-              key={n.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 12px 8px 10px',
-                borderRadius: 10,
-                background: c.bg,
-                border: `1px solid ${c.border}`,
-                color: c.color,
-                fontSize: 12,
-                fontWeight: 500,
-                backdropFilter: 'blur(16px)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.55)',
-                maxWidth: 280,
-                pointerEvents: 'auto',
-                animation: 'slideInRight 0.22s cubic-bezier(0.22,1,0.36,1) both',
-                letterSpacing: '0.01em',
-                lineHeight: 1.4,
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
+            <div key={n.id} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 10px', borderRadius: 8, background: c.bg,
+              border: `1px solid ${c.border}`, borderLeft: `2px solid ${rgba(T.gold, 0.4)}`, color: c.color,
+              fontSize: 11, fontWeight: 500, backdropFilter: 'blur(20px)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)', maxWidth: 260,
+              pointerEvents: 'auto',
+              animation: isDismissing ? 'slideOutRight 0.2s ease both' : 'slideInRight 0.2s ease both',
+              letterSpacing: '0.01em', lineHeight: 1.35,
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{n.message}</span>
-              <button
-                onClick={() => dismissNotification(n.id)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: c.color,
-                  opacity: 0.45,
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  padding: '0 0 0 4px',
-                  lineHeight: 1,
-                  flexShrink: 0,
-                }}
-              >
-                ✕
-              </button>
+              <button onClick={() => dismissNotification(n.id)} style={{
+                background: 'none', border: 'none', color: c.color, opacity: 0.35,
+                cursor: 'pointer', fontSize: 10, padding: '0 0 0 4px', lineHeight: 1, flexShrink: 0,
+              }}>x</button>
             </div>
           )
         })}
       </div>
 
-      <style>{`
-        /* ── 공통 컨트롤 버튼 (설정·종료) ─────────────────────── */
-        .app-ctrl-btn {
-          width: 28px; height: 28px; border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.18);
-          background: rgba(255,255,255,0.07);
-          color: rgba(255,255,255,0.50);
-          cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 13px;
-          transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-          backdrop-filter: blur(4px);
-        }
-        .app-ctrl-btn--settings:hover {
-          background: rgba(139,92,246,0.25);
-          color: rgba(196,181,253,0.85);
-          border-color: rgba(139,92,246,0.4);
-        }
-        .app-ctrl-btn--quit:hover {
-          background: rgba(220,38,38,0.35);
-          color: rgba(255,255,255,0.8);
-          border-color: rgba(220,38,38,0.5);
-        }
-
-        /* ── AI 스캔 버튼 (hubColor 기반 CSS 커스텀 프로퍼티) ─── */
-        .app-scan-btn {
-          padding: 6px 16px; border-radius: 20px;
-          border: 1px solid var(--hub-border);
-          background: var(--hub-bg);
-          color: var(--hub-text);
-          font-size: 11px; font-weight: 600;
-          backdrop-filter: blur(8px);
-          transition: background 0.15s ease, border-color 0.15s ease;
-        }
-        .app-scan-btn:hover:not(:disabled) {
-          background: var(--hub-bg-hover);
-          border-color: var(--hub-border-hover);
-        }
-      `}</style>
-
-      {/* Tool Panel — 10. 전환 애니메이션 */}
       {uiState === 'tool' && activeTool && (
-        <div style={{ animation: 'toolPanelIn 0.22s cubic-bezier(0.22,1,0.36,1) both', position: 'fixed', inset: 0, zIndex: 50 }}>
-        <ToolPanel
-          key={activeTool.id}
-          toolId={activeTool.id}
-          toolColor={activeTool.color}
-          toolLabel={activeTool.label}
-          onBack={handleBack}
-        />
+        <div id="main-content" style={{ animation: 'toolPanelIn 0.2s ease both', position: 'fixed', inset: 0, zIndex: 50 }}>
+          <ToolPanel key={activeTool.id} toolId={activeTool.id}
+            toolColor={activeTool.color} toolLabel={activeTool.label} onBack={handleBack} />
         </div>
       )}
 
-      {/* Top-right floating controls */}
-      <button
-        className="app-ctrl-btn app-ctrl-btn--settings"
-        onClick={handleOpenSettings}
-        title="단축키 설정"
-        style={{ position: 'fixed', top: 16, right: 56, zIndex: 100 }}
-      >
-        ⚙
+      {/* Top controls */}
+      <button className="app-top-btn" onClick={handleOpenSettings} title="설정"
+        style={{ position: 'fixed', top: 14, right: 48, zIndex: 100 }}>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4"/>
+        </svg>
+      </button>
+      <button className="app-top-btn app-top-btn--quit" onClick={handleHide} title="숨기기"
+        style={{ position: 'fixed', top: 14, right: 16, zIndex: 100 }}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/>
+        </svg>
       </button>
 
-      {/* Quit button */}
-      <button
-        className="app-ctrl-btn app-ctrl-btn--quit"
-        onClick={handleClose}
-        title="앱 종료"
-        style={{ position: 'fixed', top: 16, right: 20, zIndex: 100 }}
-      >
-        ✕
-      </button>
+      {/* Keyboard shortcut help overlay */}
+      {showShortcuts && (
+        <div onClick={() => setShowShortcuts(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 999,
+          background: rgba(T.bg, 0.9), backdropFilter: 'blur(20px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{ padding: '28px 36px', borderRadius: 12, border: `1px solid ${rgba(T.gold, 0.15)}`, background: rgba(T.bg, 0.95), minWidth: 340, maxWidth: 440 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: rgba(T.fg, 0.9), marginBottom: 4, fontFamily: theme.titleFont }}>키보드 단축키</div>
+            <div style={{ fontSize: 10, color: rgba(T.fg, 0.35), marginBottom: 18 }}>아무 곳이나 클릭하거나 Esc를 눌러 닫기</div>
+
+            {([
+              { label: '일반', items: [
+                ['Esc', '닫기 / 뒤로가기'],
+                ['?', '이 도움말 표시'],
+              ]},
+              { label: '메뉴 탐색', items: [
+                ['←  →', '이전 / 다음 도구'],
+                ['Home', '첫 번째 도구 (A)'],
+                ['End', '마지막 도구 (Z)'],
+                ['↑  ↓', '전체 보기 토글'],
+                ['Enter', '선택한 도구 열기'],
+                ['스크롤', '도구 회전'],
+              ]},
+              { label: '검색', items: [
+                ['텍스트 입력', '도구 이름으로 필터'],
+                ['카테고리 클릭', '분류별 필터'],
+              ]},
+            ] as const).map(section => (
+              <div key={section.label} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: rgba(T.gold, 0.45), letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>{section.label}</div>
+                {section.items.map(([key, desc]) => (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${rgba(T.gold, 0.04)}` }}>
+                    <kbd style={{ fontSize: 11, fontWeight: 600, color: T.teal, fontFamily: 'monospace', background: rgba(T.teal, 0.06), padding: '2px 10px', borderRadius: 4, border: `1px solid ${rgba(T.teal, 0.1)}`, minWidth: 60, textAlign: 'center' }}>{key}</kbd>
+                    <span style={{ fontSize: 11, color: rgba(T.fg, 0.55) }}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

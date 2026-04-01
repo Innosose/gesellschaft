@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { T, rgba } from '../utils/theme'
 
 function DayNightToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }): React.ReactElement {
   const isNight = isDark
@@ -20,9 +21,9 @@ function DayNightToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () =>
         {/* Cloud shapes */}
         <div className={`toggle-clouds ${isNight ? 'hidden' : 'visible'}`}>
           <svg width="52" height="26" viewBox="0 0 52 26" fill="none">
-            <ellipse cx="38" cy="18" rx="7" ry="4" fill="rgba(255,255,255,0.6)" />
-            <ellipse cx="34" cy="16" rx="5" ry="4" fill="rgba(255,255,255,0.7)" />
-            <ellipse cx="42" cy="17" rx="4" ry="3" fill="rgba(255,255,255,0.5)" />
+            <ellipse cx="38" cy="18" rx="7" ry="4" fill={rgba(T.fg, 0.6)} />
+            <ellipse cx="34" cy="16" rx="5" ry="4" fill={rgba(T.fg, 0.7)} />
+            <ellipse cx="42" cy="17" rx="4" ry="3" fill={rgba(T.fg, 0.5)} />
           </svg>
         </div>
 
@@ -85,10 +86,10 @@ export default function TitleBar({
         <div className="flex items-center gap-2 px-3 no-drag">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <rect x="1" y="3" width="14" height="11" rx="2" fill="#0078d4" opacity="0.9"/>
-            <path d="M1 6h14" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8"/>
-            <rect x="3" y="8" width="4" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/>
-            <rect x="9" y="8" width="4" height="1.2" rx="0.5" fill="rgba(255,255,255,0.4)"/>
-            <rect x="9" y="10" width="2.5" height="1.2" rx="0.5" fill="rgba(255,255,255,0.4)"/>
+            <path d="M1 6h14" stroke={rgba(T.fg, 0.3)} strokeWidth="0.8"/>
+            <rect x="3" y="8" width="4" height="3" rx="0.5" fill={rgba(T.fg, 0.7)}/>
+            <rect x="9" y="8" width="4" height="1.2" rx="0.5" fill={rgba(T.fg, 0.4)}/>
+            <rect x="9" y="10" width="2.5" height="1.2" rx="0.5" fill={rgba(T.fg, 0.4)}/>
           </svg>
           <span className="titlebar-text-main text-[13px] font-semibold tracking-tight" style={{ color: 'var(--win-text)' }}>게젤샤프트</span>
           <span className="titlebar-text-sub text-[11px] font-normal" style={{ color: 'var(--win-text-muted)' }}>업무 보조 도구</span>

@@ -51,10 +51,12 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
     setLoading(true)
     try {
       const result = await window.api.excelTool.loadSheet(filePath, sheetName)
-      const cols: string[] = result[0] || []
+      const rows: string[][] = result.success ? result.data : []
+      const cols: string[] = rows[0] || []
       setColumns(cols)
       setSelectedCols(new Set(cols))
-      setPreviewRows(result.slice(1, 51))
+      setPreviewRows(rows.slice(1, 51))
+      if (!result.success) setExportError(result.error ?? '시트 로드 실패')
     } catch {
       setExportError('시트 로드 중 오류가 발생했습니다.')
     }
@@ -132,7 +134,7 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
                     style={{
                       padding: '6px 16px',
                       background: activeSheet === s ? 'var(--win-accent)' : 'transparent',
-                      color: activeSheet === s ? '#fff' : 'var(--win-text-sub)',
+                      color: activeSheet === s ? T.fg : 'var(--win-text-sub)',
                       border: 'none',
                       cursor: 'pointer',
                       fontSize: 12,
@@ -296,12 +298,12 @@ export default function ExcelToolModal({ onClose, asPanel }: ExcelToolModalProps
             )}
 
             {exportDone && (
-              <div style={{ padding: '10px 14px', background: 'var(--win-success)', color: '#fff', borderRadius: 6, fontSize: 13 }}>
+              <div style={{ padding: '10px 14px', background: 'var(--win-success)', color: T.fg, borderRadius: 6, fontSize: 13 }}>
                 ✅ 내보내기 완료!
               </div>
             )}
             {exportError && (
-              <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: '#fff', borderRadius: 6, fontSize: 13 }}>
+              <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: T.fg, borderRadius: 6, fontSize: 13 }}>
                 ⚠️ {exportError}
               </div>
             )}

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -34,12 +35,12 @@ export default function DocTemplateModal({ onClose, asPanel }: DocTemplateModalP
   return (
     <Modal title="문서 템플릿" onClose={onClose} asPanel={asPanel}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
         {(['email', 'snippets'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            background: tab === t ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: tab === t ? '#fff' : 'rgba(255,255,255,0.45)',
+            background: tab === t ? rgba(T.fg, 0.12) : 'transparent',
+            color: tab === t ? T.fg : rgba(T.fg, 0.45),
             transition: 'all 0.15s',
           }}>
             {t === 'email' ? '이메일 템플릿' : '상용구'}
@@ -106,21 +107,27 @@ function EmailTemplateTab(): React.ReactElement {
   }
 
   const handleCopySubject = async (): Promise<void> => {
-    await navigator.clipboard.writeText(editSubject)
-    setCopiedMsg('제목 복사됨')
-    setTimeout(() => setCopiedMsg(''), 1500)
+    try {
+      await navigator.clipboard.writeText(editSubject)
+      setCopiedMsg('제목 복사됨')
+      setTimeout(() => setCopiedMsg(''), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   const handleCopyBody = async (): Promise<void> => {
-    await navigator.clipboard.writeText(editBody)
-    setCopiedMsg('본문 복사됨')
-    setTimeout(() => setCopiedMsg(''), 1500)
+    try {
+      await navigator.clipboard.writeText(editBody)
+      setCopiedMsg('본문 복사됨')
+      setTimeout(() => setCopiedMsg(''), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   const handleCopyAll = async (): Promise<void> => {
-    await navigator.clipboard.writeText(`제목: ${editSubject}\n\n${editBody}`)
-    setCopiedMsg('전체 복사됨')
-    setTimeout(() => setCopiedMsg(''), 1500)
+    try {
+      await navigator.clipboard.writeText(`제목: ${editSubject}\n\n${editBody}`)
+      setCopiedMsg('전체 복사됨')
+      setTimeout(() => setCopiedMsg(''), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   return (
@@ -297,9 +304,11 @@ function SnippetsTab(): React.ReactElement {
   }
 
   const handleCopy = async (content: string, id: string): Promise<void> => {
-    await navigator.clipboard.writeText(content)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 1500)
+    try {
+      await navigator.clipboard.writeText(content)
+      setCopiedId(id)
+      setTimeout(() => setCopiedId(null), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   return (

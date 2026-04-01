@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Modal } from './SearchModal'
+import { T, rgba } from '../utils/theme'
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -77,9 +78,11 @@ function VatTab(): React.ReactElement {
       `부가세(10%): ${fmt(quoteVat)}원`,
       `합계: ${fmt(grandTotal)}원`,
     ]
-    await navigator.clipboard.writeText(lines.join('\n'))
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch { /* clipboard unavailable */ }
   }
 
   return (
@@ -101,7 +104,7 @@ function VatTab(): React.ReactElement {
                   style={{
                     padding: '6px 14px',
                     background: vatMode === m.id ? 'var(--win-accent)' : 'var(--win-surface-3)',
-                    color: vatMode === m.id ? '#fff' : 'var(--win-text-sub)',
+                    color: vatMode === m.id ? T.fg : 'var(--win-text-sub)',
                     border: '1px solid var(--win-border)',
                     cursor: 'pointer',
                     fontSize: 12,
@@ -179,17 +182,17 @@ function VatTab(): React.ReactElement {
 
         {discPrice && discPct && (
           <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-            {[
-              { label: '원래 가격', value: fmt(discResult.original) + '원', color: 'var(--win-text)' },
-              { label: `할인 금액 (${discResult.pct}%)`, value: '-' + fmt(discResult.discAmt) + '원', color: 'var(--win-danger)' },
+            {([
+              { label: '원래 가격', value: fmt(discResult.original) + '원', color: 'var(--win-text)', big: false },
+              { label: `할인 금액 (${discResult.pct}%)`, value: '-' + fmt(discResult.discAmt) + '원', color: 'var(--win-danger)', big: false },
               { label: '최종 가격', value: fmt(discResult.final) + '원', color: 'var(--win-success)', big: true },
-            ].map(item => (
+            ] as const).map(item => (
               <div
                 key={item.label}
                 style={{ padding: '12px 18px', background: 'var(--win-surface)', borderRadius: 8, border: '1px solid var(--win-border)', textAlign: 'center' }}
               >
                 <div style={{ fontSize: 11, color: 'var(--win-text-muted)', marginBottom: 4 }}>{item.label}</div>
-                <div style={{ fontSize: (item as any).big ? 22 : 18, fontWeight: 700, color: item.color }}>
+                <div style={{ fontSize: item.big ? 22 : 18, fontWeight: 700, color: item.color }}>
                   {item.value}
                 </div>
               </div>
@@ -204,8 +207,8 @@ function VatTab(): React.ReactElement {
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--win-text)' }}>견적서 계산기</div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="win-btn-ghost" style={{ fontSize: 12 }} onClick={addItem}>+ 항목 추가</button>
-            <button className="win-btn-secondary" style={{ fontSize: 12 }} onClick={handleCopyQuote}>
-              {copied ? '✅ 복사됨' : '텍스트 복사'}
+            <button className="win-btn-secondary" style={{ fontSize: 12, color: copied ? T.success : undefined }} onClick={handleCopyQuote}>
+              {copied ? '복사됨 ✓' : '텍스트 복사'}
             </button>
           </div>
         </div>
@@ -308,8 +311,8 @@ function ExchangeTab(): React.ReactElement {
       if (data.result !== 'success') throw new Error('API 오류')
       setRates(data.rates)
       setUpdatedAt(new Date(data.time_last_update_utc).toLocaleString('ko-KR'))
-    } catch (e: any) {
-      setError(e?.message || '환율 데이터를 불러올 수 없습니다.')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '환율 데이터를 불러올 수 없습니다.')
     }
     setLoading(false)
   }
@@ -358,7 +361,7 @@ function ExchangeTab(): React.ReactElement {
       </div>
 
       {error && (
-        <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: '#fff', borderRadius: 6, fontSize: 13 }}>
+        <div style={{ padding: '10px 14px', background: 'var(--win-danger)', color: T.fg, borderRadius: 6, fontSize: 13 }}>
           ⚠️ {error}
         </div>
       )}
@@ -545,7 +548,7 @@ function UnitTab(): React.ReactElement {
             style={{
               padding: '8px 16px',
               background: category === cat ? 'var(--win-accent)' : 'transparent',
-              color: category === cat ? '#fff' : 'var(--win-text-sub)',
+              color: category === cat ? T.fg : 'var(--win-text-sub)',
               border: 'none',
               cursor: 'pointer',
               fontSize: 13,
@@ -632,31 +635,39 @@ function UnitTab(): React.ReactElement {
 
 // ── CalculatorModal ────────────────────────────────────────────────────────────
 
+const LazySalaryCalc = React.lazy(() => import('./SalaryCalcModal').then(m => ({ default: m.SalaryCalcContent })))
+
 export default function CalculatorModal({ onClose, asPanel }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {
-  const [tab, setTab] = useState<'vat' | 'exchange' | 'unit'>('vat')
+  const [tab, setTab] = useState<'vat' | 'exchange' | 'unit' | 'salary'>('vat')
 
   return (
     <Modal title="계산기" onClose={onClose} asPanel={asPanel}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: `1px solid ${rgba(T.fg, 0.08)}`, paddingBottom: 8 }}>
           {[
             { id: 'vat', label: '부가세' },
             { id: 'exchange', label: '환율' },
             { id: 'unit', label: '단위 변환' },
+            { id: 'salary', label: '급여' },
           ].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id as any)} style={{
+            <button key={t.id} onClick={() => setTab(t.id as typeof tab)} style={{
               padding: '5px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-              background: tab === t.id ? 'rgba(255,255,255,0.12)' : 'transparent',
-              color: tab === t.id ? '#fff' : 'rgba(255,255,255,0.45)',
+              background: tab === t.id ? rgba(T.fg, 0.12) : 'transparent',
+              color: tab === t.id ? T.fg : rgba(T.fg, 0.45),
               transition: 'all 0.15s',
             }}>{t.label}</button>
           ))}
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
           {tab === 'vat' && <VatTab />}
           {tab === 'exchange' && <ExchangeTab />}
           {tab === 'unit' && <UnitTab />}
+          {tab === 'salary' && (
+            <React.Suspense fallback={<div style={{ textAlign: 'center', padding: 40, color: rgba(T.fg, 0.4) }}>로딩 중...</div>}>
+              <LazySalaryCalc />
+            </React.Suspense>
+          )}
         </div>
       </div>
     </Modal>

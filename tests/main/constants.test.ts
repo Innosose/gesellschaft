@@ -8,14 +8,13 @@ import {
 
 describe('shared/constants', () => {
   describe('ALL_TOOLS', () => {
-    it('16개 도구가 정의되어 있어야 함', () => {
-      expect(ALL_TOOLS.length).toBe(16)
+    it('26개 도구가 정의되어 있어야 함 (A-Z)', () => {
+      expect(ALL_TOOLS.length).toBe(26)
     })
 
-    it('모든 도구는 id, icon, label, color, description을 가져야 함', () => {
+    it('모든 도구는 id, label, color, description을 가져야 함', () => {
       for (const tool of ALL_TOOLS) {
         expect(tool.id).toBeTruthy()
-        expect(tool.icon).toBeTruthy()
         expect(tool.label).toBeTruthy()
         expect(tool.color).toMatch(/^#[0-9a-fA-F]{6}$/)
         expect(tool.description).toBeTruthy()
