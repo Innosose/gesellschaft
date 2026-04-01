@@ -63,7 +63,7 @@ export const DEFAULT_ANIM_SPEED     = 'normal' as const
 /** 클립보드 히스토리 최대 보관 개수 */
 export const CLIPBOARD_HISTORY_LIMIT = 50
 /** 클립보드 폴링 간격 (ms) */
-export const CLIPBOARD_POLL_INTERVAL = 1000
+export const CLIPBOARD_POLL_INTERVAL = 500
 /** 리마인더 확인 주기 (ms) */
 export const REMINDER_CHECK_INTERVAL = 60 * 1000
 /** 클립보드 항목 최대 길이 */

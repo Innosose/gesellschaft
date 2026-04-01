@@ -1,6 +1,7 @@
 import { ipcMain, clipboard, BrowserWindow, app } from 'electron'
 import { join } from 'path'
 import fs from 'fs'
+import { createHash } from 'crypto'
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 import {
@@ -13,6 +14,12 @@ let history: string[] = []
 // history 배열과 항상 동기화 — O(1) 멤버십 확인 및 중복 제거 판단용
 let historySet = new Set<string>()
 let lastText = ''
+// MD5 해시로 변경 감지 — 대용량 텍스트의 매 폴링마다 O(n) 비교를 O(1)로 단축
+let lastHash = ''
+
+function hashText(text: string): string {
+  return createHash('md5').update(text).digest('hex')
+}
 let registered = false
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
