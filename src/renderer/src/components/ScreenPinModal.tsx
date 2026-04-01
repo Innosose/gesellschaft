@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Modal } from './SearchModal'
 import { T, rgba } from '../utils/theme'
+import OverlayPortal from '../utils/OverlayPortal'
 
 interface Pin {
   id: string
   text: string
   color: string
-  xPct: number
-  yPct: number
+  x: number
+  y: number
 }
 
 const STORAGE_KEY = 'gs-screen-pins'
@@ -18,7 +18,7 @@ function loadPins(): Pin[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
 }
 
-function savePins(pins: Pin[]) {
+function savePins(pins: Pin[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(pins))
 }
 
@@ -26,25 +26,24 @@ function genId(): string {
   return `pin_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
 }
 
-// Draggable pin displayed inside the preview area
-function PinNote({ pin, onUpdate, onDelete, containerRect }: {
-  pin: Pin; onUpdate: (p: Partial<Pin>) => void; onDelete: () => void; containerRect: DOMRect | null
-}) {
-  const dragRef = useRef<{ startX: number; startY: number; origXPct: number; origYPct: number } | null>(null)
+function PinNote({ pin, onUpdate, onDelete }: {
+  pin: Pin; onUpdate: (p: Partial<Pin>) => void; onDelete: () => void
+}): React.ReactElement {
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
 
-  const onMouseDown = (e: React.MouseEvent) => {
+  const onMouseDown = (e: React.MouseEvent): void => {
     if ((e.target as HTMLElement).tagName === 'TEXTAREA' || (e.target as HTMLElement).tagName === 'BUTTON') return
     e.preventDefault()
-    dragRef.current = { startX: e.clientX, startY: e.clientY, origXPct: pin.xPct, origYPct: pin.yPct }
-    const onMove = (ev: MouseEvent) => {
-      if (!dragRef.current || !containerRect) return
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: pin.x, origY: pin.y }
+    const onMove = (ev: MouseEvent): void => {
+      if (!dragRef.current) return
       const dx = ev.clientX - dragRef.current.startX
       const dy = ev.clientY - dragRef.current.startY
-      const xPct = Math.max(0, Math.min(85, dragRef.current.origXPct + (dx / containerRect.width) * 100))
-      const yPct = Math.max(0, Math.min(85, dragRef.current.origYPct + (dy / containerRect.height) * 100))
-      onUpdate({ xPct, yPct })
+      const x = Math.max(0, Math.min(window.innerWidth - 140, dragRef.current.origX + dx))
+      const y = Math.max(0, Math.min(window.innerHeight - 60, dragRef.current.origY + dy))
+      onUpdate({ x, y })
     }
-    const onUp = () => {
+    const onUp = (): void => {
       dragRef.current = null
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
@@ -57,10 +56,11 @@ function PinNote({ pin, onUpdate, onDelete, containerRect }: {
     <div
       onMouseDown={onMouseDown}
       style={{
-        position: 'absolute', left: `${pin.xPct}%`, top: `${pin.yPct}%`,
+        position: 'fixed', left: pin.x, top: pin.y,
         width: 140, minHeight: 60, borderRadius: 6, padding: 6,
-        background: T.surface, border: `1.5px solid ${pin.color}`,
-        boxShadow: `0 2px 8px rgba(0,0,0,0.4)`, cursor: 'grab', zIndex: 10
+        background: rgba(T.bg, 0.95), border: `1.5px solid ${pin.color}`,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.4)', cursor: 'grab', zIndex: 5,
+        pointerEvents: 'auto',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -69,7 +69,7 @@ function PinNote({ pin, onUpdate, onDelete, containerRect }: {
             <div key={c} onClick={() => onUpdate({ color: c })}
               style={{
                 width: 10, height: 10, borderRadius: '50%', background: c, cursor: 'pointer',
-                border: c === pin.color ? '1.5px solid #fff' : '1px solid transparent'
+                border: c === pin.color ? '1.5px solid #fff' : '1px solid transparent',
               }} />
           ))}
         </div>
@@ -81,41 +81,43 @@ function PinNote({ pin, onUpdate, onDelete, containerRect }: {
       <textarea
         value={pin.text}
         onChange={e => onUpdate({ text: e.target.value })}
-        placeholder="메모..."
+        placeholder="..."
         style={{
           width: '100%', minHeight: 36, background: 'transparent', border: 'none',
           color: pin.color, fontSize: 11, resize: 'vertical', outline: 'none',
-          fontFamily: 'inherit', lineHeight: 1.4
+          fontFamily: 'inherit', lineHeight: 1.4,
         }}
       />
     </div>
   )
 }
 
-export default function ScreenPinModal({ onClose, asPanel }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {
+export default function ScreenPinModal({ onClose }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {
   const [pins, setPins] = useState<Pin[]>(loadPins)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [containerRect, setContainerRect] = useState<DOMRect | null>(null)
+  const [placing, setPlacing] = useState(false)
 
   useEffect(() => { savePins(pins) }, [pins])
 
   useEffect(() => {
-    const update = () => {
-      if (containerRef.current) setContainerRect(containerRef.current.getBoundingClientRect())
+    const handler = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') { onClose(); e.stopPropagation() }
     }
-    update()
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [])
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
+  }, [onClose])
 
-  const addPin = useCallback(() => {
+  const handleScreenClick = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[data-toolbar]')) return
+    if ((e.target as HTMLElement).closest('[data-pin]')) return
+    if (!placing) return
     if (pins.length >= MAX_PINS) return
     const pin: Pin = {
       id: genId(), text: '', color: COLORS[pins.length % COLORS.length],
-      xPct: 10 + Math.random() * 60, yPct: 10 + Math.random() * 60
+      x: e.clientX - 70, y: e.clientY - 30,
     }
     setPins(prev => [...prev, pin])
-  }, [pins.length])
+    setPlacing(false)
+  }, [placing, pins])
 
   const updatePin = useCallback((id: string, patch: Partial<Pin>) => {
     setPins(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p))
@@ -125,52 +127,74 @@ export default function ScreenPinModal({ onClose, asPanel }: { onClose: () => vo
     setPins(prev => prev.filter(p => p.id !== id))
   }, [])
 
+  const btnStyle = (active?: boolean): React.CSSProperties => ({
+    padding: '4px 10px', borderRadius: 4, fontSize: 10, cursor: 'pointer',
+    border: `1px solid ${rgba(T.gold, 0.12)}`,
+    background: active ? rgba(T.teal, 0.12) : rgba(T.gold, 0.04),
+    color: active ? T.teal : rgba(T.fg, 0.6),
+    fontWeight: active ? 600 : 400,
+  })
+
   return (
-    <Modal title="화면 핀" onClose={onClose} wide asPanel={asPanel}>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
-          <button className="win-btn-primary" style={{ fontSize: 12, padding: '4px 14px' }}
-            onClick={addPin} disabled={pins.length >= MAX_PINS}>
-            + 핀 추가 ({pins.length}/{MAX_PINS})
-          </button>
-          {pins.length >= MAX_PINS && (
-            <span style={{ fontSize: 10, color: T.danger }}>최대 {MAX_PINS}개</span>
-          )}
-          <button className="win-btn-danger" style={{ fontSize: 11, padding: '2px 10px', marginLeft: 'auto' }}
-            onClick={() => setPins([])}>
-            전체 삭제
-          </button>
-        </div>
+    <OverlayPortal>
+      {/* Click area for placing pins */}
+      <div
+        onClick={handleScreenClick}
+        style={{
+          position: 'fixed', inset: 0,
+          pointerEvents: placing ? 'auto' : 'none',
+          cursor: placing ? 'crosshair' : 'default',
+          zIndex: 1,
+        }}
+      />
 
-        {/* Pin area */}
-        <div ref={containerRef} style={{
-          position: 'relative', minHeight: 350, borderRadius: 8,
-          background: 'rgba(22,20,14,0.6)', border: `1px solid ${rgba(T.gold, 0.15)}`,
-          overflow: 'hidden'
-        }}>
-          {pins.length === 0 && (
-            <div style={{
-              position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--win-text-muted)', fontSize: 12
-            }}>
-              핀을 추가하여 메모를 남기세요
-            </div>
-          )}
-          {pins.map(pin => (
-            <PinNote
-              key={pin.id}
-              pin={pin}
-              onUpdate={patch => updatePin(pin.id, patch)}
-              onDelete={() => deletePin(pin.id)}
-              containerRect={containerRect}
-            />
-          ))}
+      {/* Pins on screen */}
+      {pins.map(pin => (
+        <div key={pin.id} data-pin>
+          <PinNote
+            pin={pin}
+            onUpdate={patch => updatePin(pin.id, patch)}
+            onDelete={() => deletePin(pin.id)}
+          />
         </div>
+      ))}
 
-        <p style={{ fontSize: 10, color: 'var(--win-text-muted)', textAlign: 'center' }}>
-          핀을 드래그하여 위치를 변경하세요 · 위치는 자동 저장됩니다
-        </p>
+      {/* Floating toolbar */}
+      <div data-toolbar style={{
+        position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 16px', borderRadius: 10,
+        background: rgba(T.bg, 0.92),
+        border: `1px solid ${rgba(T.gold, 0.12)}`,
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+        pointerEvents: 'auto', zIndex: 10,
+        fontSize: 10,
+      }}>
+        <button
+          onClick={() => setPlacing(!placing)}
+          disabled={pins.length >= MAX_PINS}
+          style={btnStyle(placing)}
+          title={placing ? '배치 취소' : '핀 추가 (클릭으로 배치)'}
+        >
+          {placing ? '배치 중...' : `+ (${pins.length}/${MAX_PINS})`}
+        </button>
+        <button
+          onClick={() => setPins([])}
+          disabled={pins.length === 0}
+          style={{ ...btnStyle(), borderColor: rgba(T.danger, 0.15), color: rgba(T.danger, 0.6) }}
+          title="전체 삭제"
+        >
+          전체 삭제
+        </button>
+        <button onClick={onClose} title="닫기 (Esc)" style={{
+          width: 22, height: 22, borderRadius: 4,
+          border: `1px solid ${rgba(T.danger, 0.2)}`,
+          background: rgba(T.danger, 0.06), color: rgba(T.danger, 0.7),
+          cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>✕</button>
       </div>
-    </Modal>
+    </OverlayPortal>
   )
 }

@@ -326,6 +326,9 @@ export default function App(): React.ReactElement {
         </svg>
       </button>
 
+      {/* Portal mount point for fullscreen overlay tools */}
+      <div id="overlay-portal" style={{ position: 'fixed', inset: 0, zIndex: 200, pointerEvents: 'none' }} />
+
       {/* Keyboard shortcut help overlay */}
       {showShortcuts && (
         <div onClick={() => setShowShortcuts(false)} style={{

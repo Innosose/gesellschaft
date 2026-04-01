@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { Modal } from './SearchModal'
 import { T, rgba } from '../utils/theme'
+import OverlayPortal from '../utils/OverlayPortal'
 
 interface Stroke {
   points: { x: number; y: number }[]
@@ -11,7 +11,7 @@ interface Stroke {
 
 const COLORS = [T.danger, T.teal, T.gold, T.success, T.fg]
 
-export default function ScreenPenModal({ onClose, asPanel }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {
+export default function ScreenPenModal({ onClose }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [color, setColor] = useState(COLORS[0])
   const [penSize, setPenSize] = useState(4)
@@ -50,10 +50,8 @@ export default function ScreenPenModal({ onClose, asPanel }: { onClose: () => vo
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const parent = canvas.parentElement
-    if (!parent) return
-    canvas.width = parent.clientWidth
-    canvas.height = parent.clientHeight
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
     redraw()
   }, [redraw])
 
@@ -63,23 +61,19 @@ export default function ScreenPenModal({ onClose, asPanel }: { onClose: () => vo
     return () => window.removeEventListener('resize', resizeCanvas)
   }, [resizeCanvas])
 
-  const getPos = (e: React.MouseEvent) => {
-    const rect = canvasRef.current!.getBoundingClientRect()
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
-  }
-
-  const onMouseDown = (e: React.MouseEvent) => {
+  const onMouseDown = (e: React.MouseEvent): void => {
+    if ((e.target as HTMLElement).closest('[data-toolbar]')) return
     drawing.current = true
-    currentStroke.current = { points: [getPos(e)], color, size: penSize, eraser }
+    currentStroke.current = { points: [{ x: e.clientX, y: e.clientY }], color, size: penSize, eraser }
   }
 
-  const onMouseMove = (e: React.MouseEvent) => {
+  const onMouseMove = (e: React.MouseEvent): void => {
     if (!drawing.current || !currentStroke.current) return
-    currentStroke.current.points.push(getPos(e))
+    currentStroke.current.points.push({ x: e.clientX, y: e.clientY })
     redraw()
   }
 
-  const onMouseUp = () => {
+  const onMouseUp = (): void => {
     if (currentStroke.current && currentStroke.current.points.length > 1) {
       setStrokes(prev => {
         const next = [...prev, currentStroke.current!]
@@ -90,69 +84,97 @@ export default function ScreenPenModal({ onClose, asPanel }: { onClose: () => vo
     drawing.current = false
   }
 
-  const undo = () => setStrokes(prev => prev.slice(0, -1))
-  const clearAll = () => setStrokes([])
+  const undo = (): void => setStrokes(prev => prev.slice(0, -1))
+  const clearAll = (): void => setStrokes([])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') { onClose(); e.stopPropagation() }
+    }
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
+  }, [onClose])
+
+  const btnStyle = (active?: boolean): React.CSSProperties => ({
+    padding: '4px 10px', borderRadius: 4, fontSize: 10, cursor: 'pointer',
+    border: `1px solid ${rgba(T.gold, 0.12)}`,
+    background: active ? rgba(T.teal, 0.12) : rgba(T.gold, 0.04),
+    color: active ? T.teal : rgba(T.fg, 0.6),
+    fontWeight: active ? 600 : 400,
+  })
 
   return (
-    <Modal title="화면 펜" onClose={onClose} wide asPanel={asPanel}>
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-2 flex-wrap">
+    <OverlayPortal>
+      {/* Dim background layer */}
+      {dimBg && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none', zIndex: 0 }} />
+      )}
+
+      {/* Full-screen drawing area */}
+      <div
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        style={{ position: 'fixed', inset: 0, pointerEvents: 'auto', cursor: eraser ? 'cell' : 'crosshair', zIndex: 1 }}
+      >
+        <canvas
+          ref={canvasRef}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        />
+      </div>
+
+      {/* Floating toolbar */}
+      <div data-toolbar style={{
+        position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '8px 16px', borderRadius: 10,
+        background: rgba(T.bg, 0.92),
+        border: `1px solid ${rgba(T.gold, 0.12)}`,
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+        pointerEvents: 'auto', zIndex: 10,
+        fontSize: 10,
+      }}>
+        {/* Color buttons */}
         {COLORS.map(c => (
           <button
             key={c}
             onClick={() => { setColor(c); setEraser(false) }}
             style={{
-              width: 24, height: 24, borderRadius: '50%', background: c,
+              width: 20, height: 20, borderRadius: '50%', background: c, cursor: 'pointer',
               border: color === c && !eraser ? `2px solid ${T.gold}` : '2px solid transparent',
-              cursor: 'pointer'
             }}
           />
         ))}
-        <div style={{ width: 1, height: 20, background: rgba(T.gold, 0.3), margin: '0 4px' }} />
-        <button
-          className={eraser ? 'win-btn-primary' : 'win-btn-secondary'}
-          style={{ fontSize: 11, padding: '2px 8px' }}
-          onClick={() => setEraser(!eraser)}
-        >지우개</button>
-        <label style={{ fontSize: 11, color: 'var(--win-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-          굵기
+        <div style={{ width: 1, height: 18, background: rgba(T.gold, 0.15) }} />
+        {/* Pen size */}
+        <label style={{ fontSize: 10, color: rgba(T.fg, 0.5), display: 'flex', alignItems: 'center', gap: 4 }}>
           <input type="range" min={2} max={10} value={penSize} onChange={e => setPenSize(+e.target.value)}
-            style={{ width: 60 }} />
-          <span style={{ color: T.gold, minWidth: 16 }}>{penSize}</span>
+            style={{ width: 50 }} />
+          <span style={{ color: T.gold, minWidth: 14 }}>{penSize}</span>
         </label>
-        <div style={{ width: 1, height: 20, background: rgba(T.gold, 0.3), margin: '0 4px' }} />
-        <button className="win-btn-secondary" style={{ fontSize: 11, padding: '2px 8px' }} onClick={undo}>
+        <div style={{ width: 1, height: 18, background: rgba(T.gold, 0.15) }} />
+        <button onClick={() => setEraser(!eraser)} style={btnStyle(eraser)} title="지우개">
+          지우개
+        </button>
+        <button onClick={() => setDimBg(!dimBg)} style={btnStyle(dimBg)} title="배경 어둡게">
+          어둡게
+        </button>
+        <button onClick={undo} disabled={strokes.length === 0} style={btnStyle()} title="되돌리기">
           되돌리기
         </button>
-        <button className="win-btn-danger" style={{ fontSize: 11, padding: '2px 8px' }} onClick={clearAll}>
+        <button onClick={clearAll} disabled={strokes.length === 0} style={{ ...btnStyle(), borderColor: rgba(T.danger, 0.15), color: rgba(T.danger, 0.6) }} title="전체 지우기">
           전체 지우기
         </button>
-        <label style={{ fontSize: 11, color: 'var(--win-text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
-          <input type="checkbox" checked={dimBg} onChange={e => setDimBg(e.target.checked)} />
-          배경 어둡게
-        </label>
+        <button onClick={onClose} title="닫기 (Esc)" style={{
+          width: 22, height: 22, borderRadius: 4,
+          border: `1px solid ${rgba(T.danger, 0.2)}`,
+          background: rgba(T.danger, 0.06), color: rgba(T.danger, 0.7),
+          cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>✕</button>
       </div>
-      {/* Canvas area */}
-      <div
-        style={{
-          position: 'relative', flex: 1, minHeight: 350, borderRadius: 8,
-          background: dimBg ? 'rgba(0,0,0,0.3)' : 'transparent',
-          border: `1px solid ${rgba(T.gold, 0.2)}`, overflow: 'hidden',
-          cursor: eraser ? 'cell' : 'crosshair'
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
-        />
-      </div>
-      <p style={{ fontSize: 10, color: 'var(--win-text-muted)', marginTop: 4, textAlign: 'center' }}>
-        마우스로 그리세요 · 최대 20획 되돌리기 가능
-      </p>
-    </Modal>
+    </OverlayPortal>
   )
 }

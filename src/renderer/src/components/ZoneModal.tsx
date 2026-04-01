@@ -1,152 +1,166 @@
-import React, { useState, useCallback, useMemo } from 'react'
-import { Modal } from './SearchModal'
+import React, { useState, useEffect } from 'react'
+import OverlayPortal from '../utils/OverlayPortal'
 import { T, rgba } from '../utils/theme'
 
-interface Zone { id: number; name: string; x: number; y: number; w: number; h: number; color: string }
-interface Layout { id: number; name: string; zones: Zone[] }
+interface Zone { x: string; y: string; w: string; h: string }
 
-const SK = 'gs-zone-layouts'
-let lid = 1, zid = 100
-
-const PRESETS: Layout[] = [
-  { id: -1, name: '50 / 50', zones: [
-    { id: 1, name: '좌', x: 0, y: 0, w: 50, h: 100, color: T.teal },
-    { id: 2, name: '우', x: 50, y: 0, w: 50, h: 100, color: T.gold },
+const LAYOUTS: { label: string; zones: Zone[] }[] = [
+  { label: '1:1', zones: [
+    { x: '0%', y: '0%', w: '50%', h: '100%' },
+    { x: '50%', y: '0%', w: '50%', h: '100%' },
   ]},
-  { id: -2, name: '70 / 30', zones: [
-    { id: 3, name: '메인', x: 0, y: 0, w: 70, h: 100, color: T.teal },
-    { id: 4, name: '사이드', x: 70, y: 0, w: 30, h: 100, color: T.gold },
+  { label: '1:1:1', zones: [
+    { x: '0%', y: '0%', w: '33.33%', h: '100%' },
+    { x: '33.33%', y: '0%', w: '33.33%', h: '100%' },
+    { x: '66.66%', y: '0%', w: '33.34%', h: '100%' },
   ]},
-  { id: -3, name: '3분할', zones: [
-    { id: 5, name: '좌', x: 0, y: 0, w: 33.3, h: 100, color: T.teal },
-    { id: 6, name: '중', x: 33.3, y: 0, w: 33.4, h: 100, color: T.gold },
-    { id: 7, name: '우', x: 66.7, y: 0, w: 33.3, h: 100, color: T.success },
+  { label: '2:1', zones: [
+    { x: '0%', y: '0%', w: '66.66%', h: '100%' },
+    { x: '66.66%', y: '0%', w: '33.34%', h: '100%' },
   ]},
-  { id: -4, name: '메인 + 상하', zones: [
-    { id: 8, name: '메인', x: 0, y: 0, w: 65, h: 100, color: T.teal },
-    { id: 9, name: '상단', x: 65, y: 0, w: 35, h: 50, color: T.gold },
-    { id: 10, name: '하단', x: 65, y: 50, w: 35, h: 50, color: T.success },
+  { label: '4분할', zones: [
+    { x: '0%', y: '0%', w: '50%', h: '50%' },
+    { x: '50%', y: '0%', w: '50%', h: '50%' },
+    { x: '0%', y: '50%', w: '50%', h: '50%' },
+    { x: '50%', y: '50%', w: '50%', h: '50%' },
   ]},
-  { id: -5, name: '4분할', zones: [
-    { id: 11, name: '좌상', x: 0, y: 0, w: 50, h: 50, color: T.teal },
-    { id: 12, name: '우상', x: 50, y: 0, w: 50, h: 50, color: T.gold },
-    { id: 13, name: '좌하', x: 0, y: 50, w: 50, h: 50, color: T.success },
-    { id: 14, name: '우하', x: 50, y: 50, w: 50, h: 50, color: T.warning },
+  { label: '메인+사이드', zones: [
+    { x: '0%', y: '0%', w: '70%', h: '100%' },
+    { x: '70%', y: '0%', w: '30%', h: '50%' },
+    { x: '70%', y: '50%', w: '30%', h: '50%' },
+  ]},
+  { label: '3행', zones: [
+    { x: '0%', y: '0%', w: '100%', h: '33.33%' },
+    { x: '0%', y: '33.33%', w: '100%', h: '33.33%' },
+    { x: '0%', y: '66.66%', w: '100%', h: '33.34%' },
   ]},
 ]
 
-function loadLayouts(): Layout[] { try { return JSON.parse(localStorage.getItem(SK) ?? '[]') } catch { return [] } }
-function saveLayouts(items: Layout[]): void { localStorage.setItem(SK, JSON.stringify(items)) }
+const ZONE_COLORS = [T.teal, T.gold, T.success, T.warning, T.danger, T.fg]
 
-export default function ZoneModal({ onClose, asPanel }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {
-  const [custom, setCustom] = useState<Layout[]>(() => { const l = loadLayouts(); lid = Math.max(1, ...l.map(i => i.id)) + 1; return l })
-  const [active, setActive] = useState<Layout | null>(null)
-  const [newName, setNewName] = useState('')
+export default function ZoneModal({ onClose }: { onClose: () => void; asPanel?: boolean }): React.ReactElement {
+  const [layoutIdx, setLayoutIdx] = useState(0)
+  const [selectedZone, setSelectedZone] = useState<number | null>(null)
+  const layout = LAYOUTS[layoutIdx]
 
-  const allLayouts = useMemo(() => [...PRESETS, ...custom], [custom])
-
-  const addLayout = useCallback(() => {
-    if (!newName.trim()) return
-    const layout: Layout = {
-      id: lid++, name: newName.trim(),
-      zones: [
-        { id: zid++, name: '좌', x: 0, y: 0, w: 50, h: 100, color: T.teal },
-        { id: zid++, name: '우', x: 50, y: 0, w: 50, h: 100, color: T.gold },
-      ],
+  useEffect(() => {
+    const h = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') { onClose(); e.stopPropagation() }
+      if (e.key === 'ArrowRight') setLayoutIdx(i => (i + 1) % LAYOUTS.length)
+      if (e.key === 'ArrowLeft') setLayoutIdx(i => (i - 1 + LAYOUTS.length) % LAYOUTS.length)
     }
-    const next = [...custom, layout]; setCustom(next); saveLayouts(next)
-    setNewName(''); setActive(layout)
-  }, [newName, custom])
+    window.addEventListener('keydown', h, true)
+    return () => window.removeEventListener('keydown', h, true)
+  }, [onClose])
 
-  const removeLayout = useCallback((id: number) => {
-    const next = custom.filter(l => l.id !== id); setCustom(next); saveLayouts(next)
-    if (active?.id === id) setActive(null)
-  }, [custom, active])
+  // Reset selection when layout changes
+  useEffect(() => { setSelectedZone(null) }, [layoutIdx])
 
-  const inputStyle: React.CSSProperties = {
-    padding: '6px 10px', borderRadius: 4, border: `1px solid ${rgba(T.gold, 0.15)}`,
-    background: rgba(T.gold, 0.04), color: rgba(T.fg, 0.9), fontSize: 12, outline: 'none',
+  const toolbarStyle: React.CSSProperties = {
+    position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '8px 16px', borderRadius: 10,
+    background: rgba(T.bg, 0.92),
+    border: `1px solid ${rgba(T.gold, 0.12)}`,
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+    pointerEvents: 'auto', zIndex: 10,
+    fontSize: 10,
   }
 
+  const btnStyle = (active?: boolean): React.CSSProperties => ({
+    padding: '4px 10px', borderRadius: 4, fontSize: 10, cursor: 'pointer',
+    border: `1px solid ${rgba(T.gold, 0.12)}`,
+    background: active ? rgba(T.teal, 0.12) : rgba(T.gold, 0.04),
+    color: active ? T.teal : rgba(T.fg, 0.6),
+    fontWeight: active ? 600 : 400,
+  })
+
   return (
-    <Modal title="Zone" onClose={onClose} asPanel={asPanel}>
-      <div style={{ padding: 20, display: 'flex', gap: 20, height: '100%', overflow: 'hidden' }}>
-        {/* Layout list */}
-        <div style={{ width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10, overflow: 'auto' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: rgba(T.gold, 0.5), letterSpacing: '0.1em' }}>PRESETS</div>
-          {PRESETS.map(l => (
-            <button key={l.id} onClick={() => setActive(l)} style={{
-              padding: '8px 10px', borderRadius: 4, cursor: 'pointer', textAlign: 'left',
-              background: active?.id === l.id ? rgba(T.teal, 0.08) : rgba(T.gold, 0.03),
-              border: `1px solid ${active?.id === l.id ? rgba(T.teal, 0.25) : rgba(T.gold, 0.06)}`,
-              color: active?.id === l.id ? T.teal : rgba(T.fg, 0.7), fontSize: 12, fontWeight: 500,
-            }}>{l.name}</button>
-          ))}
+    <OverlayPortal>
+      {/* Dim background */}
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', pointerEvents: 'none', zIndex: 0 }} />
 
-          {custom.length > 0 && (
-            <>
-              <div style={{ fontSize: 10, fontWeight: 700, color: rgba(T.gold, 0.5), letterSpacing: '0.1em', marginTop: 8 }}>CUSTOM</div>
-              {custom.map(l => (
-                <div key={l.id} style={{ display: 'flex', gap: 4 }}>
-                  <button onClick={() => setActive(l)} style={{
-                    flex: 1, padding: '8px 10px', borderRadius: 4, cursor: 'pointer', textAlign: 'left',
-                    background: active?.id === l.id ? rgba(T.teal, 0.08) : rgba(T.gold, 0.03),
-                    border: `1px solid ${active?.id === l.id ? rgba(T.teal, 0.25) : rgba(T.gold, 0.06)}`,
-                    color: active?.id === l.id ? T.teal : rgba(T.fg, 0.7), fontSize: 12,
-                  }}>{l.name}</button>
-                  <button onClick={() => removeLayout(l.id)} style={{ background: 'none', border: 'none', color: rgba(T.danger, 0.5), cursor: 'pointer', fontSize: 11 }}>x</button>
+      {/* Zone grid overlay */}
+      <div
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest('[data-toolbar]')) return
+        }}
+        style={{ position: 'fixed', inset: 0, pointerEvents: 'auto', zIndex: 1 }}
+      >
+        {layout.zones.map((zone, i) => {
+          const zoneColor = ZONE_COLORS[i % ZONE_COLORS.length]
+          const isSelected = selectedZone === i
+          return (
+            <div
+              key={`${layoutIdx}-${i}`}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest('[data-toolbar]')) return
+                setSelectedZone(prev => prev === i ? null : i)
+              }}
+              style={{
+                position: 'absolute',
+                left: zone.x, top: zone.y, width: zone.w, height: zone.h,
+                border: isSelected ? `3px solid ${zoneColor}` : `2px solid ${rgba(zoneColor, 0.35)}`,
+                background: isSelected ? rgba(zoneColor, 0.12) : rgba(zoneColor, 0.04),
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                boxSizing: 'border-box',
+              }}
+              onMouseEnter={(e) => {
+                if (!isSelected) {
+                  ;(e.currentTarget as HTMLElement).style.background = rgba(zoneColor, 0.08)
+                  ;(e.currentTarget as HTMLElement).style.borderColor = rgba(zoneColor, 0.6)
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSelected) {
+                  ;(e.currentTarget as HTMLElement).style.background = rgba(zoneColor, 0.04)
+                  ;(e.currentTarget as HTMLElement).style.borderColor = rgba(zoneColor, 0.35)
+                }
+              }}
+            >
+              <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
+                <div style={{
+                  fontSize: 18, fontWeight: 700,
+                  color: isSelected ? zoneColor : rgba(zoneColor, 0.6),
+                  textShadow: isSelected ? `0 0 12px ${rgba(zoneColor, 0.3)}` : 'none',
+                }}>
+                  {i + 1}
                 </div>
-              ))}
-            </>
-          )}
-
-          <div style={{ borderTop: `1px solid ${rgba(T.gold, 0.08)}`, paddingTop: 10, display: 'flex', gap: 6, marginTop: 'auto' }}>
-            <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addLayout()} placeholder="새 레이아웃..." style={{ ...inputStyle, flex: 1 }} />
-            <button onClick={addLayout} style={{ padding: '6px 10px', borderRadius: 4, border: `1px solid ${rgba(T.teal, 0.3)}`, background: rgba(T.teal, 0.08), color: T.teal, fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>+</button>
-          </div>
-        </div>
-
-        {/* Preview */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {active ? (
-            <>
-              <div style={{ fontSize: 14, fontWeight: 600, color: rgba(T.fg, 0.8) }}>{active.name}</div>
-              <div style={{ flex: 1, position: 'relative', borderRadius: 6, border: `1px solid ${rgba(T.gold, 0.1)}`, background: 'rgba(0,0,0,0.3)', overflow: 'hidden' }}>
-                {active.zones.map(z => (
-                  <div key={z.id} style={{
-                    position: 'absolute',
-                    left: `${z.x}%`, top: `${z.y}%`, width: `${z.w}%`, height: `${z.h}%`,
-                    border: `1.5px solid ${rgba(z.color, 0.27)}`,
-                    background: rgba(z.color, 0.04),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: rgba(z.color, 0.8) }}>{z.name}</div>
-                      <div style={{ fontSize: 9, color: rgba(T.fg, 0.35), marginTop: 2 }}>
-                        {z.w.toFixed(0)}% x {z.h.toFixed(0)}%
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <div style={{ fontSize: 10, color: rgba(T.fg, 0.35), marginTop: 2 }}>
+                  {zone.w} x {zone.h}
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {active.zones.map(z => (
-                  <div key={z.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 4, background: rgba(T.gold, 0.03), border: `1px solid ${rgba(T.gold, 0.06)}` }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: z.color, opacity: 0.6 }} />
-                    <span style={{ fontSize: 11, color: rgba(T.fg, 0.65) }}>{z.name}</span>
-                    <span style={{ fontSize: 9, color: rgba(T.fg, 0.3) }}>{z.w.toFixed(0)}x{z.h.toFixed(0)}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: rgba(T.fg, 0.25), fontSize: 12 }}>
-              레이아웃을 선택하세요
             </div>
-          )}
-        </div>
+          )
+        })}
       </div>
-    </Modal>
+
+      {/* Floating toolbar */}
+      <div data-toolbar style={toolbarStyle}>
+        <span style={{ fontSize: 10, color: rgba(T.gold, 0.5), fontWeight: 600 }}>Zone</span>
+        <div style={{ width: 1, height: 18, background: rgba(T.gold, 0.15) }} />
+        {LAYOUTS.map((l, i) => (
+          <button
+            key={l.label}
+            onClick={() => setLayoutIdx(i)}
+            style={btnStyle(layoutIdx === i)}
+          >
+            {l.label}
+          </button>
+        ))}
+        <div style={{ width: 1, height: 18, background: rgba(T.gold, 0.15) }} />
+        <span style={{ fontSize: 9, color: rgba(T.fg, 0.3) }}>← → 전환</span>
+        <button onClick={onClose} title="닫기 (Esc)" style={{
+          width: 22, height: 22, borderRadius: 4,
+          border: `1px solid ${rgba(T.danger, 0.2)}`,
+          background: rgba(T.danger, 0.06), color: rgba(T.danger, 0.7),
+          cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>✕</button>
+      </div>
+    </OverlayPortal>
   )
 }

@@ -45,11 +45,29 @@ const TOOL_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentTyp
   zone:         lm(() => import('./ZoneModal')),
 }
 
+/** Fullscreen overlay tools render via OverlayPortal — no modal wrapper needed */
+const FULLSCREEN_TOOLS = new Set(['ruler', 'whiteboard', 'zone', 'notepin'])
+
 interface ToolPanelProps { toolId: string; toolColor: string; toolLabel: string; onBack: () => void }
 
 export default function ToolPanel({ toolId, toolColor, toolLabel, onBack }: ToolPanelProps): React.ReactElement {
   useAppStore()
   const LazyTool = TOOL_REGISTRY[toolId]
+
+  // Fullscreen overlay tools render directly without the modal wrapper
+  if (FULLSCREEN_TOOLS.has(toolId)) {
+    return (
+      <ErrorBoundary key={toolId}>
+        {LazyTool ? (
+          <Suspense fallback={null}><LazyTool onClose={onBack} /></Suspense>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: rgba(T.fg, 0.25), fontSize: 12 }}>
+            알 수 없는 도구: {toolId}
+          </div>
+        )}
+      </ErrorBoundary>
+    )
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex',
