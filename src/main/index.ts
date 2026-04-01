@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, dialog, screen } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, screen, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import log from './logger'
@@ -22,6 +22,7 @@ import { registerScreenCaptureHandlers } from './screenCapture'
 import { initShortcut, registerSettingsHandlers } from './settings'
 import { registerSnippetsHandlers } from './snippets'
 import { registerEmailTemplatesHandlers } from './emailTemplates'
+import { registerPomodoroHandlers } from './pomodoro'
 
 function createWindow(): void {
   const primaryDisplay = screen.getPrimaryDisplay()
@@ -53,6 +54,33 @@ function createWindow(): void {
       nodeIntegration: false
     }
   })
+
+  // ── Content-Security-Policy ───────────────────────────────────────────────
+  // Only applied in production; dev mode allows vite HMR websocket/eval.
+  if (!is.dev) {
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            [
+              "default-src 'self'",
+              "script-src 'self'",
+              // Tailwind/inline styles require unsafe-inline for style-src
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob:",
+              "font-src 'self' data:",
+              // AI provider APIs
+              "connect-src 'self' https://api.openai.com https://api.anthropic.com",
+              "worker-src blob:",
+              "object-src 'none'",
+              "base-uri 'self'",
+            ].join('; '),
+          ],
+        },
+      })
+    })
+  }
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -139,6 +167,7 @@ app.whenReady().then(() => {
   registerSettingsHandlers()
   registerSnippetsHandlers()
   registerEmailTemplatesHandlers()
+  registerPomodoroHandlers()
 
   createWindow()
 

@@ -1,23 +1,41 @@
-import React, { useState } from 'react'
-import SettingsPanel from './SettingsPanel'
-import CadConvertModal from './CadConvertModal'
-import ClipboardModal from './ClipboardModal'
-import TodoModal from './TodoModal'
-import TextToolsModal from './TextToolsModal'
-import PdfToolModal from './PdfToolModal'
-import ExcelToolModal from './ExcelToolModal'
-import TranslateModal from './TranslateModal'
-import AiPanel from './AiPanel'
-import MeetingTimerModal from './MeetingTimerModal'
-import SalaryCalcModal from './SalaryCalcModal'
-import CalculatorModal from './CalculatorModal'
-import DateToolsModal from './DateToolsModal'
-import MemoAlarmModal from './MemoAlarmModal'
-import DocTemplateModal from './DocTemplateModal'
-import FileManagerModal from './FileManagerModal'
-import ImageToolsModal from './ImageToolsModal'
+import React, { lazy, Suspense, useState } from 'react'
 import ErrorBoundary from './ErrorBoundary'
+import ToolSkeleton from './ToolSkeleton'
 import { useAppStore } from '../store/appStore'
+
+// ── 도구 props 공통 인터페이스 ─────────────────────────────
+export interface ToolProps {
+  onClose: () => void
+  asPanel?: boolean
+}
+
+// ── 레이지 레지스트리 — 사용 시점에만 번들 로드 ──────────────
+// Heavy libs(pdf-lib, exceljs, tesseract.js)는 각 도구 모달 내부에서
+// dynamic import()로 로드되므로 초기 렌더러 번들 크기에 영향 없음.
+const TOOL_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentType<ToolProps>>> = {
+  settings:    lazy(() => import('./SettingsPanel').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  ai:          lazy(() => import('./AiPanel').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  todo:        lazy(() => import('./TodoModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  clipboard:   lazy(() => import('./ClipboardModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  memoAlarm:   lazy(() => import('./MemoAlarmModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  docTemplate: lazy(() => import('./DocTemplateModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  meetingTimer:lazy(() => import('./MeetingTimerModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  dateTools:   lazy(() => import('./DateToolsModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  translate:   lazy(() => import('./TranslateModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  salaryCalc:  lazy(() => import('./SalaryCalcModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  calculator:  lazy(() => import('./CalculatorModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  pdfTool:     lazy(() => import('./PdfToolModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  excelTool:   lazy(() => import('./ExcelToolModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  imageTools:  lazy(() => import('./ImageToolsModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  textTools:   lazy(() => import('./TextToolsModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  fileManager: lazy(() => import('./FileManagerModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  cadConvert:  lazy(() => import('./CadConvertModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  pomodoro:    lazy(() => import('./PomodoroModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+  devTools:    lazy(() => import('./DevToolsModal').then(m => ({ default: m.default as React.ComponentType<ToolProps> }))),
+}
+
+// ── folder input 가 필요한 도구 목록 ─────────────────────────
+const FOLDER_TOOLS = new Set(['fileManager'])
 
 interface ToolPanelProps {
   toolId: string
@@ -32,11 +50,10 @@ export default function ToolPanel({
   toolLabel,
   onBack,
 }: ToolPanelProps): React.ReactElement {
-  const { hubColor } = useAppStore()
+  useAppStore()   // subscribe so hubColor changes re-render panel border
   const [folder, setFolder] = useState('')
 
-  const folderTools = ['fileManager']
-  const showFolder = folderTools.includes(toolId)
+  const LazyTool = TOOL_REGISTRY[toolId]
 
   return (
     <div
@@ -77,7 +94,7 @@ export default function ToolPanel({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Panel top bar */}
+        {/* Top bar */}
         <div
           style={{
             height: 48,
@@ -90,31 +107,14 @@ export default function ToolPanel({
             background: `linear-gradient(90deg, ${toolColor}18, transparent)`,
           }}
         >
-          {/* Back button */}
           <button
             onClick={onBack}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              border: '1px solid rgba(255,255,255,0.15)',
-              background: 'rgba(255,255,255,0.06)',
-              color: 'rgba(255,255,255,0.7)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 14,
-              flexShrink: 0,
-              transition: 'background 0.15s ease',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.12)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)' }}
+            className="tool-panel-back-btn"
+            aria-label="뒤로 가기"
           >
             ←
           </button>
 
-          {/* Accent dot + label */}
           <div
             style={{
               width: 8,
@@ -137,8 +137,7 @@ export default function ToolPanel({
             {toolLabel}
           </span>
 
-          {/* Folder input for file tools */}
-          {showFolder && toolId !== 'settings' && (
+          {FOLDER_TOOLS.has(toolId) && (
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <input
                 className="win-input"
@@ -161,27 +160,19 @@ export default function ToolPanel({
           )}
         </div>
 
-        {/* Tool content — ErrorBoundary로 감싸 개별 도구 크래시가 앱 전체에 영향 없도록 */}
-        <ErrorBoundary>
-        <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
-          {toolId === 'settings'      && <SettingsPanel />}
-          {toolId === 'ai'            && <AiPanel          asPanel onClose={onBack} />}
-          {toolId === 'todo'          && <TodoModal        onClose={onBack} asPanel />}
-          {toolId === 'clipboard'     && <ClipboardModal   onClose={onBack} asPanel />}
-          {toolId === 'memoAlarm'     && <MemoAlarmModal   onClose={onBack} asPanel />}
-          {toolId === 'docTemplate'   && <DocTemplateModal onClose={onBack} asPanel />}
-          {toolId === 'meetingTimer'  && <MeetingTimerModal onClose={onBack} asPanel />}
-          {toolId === 'dateTools'     && <DateToolsModal   onClose={onBack} asPanel />}
-          {toolId === 'translate'     && <TranslateModal   onClose={onBack} asPanel />}
-          {toolId === 'salaryCalc'    && <SalaryCalcModal  onClose={onBack} asPanel />}
-          {toolId === 'calculator'    && <CalculatorModal  onClose={onBack} asPanel />}
-          {toolId === 'pdfTool'       && <PdfToolModal     onClose={onBack} asPanel />}
-          {toolId === 'excelTool'     && <ExcelToolModal   onClose={onBack} asPanel />}
-          {toolId === 'imageTools'    && <ImageToolsModal  onClose={onBack} asPanel />}
-          {toolId === 'textTools'     && <TextToolsModal   onClose={onBack} asPanel />}
-          {toolId === 'fileManager'   && <FileManagerModal onClose={onBack} asPanel />}
-          {toolId === 'cadConvert'    && <CadConvertModal  onClose={onBack} asPanel />}
-        </div>
+        {/* Tool content — per-tool ErrorBoundary so one crash won't kill the app */}
+        <ErrorBoundary key={toolId}>
+          <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
+            {LazyTool ? (
+              <Suspense fallback={<ToolSkeleton />}>
+                <LazyTool onClose={onBack} asPanel />
+              </Suspense>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+                알 수 없는 도구: {toolId}
+              </div>
+            )}
+          </div>
         </ErrorBoundary>
       </div>
     </div>

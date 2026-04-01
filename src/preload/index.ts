@@ -205,6 +205,14 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('emailTemplates:delete', id),
   },
 
+  // Pomodoro
+  pomodoro: {
+    getStats: () => ipcRenderer.invoke('pomodoro:getStats'),
+    saveSession: (session: { date: string; completedPomodoros: number; totalFocusMinutes: number }) =>
+      ipcRenderer.invoke('pomodoro:saveSession', session),
+    clearStats: () => ipcRenderer.invoke('pomodoro:clearStats'),
+  },
+
   // AI Assistant
   ai: {
     getConfig: () => ipcRenderer.invoke('ai:getConfig'),
