@@ -23,17 +23,26 @@ async function dxfToSvg(filePath: string): Promise<string> {
   return helper.toSVG()
 }
 
+const PDF_TIMEOUT_MS = 30_000
+
 // SVG → PDF via hidden BrowserWindow + printToPDF
 async function svgToPdf(svgContent: string, outputPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const win = new BrowserWindow({
-      show: false,
-      width: 1200,
-      height: 900,
-      webPreferences: { nodeIntegration: false, contextIsolation: true },
-    })
+  const win = new BrowserWindow({
+    show: false,
+    width: 1200,
+    height: 900,
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  })
 
-    const html = `<!DOCTYPE html>
+  const closeWin = (): void => {
+    if (!win.isDestroyed()) win.close()
+  }
+
+  // timeoutId는 Promise 실행자 내에서 동기적으로 할당되므로
+  // finally가 실행되는 시점에는 반드시 초기화되어 있음
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+  const html = `<!DOCTYPE html>
 <html><head><style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; background: white; }
@@ -42,7 +51,18 @@ async function svgToPdf(svgContent: string, outputPath: string): Promise<void> {
 </style></head>
 <body><div class="wrap">${svgContent}</div></body></html>`
 
-    win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+  const promise = new Promise<void>((resolve, reject) => {
+    let settled = false
+    const doSettle = (fn: () => void): void => {
+      if (settled) return
+      settled = true
+      fn()
+    }
+
+    // loadURL 무응답·printToPDF 행(hang) 모두 포함하는 전체 작업 타임아웃
+    timeoutId = setTimeout(() => {
+      doSettle(() => reject(new Error(`PDF 변환 타임아웃 (${PDF_TIMEOUT_MS / 1000}초 초과)`)))
+    }, PDF_TIMEOUT_MS)
 
     win.webContents.once('did-finish-load', async () => {
       try {
@@ -53,18 +73,23 @@ async function svgToPdf(svgContent: string, outputPath: string): Promise<void> {
           margins: { marginType: 'custom', top: 0, bottom: 0, left: 0, right: 0 },
         })
         fs.writeFileSync(outputPath, pdfBuffer)
-        win.close()
-        resolve()
+        doSettle(() => resolve())
       } catch (e) {
-        win.close()
-        reject(e)
+        doSettle(() => reject(e))
       }
     })
 
     win.webContents.once('did-fail-load', (_, code, desc) => {
-      win.close()
-      reject(new Error(`페이지 로드 실패: ${desc} (${code})`))
+      doSettle(() => reject(new Error(`페이지 로드 실패: ${desc} (${code})`)))
     })
+
+    win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+  })
+
+  // 성공·실패·타임아웃 어느 경로든 win 정리와 타임아웃 해제를 보장
+  return promise.finally(() => {
+    clearTimeout(timeoutId)
+    closeWin()
   })
 }
 

@@ -723,6 +723,124 @@ input[type='range']::-webkit-slider-thumb:hover {
   background: linear-gradient(90deg, transparent, var(--win-accent), transparent);
 }
 
+/* ── Tool Panel Back Button ── */
+.tool-panel-back-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.tool-panel-back-btn:hover { background: rgba(255,255,255,0.12); }
+
+/* ──────────────────────────────────────────
+   Spiral Menu — Overlay Control Buttons
+   ────────────────────────────────────────── */
+
+/* ← › 회전 버튼 */
+.spiral-nav-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid rgba(210,148,50,0.35);
+  background: rgba(18,12,6,0.88);
+  color: rgba(255,200,100,0.8);
+  font-size: 18px; cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.spiral-nav-btn:hover {
+  background: rgba(210,148,50,0.2);
+  border-color: rgba(210,148,50,0.7);
+  color: #ffd080;
+}
+
+/* 전체 기능 보기(⊞) 버튼 */
+.spiral-overview-btn {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1px solid rgba(210,148,50,0.30);
+  background: rgba(18,12,6,0.88);
+  color: rgba(255,200,100,0.65);
+  font-size: 16px; cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  display: flex; align-items: center; justify-content: center;
+  margin-left: 4px;
+}
+.spiral-overview-btn:hover {
+  background: rgba(210,148,50,0.18);
+  border-color: rgba(210,148,50,0.65);
+  color: #ffd080;
+}
+
+/* 전체 목록 닫기(✕) 버튼 */
+.spiral-close-btn {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.35);
+  font-size: 16px; padding: 2px 6px; border-radius: 6px;
+  transition: color 0.12s ease;
+}
+.spiral-close-btn:hover { color: rgba(255,255,255,0.7); }
+
+/* ──────────────────────────────────────────
+   Center Hub — Action Buttons
+   ────────────────────────────────────────── */
+
+/* AI 추천 버튼: dynamic hubColor via CSS custom properties set in JSX */
+.hub-scan-btn {
+  padding: 6px 14px; border-radius: 20px;
+  border: 1px solid var(--hub-scan-border);
+  background: var(--hub-scan-bg);
+  color: var(--hub-scan-color);
+  font-size: 11px; font-weight: 600;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s ease, border-color 0.15s ease;
+  letter-spacing: 0.02em;
+}
+.hub-scan-btn:hover:not(:disabled) {
+  background: var(--hub-scan-bg-hover);
+  border-color: var(--hub-scan-border-hover);
+}
+
+/* 숨기기 버튼 */
+.hub-hide-btn {
+  padding: 6px 12px; border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.4);
+  font-size: 11px; cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.hub-hide-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+}
+
+/* ──────────────────────────────────────────
+   Todo Modal — Interactive Elements
+   ────────────────────────────────────────── */
+
+/* 삭제(✕) · 완료 항목 삭제 버튼: muted → danger */
+.todo-muted-btn {
+  color: var(--win-text-muted);
+  transition: color 0.12s ease;
+}
+.todo-muted-btn:hover { color: var(--win-danger); }
+
+/* 할일 행: surface 테두리 → border-focus on hover */
+.todo-row { border: 1px solid var(--win-surface); }
+.todo-row:hover { border-color: var(--win-border); }
+
+/* 체크박스: hover 시 accent 테두리 (inline borderColor 오버라이드) */
+.todo-checkbox:hover { border-color: var(--win-accent) !important; }
+
+/* 우선순위 토글 버튼 (normal 상태에만 적용) */
+.todo-priority-btn { color: var(--win-text-muted); }
+.todo-priority-btn:hover { color: var(--win-text); }
+
 /* ──────────────────────────────────────────
    Loading Skeleton
    ────────────────────────────────────────── */

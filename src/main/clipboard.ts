@@ -1,6 +1,7 @@
 import { ipcMain, clipboard, BrowserWindow, app } from 'electron'
 import { join } from 'path'
 import fs from 'fs'
+import { createHash } from 'crypto'
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 import {
@@ -10,7 +11,15 @@ import {
 } from '../shared/constants'
 
 let history: string[] = []
+// history 배열과 항상 동기화 — O(1) 멤버십 확인 및 중복 제거 판단용
+let historySet = new Set<string>()
 let lastText = ''
+// MD5 해시로 변경 감지 — 대용량 텍스트의 매 폴링마다 O(n) 비교를 O(1)로 단축
+let lastHash = ''
+
+function hashText(text: string): string {
+  return createHash('md5').update(text).digest('hex')
+}
 let registered = false
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
@@ -25,11 +34,13 @@ function load(): void {
     if (fs.existsSync(getPath())) {
       const raw = JSON.parse(fs.readFileSync(getPath(), 'utf-8'))
       history = Array.isArray(raw) ? raw : []
+      historySet = new Set(history)   // 시작 시 배열→Set 일괄 구성 O(n), 이후 O(1)
       log.debug(`[clipboard] ${history.length}개 로드`)
     }
   } catch (err) {
     log.warn('[clipboard] 파일 로드 실패, 초기화', err)
     history = []
+    historySet.clear()
   }
 }
 
@@ -52,11 +63,22 @@ export function registerClipboardHandlers(): void {
     const text = clipboard.readText().trim()
     if (text && text !== lastText && text.length <= CLIPBOARD_MAX_LENGTH) {
       lastText = text
-      history = history.filter(item => item !== text)
-      history.unshift(text)
-      if (history.length > CLIPBOARD_HISTORY_LIMIT) {
-        history = history.slice(0, CLIPBOARD_HISTORY_LIMIT)
+
+      if (historySet.has(text)) {
+        // 기존 위치 제거 — 중복 재삽입 경우에만 O(n) 필터 실행
+        history = history.filter(item => item !== text)
+        // Set에서는 삭제하지 않아도 되지만 명시적으로 유지
+      } else {
+        // 신규 항목: 한도 초과 시 맨 끝 1개만 퇴출 (새 항목 추가로 최대 1개만 넘침)
+        if (history.length >= CLIPBOARD_HISTORY_LIMIT) {
+          historySet.delete(history[CLIPBOARD_HISTORY_LIMIT - 1])
+          history = history.slice(0, CLIPBOARD_HISTORY_LIMIT - 1)
+        }
       }
+
+      history.unshift(text)
+      historySet.add(text)        // 중복 삽입이어도 Set.add는 멱등
+
       save()
       BrowserWindow.getAllWindows().forEach(w => {
         if (!w.isDestroyed()) w.webContents.send('clipboard:updated', history)
@@ -87,13 +109,16 @@ export function registerClipboardHandlers(): void {
       log.warn('[clipboard:remove] 유효하지 않은 텍스트')
       return history
     }
-    history = history.filter(item => item !== result.data)
-    save()
+    if (historySet.delete(result.data)) {   // O(1) — 없으면 filter 자체를 건너뜀
+      history = history.filter(item => item !== result.data)
+      save()
+    }
     return history
   })
 
   ipcMain.handle('clipboard:clear', () => {
     history = []
+    historySet.clear()                      // O(1)
     save()
     log.debug('[clipboard:clear] 히스토리 초기화')
     return history

@@ -1,8 +1,8 @@
 import { ipcMain, app } from 'electron'
-import fs from 'fs'
 import path from 'path'
 import { z } from 'zod'
 import log from './logger'
+import { readJsonSync, updateJson } from './jsonStore'
 
 interface TagStore {
   [filePath: string]: string[]
@@ -16,31 +16,11 @@ function getTagStorePath(): string {
   return path.join(app.getPath('userData'), 'tags.json')
 }
 
-function loadTags(): TagStore {
-  try {
-    const data = fs.readFileSync(getTagStorePath(), 'utf-8')
-    return JSON.parse(data)
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-      log.warn('[tags] 파일 로드 실패', err)
-    }
-    return {}
-  }
-}
-
-function saveTags(store: TagStore): void {
-  try {
-    fs.writeFileSync(getTagStorePath(), JSON.stringify(store, null, 2), 'utf-8')
-  } catch (err) {
-    log.error('[tags] 파일 저장 실패', err)
-  }
-}
-
 export function registerTagHandlers(): void {
-  ipcMain.handle('tags:get', async (_, rawPath: unknown) => {
+  ipcMain.handle('tags:get', (_, rawPath: unknown) => {
     const result = FilePathSchema.safeParse(rawPath)
     if (!result.success) return []
-    return loadTags()[result.data] ?? []
+    return readJsonSync<TagStore>(getTagStorePath(), {})[result.data] ?? []
   })
 
   ipcMain.handle('tags:set', async (_, rawPath: unknown, rawTags: unknown) => {
@@ -50,20 +30,26 @@ export function registerTagHandlers(): void {
       log.warn('[tags:set] 유효하지 않은 입력')
       return { success: false, error: '유효하지 않은 입력' }
     }
-    const store = loadTags()
-    if (tagsResult.data.length === 0) {
-      delete store[pathResult.data]
-    } else {
-      store[pathResult.data] = tagsResult.data
+    try {
+      await updateJson<TagStore>(getTagStorePath(), {}, (store) => {
+        if (tagsResult.data.length === 0) {
+          delete store[pathResult.data]
+        } else {
+          store[pathResult.data] = tagsResult.data
+        }
+        return store
+      })
+      return { success: true }
+    } catch (err) {
+      log.error('[tags:set] 저장 실패', err)
+      return { success: false, error: String(err) }
     }
-    saveTags(store)
-    return { success: true }
   })
 
-  ipcMain.handle('tags:getAll', async () => loadTags())
+  ipcMain.handle('tags:getAll', () => readJsonSync<TagStore>(getTagStorePath(), {}))
 
-  ipcMain.handle('tags:getAllTags', async () => {
-    const store = loadTags()
+  ipcMain.handle('tags:getAllTags', () => {
+    const store = readJsonSync<TagStore>(getTagStorePath(), {})
     const allTags = new Set<string>()
     for (const tags of Object.values(store)) {
       for (const tag of tags) allTags.add(tag)
@@ -71,10 +57,10 @@ export function registerTagHandlers(): void {
     return Array.from(allTags)
   })
 
-  ipcMain.handle('tags:findByTag', async (_, rawTag: unknown) => {
+  ipcMain.handle('tags:findByTag', (_, rawTag: unknown) => {
     const result = TagSchema.safeParse(rawTag)
     if (!result.success) return []
-    const store = loadTags()
+    const store = readJsonSync<TagStore>(getTagStorePath(), {})
     return Object.entries(store)
       .filter(([, tags]) => tags.includes(result.data))
       .map(([filePath]) => filePath)

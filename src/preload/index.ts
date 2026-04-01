@@ -30,6 +30,16 @@ const api = {
       ipcRenderer.invoke('fs:bulkRename', items),
     folderSize: (dirPath: string) => ipcRenderer.invoke('fs:folderSize', dirPath),
     typeStats: (dirPath: string) => ipcRenderer.invoke('fs:typeStats', dirPath),
+    onFolderSizeProgress: (cb: (scanned: number) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, scanned: number): void => cb(scanned)
+      ipcRenderer.on('fs:folderSize:progress', handler)
+      return () => ipcRenderer.removeListener('fs:folderSize:progress', handler)
+    },
+    onTypeStatsProgress: (cb: (scanned: number) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, scanned: number): void => cb(scanned)
+      ipcRenderer.on('fs:typeStats:progress', handler)
+      return () => ipcRenderer.removeListener('fs:typeStats:progress', handler)
+    },
     open: (filePath: string) => ipcRenderer.invoke('fs:open', filePath),
     showInExplorer: (filePath: string) => ipcRenderer.invoke('fs:showInExplorer', filePath)
   },
@@ -39,8 +49,9 @@ const api = {
     files: (options: unknown) => ipcRenderer.invoke('search:files', options),
     cancel: () => ipcRenderer.send('search:cancel'),
     onProgress: (cb: (count: number) => void) => {
-      ipcRenderer.on('search:progress', (_, count) => cb(count))
-      return () => ipcRenderer.removeAllListeners('search:progress')
+      const handler = (_: Electron.IpcRendererEvent, count: number): void => cb(count)
+      ipcRenderer.on('search:progress', handler)
+      return () => ipcRenderer.removeListener('search:progress', handler)
     }
   },
 
@@ -53,8 +64,9 @@ const api = {
       ipcRenderer.invoke('cadConvert:convert', files, outputDir),
     openPdf: (pdfPath: string) => ipcRenderer.invoke('cadConvert:openPdf', pdfPath),
     onProgress: (cb: (info: { filePath: string; status: string; outputPath?: string; error?: string }) => void) => {
-      ipcRenderer.on('cadConvert:progress', (_, info) => cb(info))
-      return () => ipcRenderer.removeAllListeners('cadConvert:progress')
+      const handler = (_: Electron.IpcRendererEvent, info: { filePath: string; status: string; outputPath?: string; error?: string }): void => cb(info)
+      ipcRenderer.on('cadConvert:progress', handler)
+      return () => ipcRenderer.removeListener('cadConvert:progress', handler)
     }
   },
 
@@ -109,8 +121,9 @@ const api = {
     remove: (text: string) => ipcRenderer.invoke('clipboard:remove', text),
     clear: () => ipcRenderer.invoke('clipboard:clear'),
     onUpdated: (cb: (history: string[]) => void) => {
-      ipcRenderer.on('clipboard:updated', (_, h) => cb(h))
-      return () => ipcRenderer.removeAllListeners('clipboard:updated')
+      const handler = (_: Electron.IpcRendererEvent, h: string[]): void => cb(h)
+      ipcRenderer.on('clipboard:updated', handler)
+      return () => ipcRenderer.removeListener('clipboard:updated', handler)
     }
   },
 
@@ -192,6 +205,14 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke('emailTemplates:delete', id),
   },
 
+  // Pomodoro
+  pomodoro: {
+    getStats: () => ipcRenderer.invoke('pomodoro:getStats'),
+    saveSession: (session: { date: string; completedPomodoros: number; totalFocusMinutes: number }) =>
+      ipcRenderer.invoke('pomodoro:saveSession', session),
+    clearStats: () => ipcRenderer.invoke('pomodoro:clearStats'),
+  },
+
   // AI Assistant
   ai: {
     getConfig: () => ipcRenderer.invoke('ai:getConfig'),
@@ -201,16 +222,19 @@ const api = {
     chat: (messages: { role: string; content: string }[]) => ipcRenderer.invoke('ai:chat', messages),
     cancel: () => ipcRenderer.invoke('ai:cancel'),
     onChunk: (cb: (text: string) => void) => {
-      ipcRenderer.on('ai:chunk', (_, text) => cb(text))
-      return () => ipcRenderer.removeAllListeners('ai:chunk')
+      const handler = (_: Electron.IpcRendererEvent, text: string): void => cb(text)
+      ipcRenderer.on('ai:chunk', handler)
+      return () => ipcRenderer.removeListener('ai:chunk', handler)
     },
     onDone: (cb: () => void) => {
-      ipcRenderer.on('ai:done', () => cb())
-      return () => ipcRenderer.removeAllListeners('ai:done')
+      const handler = (): void => cb()
+      ipcRenderer.on('ai:done', handler)
+      return () => ipcRenderer.removeListener('ai:done', handler)
     },
     onError: (cb: (msg: string) => void) => {
-      ipcRenderer.on('ai:error', (_, msg) => cb(msg))
-      return () => ipcRenderer.removeAllListeners('ai:error')
+      const handler = (_: Electron.IpcRendererEvent, msg: string): void => cb(msg)
+      ipcRenderer.on('ai:error', handler)
+      return () => ipcRenderer.removeListener('ai:error', handler)
     }
   }
 }

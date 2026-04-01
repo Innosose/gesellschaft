@@ -1,8 +1,8 @@
 import { ipcMain, app } from 'electron'
 import { join } from 'path'
-import fs from 'fs'
 import { z } from 'zod'
 import log from './logger'
+import { readJsonSync, writeJsonLocked } from './jsonStore'
 
 export interface Snippet {
   id: string
@@ -28,21 +28,14 @@ function getPath(): string {
 }
 
 function load(): void {
-  try {
-    if (fs.existsSync(getPath())) {
-      const raw = JSON.parse(fs.readFileSync(getPath(), 'utf-8'))
-      snippets = Array.isArray(raw) ? raw : []
-      log.debug(`[snippets] ${snippets.length}개 로드`)
-    }
-  } catch (err) {
-    log.warn('[snippets] 파일 로드 실패, 초기화', err)
-    snippets = []
-  }
+  const raw = readJsonSync<unknown>(getPath(), [])
+  snippets = Array.isArray(raw) ? raw : []
+  log.debug(`[snippets] ${snippets.length}개 로드`)
 }
 
-function save(): void {
+async function save(): Promise<void> {
   try {
-    fs.writeFileSync(getPath(), JSON.stringify(snippets), 'utf-8')
+    await writeJsonLocked(getPath(), snippets)
   } catch (err) {
     log.error('[snippets] 파일 저장 실패', err)
   }
@@ -53,7 +46,7 @@ export function registerSnippetsHandlers(): void {
 
   ipcMain.handle('snippets:get', () => snippets)
 
-  ipcMain.handle('snippets:save', (_, raw: unknown) => {
+  ipcMain.handle('snippets:save', async (_, raw: unknown) => {
     const result = SnippetSaveSchema.safeParse(raw)
     if (!result.success) {
       log.warn('[snippets:save] 유효하지 않은 입력', result.error.flatten())
@@ -72,15 +65,15 @@ export function registerSnippetsHandlers(): void {
         createdAt: Date.now(),
       })
     }
-    save()
+    await save()
     return snippets
   })
 
-  ipcMain.handle('snippets:delete', (_, raw: unknown) => {
+  ipcMain.handle('snippets:delete', async (_, raw: unknown) => {
     const result = SnippetIdSchema.safeParse(raw)
     if (!result.success) return snippets
     snippets = snippets.filter(s => s.id !== result.data)
-    save()
+    await save()
     log.debug(`[snippets:delete] id=${result.data}`)
     return snippets
   })

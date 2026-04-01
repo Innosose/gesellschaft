@@ -35,6 +35,9 @@ export const ALL_TOOLS: ToolDef[] = [
   // ─── 파일 관리 ────────────────────────────────
   { id: 'fileManager',  icon: '📂', label: '파일 관리',     color: '#0078d4', description: '파일 검색·일괄 이름 변경·폴더 비교 통합' },
   { id: 'cadConvert',   icon: '📐', label: 'CAD → PDF',     color: '#8764b8', description: 'DWG/DXF CAD 도면을 PDF로 변환' },
+  // ─── 생산성 ──────────────────────────────────
+  { id: 'pomodoro',    icon: '🍅', label: '포모도로',       color: '#e74c3c', description: '25분 집중/5분 휴식 포모도로 타이머와 통계' },
+  { id: 'devTools',    icon: '🛠️', label: '개발자 도구',    color: '#00bcd4', description: 'JSON·Base64·URL·해시·JWT·타임스탬프 유틸리티' },
 ]
 
 /** id → description 매핑 (screenCapture 등에서 사용) */
@@ -60,7 +63,7 @@ export const DEFAULT_ANIM_SPEED     = 'normal' as const
 /** 클립보드 히스토리 최대 보관 개수 */
 export const CLIPBOARD_HISTORY_LIMIT = 50
 /** 클립보드 폴링 간격 (ms) */
-export const CLIPBOARD_POLL_INTERVAL = 1000
+export const CLIPBOARD_POLL_INTERVAL = 500
 /** 리마인더 확인 주기 (ms) */
 export const REMINDER_CHECK_INTERVAL = 60 * 1000
 /** 클립보드 항목 최대 길이 */

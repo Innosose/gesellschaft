@@ -1,9 +1,9 @@
 import { ipcMain, app } from 'electron'
 import { join } from 'path'
-import fs from 'fs'
 import { z } from 'zod'
 import log from './logger'
 import { QUICK_NOTE_COLORS } from '../shared/constants'
+import { readJsonSync, writeJsonLocked } from './jsonStore'
 
 export interface QuickNote {
   id: string
@@ -29,21 +29,14 @@ function getPath(): string {
 }
 
 function load(): void {
-  try {
-    if (fs.existsSync(getPath())) {
-      const raw = JSON.parse(fs.readFileSync(getPath(), 'utf-8'))
-      notes = Array.isArray(raw) ? raw : []
-      log.debug(`[quickNotes] ${notes.length}개 로드`)
-    }
-  } catch (err) {
-    log.warn('[quickNotes] 파일 로드 실패, 초기화', err)
-    notes = []
-  }
+  const raw = readJsonSync<unknown>(getPath(), [])
+  notes = Array.isArray(raw) ? raw : []
+  log.debug(`[quickNotes] ${notes.length}개 로드`)
 }
 
-function save(): void {
+async function save(): Promise<void> {
   try {
-    fs.writeFileSync(getPath(), JSON.stringify(notes), 'utf-8')
+    await writeJsonLocked(getPath(), notes)
   } catch (err) {
     log.error('[quickNotes] 파일 저장 실패', err)
   }
@@ -54,7 +47,7 @@ export function registerQuickNotesHandlers(): void {
 
   ipcMain.handle('quickNotes:get', () => notes)
 
-  ipcMain.handle('quickNotes:save', (_, raw: unknown) => {
+  ipcMain.handle('quickNotes:save', async (_, raw: unknown) => {
     const result = QuickNoteSaveSchema.safeParse(raw)
     if (!result.success) {
       log.warn('[quickNotes:save] 유효하지 않은 입력', result.error.flatten())
@@ -67,25 +60,25 @@ export function registerQuickNotesHandlers(): void {
     } else {
       const colorIdx = notes.length % QUICK_NOTE_COLORS.length
       notes.unshift({
-        id:        Date.now().toString(),
+        id:        `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         title:     note.title   ?? '',
         content:   note.content ?? '',
         color:     note.color   ?? QUICK_NOTE_COLORS[colorIdx],
         updatedAt: Date.now(),
       })
     }
-    save()
+    await save()
     return notes
   })
 
-  ipcMain.handle('quickNotes:delete', (_, raw: unknown) => {
+  ipcMain.handle('quickNotes:delete', async (_, raw: unknown) => {
     const result = QuickNoteIdSchema.safeParse(raw)
     if (!result.success) {
       log.warn('[quickNotes:delete] 유효하지 않은 id')
       return { success: false, error: '유효하지 않은 id' }
     }
     notes = notes.filter(n => n.id !== result.data)
-    save()
+    await save()
     log.debug(`[quickNotes:delete] id=${result.data}`)
     return notes
   })
