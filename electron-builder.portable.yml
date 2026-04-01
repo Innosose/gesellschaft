@@ -1,0 +1,28 @@
+appId: com.gesellschaft.app
+productName: 게젤샤프트
+directories:
+  output: dist/portable
+files:
+  - out/**/*
+win:
+  icon: resources/icon.ico
+  target:
+    - target: portable
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+portable:
+  artifactName: 게젤샤프트-포터블-${version}-${arch}.exe
+  unpackDirName: 게젤샤프트
+linux:
+  icon: resources/icon_256.png
+  category: Utility
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
