@@ -324,13 +324,15 @@ export default function App(): React.ReactElement {
         </div>
       )}
 
-      {/* Top controls */}
+      {/* Top controls — hidden in hub state */}
+      {uiState !== 'hub' && <>
       <button onClick={handleOpenSettings} title="설정"
         style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top, 14px))', right: 60, zIndex: 100,
           width: 40, height: 40, borderRadius: 20, border: 'none',
           background: rgba(T.fg, 0.08), backdropFilter: 'blur(20px)',
           color: rgba(T.fg, 0.6), cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease',
         }}>
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
           <circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4"/>
@@ -342,11 +344,13 @@ export default function App(): React.ReactElement {
           background: rgba(T.fg, 0.08), backdropFilter: 'blur(20px)',
           color: rgba(T.fg, 0.6), cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease',
         }}>
         <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/>
         </svg>
       </button>
+      </>}
 
       {/* Portal mount point for fullscreen overlay tools */}
       <div id="overlay-portal" style={{ position: 'fixed', inset: 0, zIndex: 200, pointerEvents: 'none' }} />
