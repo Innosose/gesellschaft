@@ -240,6 +240,9 @@ function useTypewriter(text: string, active: boolean, speed = 30, delay = 500): 
   return displayed
 }
 
+/** True on touch-primary devices (phones/tablets) — disables hover-open card animation */
+const IS_TOUCH = typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches
+
 const FanCard = memo(function FanCard({
   tool, slotIndex, total, radius, arcCenterX, arcCenterY,
   isFavorite, isCenter, animDuration, staggerMs, cardW, cardH, onSelect, onRotateTo,
@@ -271,7 +274,7 @@ const FanCard = memo(function FanCard({
   const enterDelay = slotIndex * staggerMs
 
   return (
-    <div role="button" tabIndex={0} aria-label={tool.label} onClick={handleClick} onKeyDown={e => e.key === 'Enter' && handleClick()} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+    <div role="button" tabIndex={0} aria-label={tool.label} onClick={handleClick} onKeyDown={e => e.key === 'Enter' && handleClick()} onMouseEnter={IS_TOUCH ? undefined : () => setHovered(true)} onMouseLeave={IS_TOUCH ? undefined : () => setHovered(false)}
       style={{
         position: 'fixed',
         left: x - cardW / 2,
@@ -488,7 +491,7 @@ const FanCard = memo(function FanCard({
       </div>
       )})()}
 
-      {hovered && !isCenter && tool.description && (
+      {hovered && !IS_TOUCH && !isCenter && tool.description && (
         <div style={{
           position: 'absolute', bottom: -28, left: '50%', transform: 'translateX(-50%)',
           padding: '4px 10px', borderRadius: 4, fontSize: 10,
@@ -675,7 +678,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
       ))}
 
       <div style={{
-        position: 'fixed', bottom: 'clamp(120px, 16vh, 180px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
+        position: 'fixed', bottom: 'clamp(140px, 18vh, 190px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
