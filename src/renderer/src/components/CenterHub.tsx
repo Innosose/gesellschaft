@@ -173,7 +173,10 @@ export default memo(function CenterHub({
   isOpen, scanning, hubColor, hubSize,
   onClick, onScan,
 }: CenterHubProps): React.ReactElement {
-  const actualSize = isOpen ? hubSize * HUB_OPEN_SCALE : hubSize
+  // Scale down hub on small screens to prevent overflow
+  const isMobileView = typeof window !== 'undefined' && window.innerWidth <= 768
+  const effectiveHubSize = isMobileView ? Math.min(hubSize, 110) : hubSize
+  const actualSize = isOpen ? effectiveHubSize * HUB_OPEN_SCALE : effectiveHubSize
   const currentThemeData = useTheme()
   const t = useTokens()
   const gold = t.gold

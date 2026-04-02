@@ -13,10 +13,14 @@ interface SpiralMenuProps {
 
 const ANIM_MS: Record<string, number> = { slow: 600, normal: 350, fast: 180, none: 0 }
 const STAGGER_MS: Record<string, number> = { slow: 50, normal: 30, fast: 12, none: 0 }
-/* Responsive card size — scales with viewport */
+/* Responsive card size — scales with viewport, smaller on mobile */
 function getCardSize(vw: number, vh: number): { w: number; h: number } {
   const ar = getCurrentTheme().shape.aspectRatio
-  const w = Math.round(Math.min(Math.max(vw * 0.085, 90), 150))
+  const isMobile = vw <= 768
+  const minW = isMobile ? 64 : 90
+  const maxW = isMobile ? 100 : 150
+  const factor = isMobile ? 0.12 : 0.085
+  const w = Math.round(Math.min(Math.max(vw * factor, minW), maxW))
   const h = Math.round(w / ar)
   return { w, h }
 }
@@ -46,7 +50,11 @@ function addRecentTool(id: string): void { const p = getRecentTools().filter(x =
 const FAV_KEY = 'gs-favorites'
 function getFavorites(): string[] { try { return JSON.parse(localStorage.getItem(FAV_KEY) ?? '[]') } catch { return [] } }
 function toggleFavorite(id: string): string[] { const f = getFavorites(); const next = f.includes(id) ? f.filter(x => x !== id) : [...f, id]; localStorage.setItem(FAV_KEY, JSON.stringify(next)); return next }
-function getArcParams(vw: number, vh: number, scale: number) { const r = Math.min(vh * 0.62 * scale, 820); return { radius: r, arcCenterX: vw / 2, arcCenterY: vh * 0.55 + r } }
+function getArcParams(vw: number, vh: number, scale: number) {
+  const isMobile = vw <= 768
+  const r = isMobile ? Math.min(vh * 0.52 * scale, 500) : Math.min(vh * 0.62 * scale, 820)
+  return { radius: r, arcCenterX: vw / 2, arcCenterY: (isMobile ? vh * 0.50 : vh * 0.55) + r }
+}
 function cardPosition(deg: number, r: number, cx: number, cy: number) { const rad = (deg * Math.PI) / 180; return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) } }
 
 // ═══════════════════════════════════════════════
@@ -620,13 +628,28 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
   useEffect(() => { if (isSearching || showOverview) return; const h = (e: KeyboardEvent): void => { if (e.key === 'ArrowLeft') rotate(-1); else if (e.key === 'ArrowRight') rotate(1); else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); setShowOverview(s => !s) } else if (e.key === 'Home') { e.preventDefault(); setCenterIdx(0) } else if (e.key === 'End') { e.preventDefault(); setCenterIdx(tools.length - 1) } }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h) }, [rotate, isSearching, showOverview, tools.length])
   useEffect(() => { if (isSearching || showOverview) return; const h = (e: WheelEvent): void => { if (wheelCooldown.current) return; wheelCooldown.current = true; rotate(e.deltaY > 0 ? 1 : -1); setTimeout(() => { wheelCooldown.current = false }, 250) }; window.addEventListener('wheel', h, { passive: true }); return () => window.removeEventListener('wheel', h) }, [rotate, isSearching, showOverview])
 
+  // Touch swipe to rotate cards on mobile
+  const touchStartX = useRef(0)
+  useEffect(() => {
+    if (isSearching || showOverview) return
+    const onStart = (e: TouchEvent): void => { touchStartX.current = e.touches[0].clientX }
+    const onEnd = (e: TouchEvent): void => {
+      const dx = e.changedTouches[0].clientX - touchStartX.current
+      if (Math.abs(dx) > 40) rotate(dx < 0 ? 1 : -1)
+    }
+    window.addEventListener('touchstart', onStart, { passive: true })
+    window.addEventListener('touchend', onEnd, { passive: true })
+    return () => { window.removeEventListener('touchstart', onStart); window.removeEventListener('touchend', onEnd) }
+  }, [rotate, isSearching, showOverview])
+
   const handleSelect = useCallback((id: string) => { addRecentTool(id); setRecentIds(getRecentTools()); onSelectTool(id) }, [onSelectTool])
   const handleToggleFav = useCallback((id: string) => { setFavoriteIds(toggleFavorite(id)) }, [])
   const centerToolLabel = slotTools[Math.floor(slotTools.length / 2)]?.label ?? ''
 
   if (isSearching) return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15, pointerEvents: 'none' }}>
-      <div style={{ pointerEvents: 'auto', width: 'min(420px, 85vw)', maxHeight: '60vh', overflowY: 'auto',
+      <div style={{ pointerEvents: 'auto', width: 'min(420px, 92vw)', maxHeight: '65vh', overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
         background: rgba(T.bg, 0.98), backdropFilter: 'blur(32px)',
         borderRadius: 6, border: `1px solid ${rgba(getGOLD(), 0.1)}`,
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)', padding: 10,
@@ -652,7 +675,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
       ))}
 
       <div style={{
-        position: 'fixed', bottom: 'clamp(100px, 14vh, 160px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
+        position: 'fixed', bottom: 'clamp(120px, 16vh, 180px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>

@@ -78,7 +78,12 @@ button {
 }
 
 html, body {
-  background: transparent !important;
+  background: transparent;
+}
+
+/* Web mode: fill safe area with dark background instead of white */
+html.web-mode, html.web-mode body {
+  background: #0a0804 !important;
 }
 
 body {
@@ -89,6 +94,9 @@ body {
   overflow: hidden;
   user-select: none;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 input, textarea {
@@ -1049,4 +1057,60 @@ input[type='range']::-webkit-slider-thumb:active {
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: var(--win-radius-xs);
+}
+
+/* ──────────────────────────────────────────
+   Responsive — Mobile & Tablet
+   ────────────────────────────────────────── */
+
+/* Touch device: enlarge touch targets, disable hover-only effects */
+@media (hover: none) and (pointer: coarse) {
+  .app-top-btn { width: 40px; height: 40px; }
+  .win-btn { min-height: 44px; }
+  .win-tab { min-height: 40px; padding: 8px 12px; }
+  .win-input, .win-textarea, .win-select { font-size: 16px; padding: 10px 12px; }
+  input, textarea { font-size: 16px !important; }
+  .tool-card::after { display: none; }
+  .tool-card:hover { border-color: inherit !important; background: inherit !important; box-shadow: none !important; }
+  .tool-card:active { opacity: 0.7; }
+}
+
+/* Mobile portrait (phones) */
+@media (max-width: 640px) {
+  :root {
+    --fs-caption: 9px;
+    --fs-label: 10px;
+    --fs-body: 13px;
+    --fs-subhead: 14px;
+    --fs-heading: 16px;
+    --fs-title: 18px;
+    --fs-display: 22px;
+    --sp-lg: 12px;
+    --sp-xl: 16px;
+    --sp-2xl: 20px;
+    --sp-3xl: 28px;
+  }
+  .panel-header { padding: 0 12px; height: 38px; font-size: 13px; }
+  .modal-header { padding: 8px 12px; }
+  .app-top-btn { width: 36px; height: 36px; }
+}
+
+/* Tablet portrait */
+@media (min-width: 641px) and (max-width: 1024px) {
+  :root {
+    --fs-title: 20px;
+    --fs-display: 24px;
+  }
+}
+
+/* Standalone PWA / fullscreen browser on iOS */
+@media (display-mode: standalone) {
+  html { padding-top: env(safe-area-inset-top); }
+}
+
+/* iOS viewport height fix (dvh) */
+@supports (height: 100dvh) {
+  html, body, #root {
+    height: 100dvh;
+  }
 }

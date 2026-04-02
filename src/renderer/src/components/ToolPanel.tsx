@@ -3,7 +3,7 @@
  * Tool component registry below (TOOL_REGISTRY)
  * To add a new tool: 1) Add to ALL_TOOLS  2) Add lazy import to TOOL_REGISTRY
  */
-import React, { lazy, Suspense } from 'react'
+import React, { lazy, Suspense, useSyncExternalStore } from 'react'
 import ErrorBoundary from './ErrorBoundary'
 import ToolSkeleton from './ToolSkeleton'
 import { useAppStore } from '../store/appStore'
@@ -48,10 +48,20 @@ const TOOL_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentTyp
 /** Fullscreen overlay tools render via OverlayPortal — no modal wrapper needed */
 const FULLSCREEN_TOOLS = new Set(['ruler', 'whiteboard', 'zone', 'notepin'])
 
+/** Reactive mobile check */
+const MOBILE_MQ = typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)') : null
+function useMobile(): boolean {
+  return useSyncExternalStore(
+    (cb) => { MOBILE_MQ?.addEventListener('change', cb); return () => MOBILE_MQ?.removeEventListener('change', cb) },
+    () => MOBILE_MQ?.matches ?? false,
+  )
+}
+
 interface ToolPanelProps { toolId: string; toolColor: string; toolLabel: string; onBack: () => void }
 
 export default function ToolPanel({ toolId, toolColor, toolLabel, onBack }: ToolPanelProps): React.ReactElement {
   useAppStore()
+  const isMobile = useMobile()
   const LazyTool = TOOL_REGISTRY[toolId]
 
   // Fullscreen overlay tools render directly without the modal wrapper
@@ -72,11 +82,19 @@ export default function ToolPanel({ toolId, toolColor, toolLabel, onBack }: Tool
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex',
       animation: 'panelSlideIn 0.28s cubic-bezier(0.2,0,0,1) both' }}>
-      <div style={{ position: 'absolute', inset: 0, background: rgba(T.bg, 0.94), backdropFilter: 'blur(40px)' }}
-        aria-label="닫기" role="button" tabIndex={-1}
-        onClick={onBack} />
-      <div style={{
-        position: 'relative', margin: 'auto', width: 'clamp(600px, 84vw, 84vh * 16 / 9)', maxWidth: 1200, aspectRatio: '16 / 9',
+      {!isMobile && (
+        <div style={{ position: 'absolute', inset: 0, background: rgba(T.bg, 0.94), backdropFilter: 'blur(40px)' }}
+          aria-label="닫기" role="button" tabIndex={-1}
+          onClick={onBack} />
+      )}
+      <div style={isMobile ? {
+        position: 'absolute', inset: 0,
+        background: rgba(T.bg, 0.98),
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      } : {
+        position: 'relative', margin: 'auto',
+        width: 'clamp(600px, 84vw, 84vh * 16 / 9)', maxWidth: 1200,
+        aspectRatio: '16 / 9',
         borderRadius: 6, border: `1px solid ${T.gold10}`,
         background: rgba(T.bg, 0.98),
         boxShadow: `0 0 40px ${rgba(T.gold, 0.03)}, 0 32px 80px rgba(0,0,0,0.6)`,
