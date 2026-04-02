@@ -221,8 +221,7 @@ export default function App(): React.ReactElement {
         }) : undefined}
         onClick={handleBackdropClick} />
 
-      {/* Floating particles — theme-driven, memoized to avoid re-renders from App state */}
-      {uiState === 'menu' && <Particles theme={theme} />}
+      {/* Particles disabled */}
 
       {uiState !== 'tool' && (
         <CenterHub key={theme.id} isOpen={uiState === 'menu'} scanning={scanning}
@@ -233,7 +232,7 @@ export default function App(): React.ReactElement {
       {uiState === 'menu' && (
         <SpiralMenu tools={ALL_TOOLS}
           spiralScale={spiralScale} animSpeed={animSpeed}
-          onSelectTool={handleMenuSelect} />
+          onSelectTool={handleMenuSelect} onOpenSettings={handleOpenSettings} />
       )}
 
       {/* AI Recommendation overlay */}
