@@ -2,7 +2,7 @@ name: Deploy Web Version to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/create-web-version-XXe7q]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
