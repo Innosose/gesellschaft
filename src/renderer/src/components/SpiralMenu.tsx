@@ -17,9 +17,9 @@ const STAGGER_MS: Record<string, number> = { slow: 50, normal: 30, fast: 12, non
 function getCardSize(vw: number, vh: number): { w: number; h: number } {
   const ar = getCurrentTheme().shape.aspectRatio
   const isMobile = vw <= 768
-  const minW = isMobile ? 64 : 90
-  const maxW = isMobile ? 100 : 150
-  const factor = isMobile ? 0.12 : 0.085
+  const minW = isMobile ? 90 : 90
+  const maxW = isMobile ? 130 : 150
+  const factor = isMobile ? 0.18 : 0.085
   const w = Math.round(Math.min(Math.max(vw * factor, minW), maxW))
   const h = Math.round(w / ar)
   return { w, h }
@@ -416,12 +416,12 @@ const FanCard = memo(function FanCard({
         {/* Title — editorial book cover layout, padding adapts to clipPath */}
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-          padding: cp?.includes('50% 0%') ? '22% 18%'  /* hexagon */
-            : cp ? '12% 14%'                            /* octagon */
-            : br === '50%' ? '24% 16%'                  /* circle */
-            : br.includes('/') ? '20% 16%'              /* blob */
-            : br.includes('40%') ? '18% 14%'            /* leaf */
-            : isCenter ? '20px 20px' : '16px 14px',     /* mild rounding */
+          padding: cp?.includes('50% 0%') ? '18% 10%'  /* hexagon */
+            : cp ? '10% 8%'                              /* octagon */
+            : br === '50%' ? '20% 10%'                   /* circle */
+            : br.includes('/') ? '16% 10%'               /* blob */
+            : br.includes('40%') ? '14% 8%'              /* leaf */
+            : isCenter ? '12px 8px' : '10px 6px',        /* mild rounding */
           position: 'relative', zIndex: 1, gap: isCenter ? 8 : 6,
         }}>
           {/* Top ornament line */}
@@ -444,34 +444,36 @@ const FanCard = memo(function FanCard({
 
             if (isSingleWord) {
               return (
-                <div style={{ textAlign: 'center', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2 }}>
+                <div style={{ textAlign: 'center', display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, maxWidth: '100%', overflow: 'hidden' }}>
                   <span style={{
                     fontFamily: font, fontSize: capSize, fontWeight: 900, color: capColor,
-                    lineHeight: 1.1, letterSpacing: '0.06em',
+                    lineHeight: 1.1, letterSpacing: '0.02em',
                     textShadow: isCenter ? `0 0 14px ${rgba(getGOLD(), 0.3)}` : 'none',
                   }}>{label[0]}</span>
                   <span style={{
                     fontFamily: font, fontSize: restSize, fontWeight: 700, color: titleColor,
-                    textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: 1.3,
+                    textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.3,
                     textShadow: isCenter ? `0 0 8px ${rgba(getTEAL(), 0.15)}` : 'none',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>{label.slice(1)}</span>
                 </div>
               )
             }
 
             return (
-              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, maxWidth: '100%', overflow: 'hidden' }}>
                 {words.map((word, wi) => (
-                  <span key={wi} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1 }}>
+                  <span key={wi} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 1, maxWidth: '100%' }}>
                     <span style={{
                       fontFamily: font, fontSize: wi === 0 ? capSize : capSize * 0.7, fontWeight: 900, color: capColor,
-                      lineHeight: 1.1, letterSpacing: '0.06em',
+                      lineHeight: 1.1, letterSpacing: '0.02em', flexShrink: 0,
                       textShadow: isCenter ? `0 0 14px ${rgba(getGOLD(), 0.3)}` : 'none',
                     }}>{word[0]}</span>
                     <span style={{
                       fontFamily: font, fontSize: restSize, fontWeight: 700, color: titleColor,
-                      textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: 1.3,
+                      textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.3,
                       textShadow: isCenter ? `0 0 8px ${rgba(getTEAL(), 0.15)}` : 'none',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>{word.slice(1)}</span>
                   </span>
                 ))}
@@ -689,23 +691,22 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button onClick={() => rotate(-1)} className="spiral-nav-btn" aria-label="이전 도구" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M6 2L3 5l3 3"/></svg>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: rgba(T.fg, 0.06), borderRadius: 22, padding: '4px', backdropFilter: 'blur(20px)' }}>
+          <button onClick={() => rotate(-1)} aria-label="이전 도구" style={{ width: 40, height: 40, borderRadius: 20, border: 'none', background: rgba(T.fg, 0.06), color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2L3 5l3 3"/></svg>
           </button>
           <div style={{
-            fontSize: 11, fontWeight: 500, color: rgba(getGOLD(), 0.7),
-            background: rgba(T.bg, 0.9), border: `1px solid ${rgba(getGOLD(), 0.1)}`,
-            borderRadius: 4, padding: '4px 14px', backdropFilter: 'blur(16px)',
-            minWidth: 100, textAlign: 'center', letterSpacing: '0.06em',
+            fontSize: 13, fontWeight: 500, color: rgba(T.fg, 0.85),
+            padding: '0 16px',
+            minWidth: 100, textAlign: 'center',
             fontFamily: getCurrentTheme().titleFont, textTransform: 'uppercase',
-            lineHeight: 1.4, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1.4,
           }}>{centerToolLabel}</div>
-          <button onClick={() => rotate(1)} className="spiral-nav-btn" aria-label="다음 도구" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M4 2l3 3-3 3"/></svg>
+          <button onClick={() => rotate(1)} aria-label="다음 도구" style={{ width: 40, height: 40, borderRadius: 20, border: 'none', background: rgba(T.fg, 0.06), color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 2l3 3-3 3"/></svg>
           </button>
-          <button onClick={() => setShowOverview(true)} title="전체" aria-label="전체 보기" className="spiral-overview-btn" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1"><rect x="1" y="1" width="3.5" height="3.5"/><rect x="5.5" y="1" width="3.5" height="3.5"/><rect x="1" y="5.5" width="3.5" height="3.5"/><rect x="5.5" y="5.5" width="3.5" height="3.5"/></svg>
+          <button onClick={() => setShowOverview(true)} title="전체" aria-label="전체 보기" style={{ width: 40, height: 40, borderRadius: 20, border: 'none', background: rgba(T.fg, 0.06), color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1"><rect x="1" y="1" width="3.5" height="3.5"/><rect x="5.5" y="1" width="3.5" height="3.5"/><rect x="1" y="5.5" width="3.5" height="3.5"/><rect x="5.5" y="5.5" width="3.5" height="3.5"/></svg>
           </button>
         </div>
       </div>

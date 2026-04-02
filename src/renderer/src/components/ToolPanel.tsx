@@ -95,28 +95,27 @@ export default function ToolPanel({ toolId, toolColor, toolLabel, onBack }: Tool
         position: 'relative', margin: 'auto',
         width: 'clamp(600px, 84vw, 84vh * 16 / 9)', maxWidth: 1200,
         aspectRatio: '16 / 9',
-        borderRadius: 6, border: `1px solid ${T.gold10}`,
+        borderRadius: 20, border: 'none',
         background: rgba(T.bg, 0.98),
-        boxShadow: `0 0 40px ${rgba(T.gold, 0.03)}, 0 32px 80px rgba(0,0,0,0.6)`,
+        boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }} onClick={e => e.stopPropagation()}>
         <div style={{
-          height: 'clamp(40px, 4vh, 52px)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 'clamp(6px, 0.8vw, 12px)', padding: '0 clamp(12px, 1.5vw, 20px)',
-          borderBottom: `1px solid ${T.gold06}`,
-          background: `linear-gradient(90deg, ${rgba(T.gold, 0.08)}, transparent 30%, transparent 70%, ${rgba(T.gold, 0.08)})`,
+          height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
+          borderBottom: `1px solid ${rgba(T.fg, 0.06)}`,
         }}>
           <button onClick={onBack} style={{
-            minWidth: 44, minHeight: 44, width: 44, height: 44, borderRadius: 4,
-            border: `1px solid ${T.gold10}`, background: rgba(T.gold, 0.04),
-            color: rgba(T.gold, 0.6), cursor: 'pointer', display: 'flex',
+            width: 36, height: 36, borderRadius: 18,
+            border: 'none', background: rgba(T.fg, 0.06),
+            color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex',
             alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }} className="tool-panel-back-btn" aria-label="뒤로 가기">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          }} aria-label="뒤로 가기">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M7.5 2L3.5 6l4 4"/>
             </svg>
           </button>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: toolColor, opacity: 0.5, flexShrink: 0 }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: rgba(T.fg, 0.92), letterSpacing: '0.02em', flex: 1 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: toolColor, opacity: 0.5, flexShrink: 0 }} />
+          <span style={{ fontSize: 17, fontWeight: 600, color: rgba(T.fg, 0.95), letterSpacing: '-0.01em', flex: 1 }}>
             {toolLabel}
           </span>
         </div>

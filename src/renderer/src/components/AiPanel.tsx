@@ -216,26 +216,28 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: rgba(T.bg, 0.97) }}>
         {/* Tab header */}
         <div style={{
-          height: 44, display: 'flex', alignItems: 'center', gap: 0,
-          padding: '0 20px', borderBottom: `1px solid ${rgba(T.fg, 0.14)}`,
-          background: rgba(T.fg, 0.04), flexShrink: 0,
+          height: 56, display: 'flex', alignItems: 'center', gap: 0,
+          padding: '0 16px', borderBottom: `1px solid ${rgba(T.fg, 0.06)}`,
+          flexShrink: 0,
         }}>
+          <div style={{ display: 'flex', background: rgba(T.fg, 0.06), borderRadius: 10, padding: 2 }}>
           {(['chat', 'history', 'settings'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               style={{
-                padding: '8px 14px', borderRadius: 14,
-                border: tab === t ? `1px solid ${rgba(T.gold, 0.4)}` : '1px solid transparent',
-                background: tab === t ? rgba(T.gold, 0.2) : 'transparent',
-                color: tab === t ? 'rgba(220,200,140,0.9)' : rgba(T.fg, 0.65),
-                fontSize: 12, fontWeight: 600, cursor: 'pointer', marginRight: 6,
-                transition: 'all 0.15s ease', minHeight: 44, lineHeight: 1.4,
+                padding: '8px 18px', borderRadius: 8,
+                border: 'none',
+                background: tab === t ? rgba(T.fg, 0.1) : 'transparent',
+                color: tab === t ? rgba(T.fg, 0.95) : rgba(T.fg, 0.5),
+                fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                transition: 'all 0.15s ease', minHeight: 36,
               }}
             >
               {t === 'chat' ? '채팅' : t === 'history' ? '기록' : '설정'}
             </button>
           ))}
+          </div>
         </div>
 
         {tab === 'chat' && (
