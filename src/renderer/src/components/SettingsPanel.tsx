@@ -52,19 +52,19 @@ function Slider({
   format: (v: number) => string; onChange: (v: number) => void
 }): React.ReactElement {
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 12, color: rgba(T.fg, 0.78), fontWeight: 500 }}>{label}</span>
-        <span style={{ fontSize: 12, color: rgba(T.fg, 0.92), fontWeight: 700, fontFamily: 'monospace' }}>{format(value)}</span>
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 15, color: rgba(T.fg, 0.85), fontWeight: 400 }}>{label}</span>
+        <span style={{ fontSize: 15, color: rgba(T.fg, 0.95), fontWeight: 600, fontFamily: 'monospace' }}>{format(value)}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
         style={{ width: '100%', cursor: 'pointer' }}
       />
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3 }}>
-        <span style={{ fontSize: 10, color: rgba(T.fg, 0.55) }}>{format(min)}</span>
-        <span style={{ fontSize: 10, color: rgba(T.fg, 0.55) }}>{format(max)}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+        <span style={{ fontSize: 13, color: rgba(T.fg, 0.35) }}>{format(min)}</span>
+        <span style={{ fontSize: 13, color: rgba(T.fg, 0.35) }}>{format(max)}</span>
       </div>
     </div>
   )
@@ -217,21 +217,22 @@ export default function SettingsPanel(): React.ReactElement {
     <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
       {/* Left sidebar */}
       <div style={{
-        width: 180,
+        width: 200,
         flexShrink: 0,
-        borderRight: `1px solid ${rgba(T.fg, 0.14)}`,
-        background: rgba(T.fg, 0.03),
-        padding: '20px 0',
+        borderRight: `1px solid ${rgba(T.fg, 0.06)}`,
+        padding: '20px 12px',
         display: 'flex',
         flexDirection: 'column',
+        gap: 4,
       }}>
-        <div className="section-header" style={{
-          padding: '0 20px',
-          marginBottom: 12,
+        <div style={{
+          padding: '0 12px',
+          marginBottom: 16,
+          fontSize: 13, color: rgba(T.fg, 0.45),
         }}>
           설정
         </div>
-        <div role="tablist" aria-label="설정 탭" style={{ display: 'contents' }}>
+        <div role="tablist" aria-label="설정 탭" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {TABS.map(t => {
           const isActive = tab === t.id
           return (
@@ -244,21 +245,21 @@ export default function SettingsPanel(): React.ReactElement {
               onClick={() => setTab(t.id)}
               style={{
                 width: '100%',
-                padding: '10px 20px',
+                padding: '12px 16px',
                 display: 'flex',
                 gap: 10,
                 alignItems: 'center',
                 cursor: 'pointer',
                 border: 'none',
-                borderRight: isActive ? `2px solid ${T.gold}` : '2px solid transparent',
-                background: isActive ? rgba(T.gold, 0.12) : 'none',
-                color: isActive ? T.gold : rgba(T.fg, 0.65),
+                borderRadius: 12,
+                background: isActive ? rgba(T.fg, 0.08) : 'transparent',
+                color: isActive ? rgba(T.fg, 0.95) : rgba(T.fg, 0.55),
                 textAlign: 'left',
                 transition: 'all 0.15s ease',
+                minHeight: 48,
               }}
             >
-              <span style={{ fontSize: 16 }}>{t.icon}</span>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>{t.label}</span>
+              <span style={{ fontSize: 15, fontWeight: isActive ? 600 : 400 }}>{t.label}</span>
             </button>
           )
         })}
@@ -266,12 +267,12 @@ export default function SettingsPanel(): React.ReactElement {
       </div>
 
       {/* Right content area */}
-      <div role="tabpanel" id={`tabpanel-${tab}`} style={{ flex: 1, overflowY: 'auto', padding: 32 }}>
+      <div role="tabpanel" id={`tabpanel-${tab}`} style={{ flex: 1, overflowY: 'auto', padding: 'clamp(20px, 4vw, 32px)' }}>
 
         {/* ════ DISPLAY TAB ════ */}
         {tab === 'display' && (
           <div>
-            <p style={{ fontSize: 11, color: rgba(T.fg, 0.62), marginBottom: 22, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: rgba(T.fg, 0.45), marginBottom: 24, lineHeight: 1.5 }}>
               허브 크기, 오버레이 투명도, 나선 간격, 애니메이션 속도를 조절합니다.
             </p>
 
@@ -298,16 +299,16 @@ export default function SettingsPanel(): React.ReactElement {
             />
 
             {/* Animation speed */}
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 12, color: rgba(T.fg, 0.78), fontWeight: 500, marginBottom: 10 }}>애니메이션 속도</div>
-              <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 15, color: rgba(T.fg, 0.85), fontWeight: 400, marginBottom: 10 }}>애니메이션 속도</div>
+              <div style={{ display: 'flex', background: rgba(T.fg, 0.06), borderRadius: 12, padding: 3 }}>
                 {(['slow', 'normal', 'fast', 'none'] as const).map(s => (
                   <button key={s} onClick={() => { setLocalAnim(s); saveDisplay({ animSpeed: s }) }}
                     style={{
-                      flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                      border: localAnim === s ? `2px solid ${T.gold}` : `2px solid ${rgba(T.fg, 0.1)}`,
-                      background: localAnim === s ? rgba(T.gold, 0.15) : rgba(T.fg, 0.07),
-                      color: localAnim === s ? T.gold : rgba(T.fg, 0.65),
+                      flex: 1, padding: '10px 0', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                      border: 'none',
+                      background: localAnim === s ? rgba(T.fg, 0.12) : 'transparent',
+                      color: localAnim === s ? rgba(T.fg, 0.95) : rgba(T.fg, 0.5),
                       transition: 'all 0.15s ease',
                     }}>
                     {s === 'slow' ? '천천히' : s === 'normal' ? '보통' : s === 'fast' ? '빠르게' : '없음'}
@@ -317,12 +318,13 @@ export default function SettingsPanel(): React.ReactElement {
             </div>
 
             {/* Startup settings */}
-            <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: `1px solid ${rgba(T.fg, 0.12)}`, background: rgba(T.fg, 0.04) }}>
-              <div className="section-header" style={{ marginBottom: 12 }}>기본 설정</div>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 13, color: rgba(T.fg, 0.45), marginBottom: 8, paddingLeft: 16 }}>기본 설정</div>
+              <div style={{ background: rgba(T.fg, 0.04), borderRadius: 12, overflow: 'hidden' }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12, padding: '14px 16px', borderBottom: `1px solid ${rgba(T.fg, 0.06)}` }}>
                 <div>
-                  <div style={{ fontSize: 12, color: rgba(T.fg, 0.75), fontWeight: 500 }}>Windows 시작 시 자동 실행</div>
-                  <div style={{ fontSize: 10, color: rgba(T.fg, 0.62), marginTop: 2 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
+                  <div style={{ fontSize: 15, color: rgba(T.fg, 0.85), fontWeight: 400 }}>Windows 시작 시 자동 실행</div>
+                  <div style={{ fontSize: 13, color: rgba(T.fg, 0.45), marginTop: 4 }}>로그인 시 게젤샤프트가 자동으로 시작됩니다</div>
                 </div>
                 <button
                   onClick={async () => {
@@ -332,7 +334,7 @@ export default function SettingsPanel(): React.ReactElement {
                     if (!result?.success) setLoginItem(!next)
                   }}
                   style={{
-                    width: 44, height: 24, borderRadius: 12, border: 'none',
+                    width: 51, height: 31, borderRadius: 16, border: 'none',
                     background: loginItem ? T.gold : rgba(T.fg, 0.12),
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
                     transition: 'background 0.2s ease',
@@ -340,26 +342,22 @@ export default function SettingsPanel(): React.ReactElement {
                   }}
                 >
                   <div style={{
-                    position: 'absolute', top: 3, width: 18, height: 18, borderRadius: '50%',
+                    position: 'absolute', top: 2, width: 27, height: 27, borderRadius: '50%',
                     background: 'white', transition: 'left 0.2s ease',
-                    left: loginItem ? 23 : 3,
+                    left: loginItem ? 22 : 2,
                     boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
                   }} />
                 </button>
               </label>
-            </div>
-
-            {/* Auto-scan setting */}
-            <div style={{ marginTop: 8, marginBottom: 18, padding: '14px 16px', borderRadius: 10, border: `1px solid ${rgba(T.fg, 0.12)}`, background: rgba(T.fg, 0.04) }}>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12, padding: '14px 16px' }}>
                 <div>
-                  <div style={{ fontSize: 12, color: rgba(T.fg, 0.75), fontWeight: 500 }}>메뉴 열 때 자동 AI 분석</div>
-                  <div style={{ fontSize: 10, color: rgba(T.fg, 0.62), marginTop: 2 }}>메뉴를 처음 열 때 화면을 자동으로 분석하여 도구를 추천합니다</div>
+                  <div style={{ fontSize: 15, color: rgba(T.fg, 0.85), fontWeight: 400 }}>메뉴 열 때 자동 AI 분석</div>
+                  <div style={{ fontSize: 13, color: rgba(T.fg, 0.45), marginTop: 4 }}>메뉴를 처음 열 때 화면을 자동으로 분석하여 도구를 추천합니다</div>
                 </div>
                 <button
                   onClick={() => setAutoScan(!autoScan)}
                   style={{
-                    width: 44, height: 24, borderRadius: 12, border: 'none',
+                    width: 51, height: 31, borderRadius: 16, border: 'none',
                     background: autoScan ? T.teal : rgba(T.fg, 0.12),
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
                     transition: 'background 0.2s ease',
@@ -367,13 +365,14 @@ export default function SettingsPanel(): React.ReactElement {
                   }}
                 >
                   <div style={{
-                    position: 'absolute', top: 3, width: 18, height: 18, borderRadius: '50%',
+                    position: 'absolute', top: 2, width: 27, height: 27, borderRadius: '50%',
                     background: 'white', transition: 'left 0.2s ease',
-                    left: autoScan ? 23 : 3,
+                    left: autoScan ? 22 : 2,
                     boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
                   }} />
                 </button>
               </label>
+              </div>
             </div>
 
             {/* Reset to best-visibility defaults */}
@@ -387,13 +386,13 @@ export default function SettingsPanel(): React.ReactElement {
                 saveDisplay(BEST)
               }}
               style={{
-                fontSize: 12, fontWeight: 600,
-                color: rgba(T.gold, 0.85),
-                background: rgba(T.gold, 0.06),
-                border: `1px solid ${rgba(T.gold, 0.2)}`,
-                borderRadius: 4,
+                fontSize: 15, fontWeight: 400,
+                color: T.teal,
+                background: 'none',
+                border: 'none',
+                borderRadius: 12,
                 cursor: 'pointer',
-                padding: '8px 16px',
+                padding: '12px 0',
                 transition: 'all 0.15s ease',
                 letterSpacing: '0.03em',
               }}
