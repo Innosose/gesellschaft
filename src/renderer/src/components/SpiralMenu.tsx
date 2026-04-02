@@ -687,7 +687,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
       ))}
 
       <div style={{
-        position: 'fixed', bottom: 'clamp(140px, 18vh, 190px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
+        position: 'fixed', bottom: 'clamp(160px, 20vh, 210px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
@@ -696,11 +696,11 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
             <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2L3 5l3 3"/></svg>
           </button>
           <div style={{
-            fontSize: 13, fontWeight: 500, color: rgba(T.fg, 0.85),
-            padding: '0 16px',
-            minWidth: 100, textAlign: 'center',
+            fontSize: 11, fontWeight: 500, color: rgba(T.fg, 0.85),
+            padding: '0 12px',
+            maxWidth: 120, textAlign: 'center',
             fontFamily: getCurrentTheme().titleFont, textTransform: 'uppercase',
-            lineHeight: 1.4,
+            lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>{centerToolLabel}</div>
           <button onClick={() => rotate(1)} aria-label="다음 도구" style={{ width: 40, height: 40, borderRadius: 20, border: 'none', background: rgba(T.fg, 0.06), color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 2l3 3-3 3"/></svg>
