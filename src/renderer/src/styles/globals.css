@@ -41,7 +41,7 @@
   --ease: cubic-bezier(0.2, 0, 0, 1);
 
   /* Typographic scale */
-  --fs-caption: 10px;
+  --fs-caption: 11px;
   --fs-label: 11px;
   --fs-body: 13px;
   --fs-subhead: 15px;
@@ -1015,7 +1015,7 @@ input[type='range']::-webkit-slider-thumb:active {
 
 /* Top control buttons */
 .app-top-btn {
-  width: 30px; height: 30px; border-radius: 4px;
+  width: 44px; height: 44px; border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--theme-primary) 20%, transparent);
   background: color-mix(in srgb, var(--theme-primary) 10%, transparent);
   color: color-mix(in srgb, var(--theme-primary) 50%, transparent);
@@ -1076,7 +1076,7 @@ input[type='range']::-webkit-slider-thumb:active {
 
 /* Touch device: enlarge touch targets, disable hover-only effects */
 @media (hover: none) and (pointer: coarse) {
-  .app-top-btn { width: 40px; height: 40px; }
+  .app-top-btn { width: 44px; height: 44px; }
   .win-btn { min-height: 44px; }
   .win-tab { min-height: 40px; padding: 8px 12px; }
   .win-input, .win-textarea, .win-select { font-size: 16px; padding: 10px 12px; }
@@ -1089,8 +1089,8 @@ input[type='range']::-webkit-slider-thumb:active {
 /* Mobile portrait (phones) */
 @media (max-width: 640px) {
   :root {
-    --fs-caption: 9px;
-    --fs-label: 10px;
+    --fs-caption: 11px;
+    --fs-label: 11px;
     --fs-body: 13px;
     --fs-subhead: 14px;
     --fs-heading: 16px;

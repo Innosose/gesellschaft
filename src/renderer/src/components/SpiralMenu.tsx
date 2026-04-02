@@ -439,7 +439,7 @@ const FanCard = memo(function FanCard({
             const capColor = isCenter ? rgba(getGOLD(), 0.9) : rgba(getGOLD(), Math.max(0.15, 0.45 - distFromCenter * 0.06))
             const shrink = cp ? 0.8 : br === '50%' ? 0.75 : 1
             const capSize = (isCenter ? 24 : Math.max(14, 20 - distFromCenter * 2)) * shrink
-            const restSize = (isCenter ? 10 : Math.max(7.5, 9 - distFromCenter * 0.4)) * shrink
+            const restSize = (isCenter ? 10 : Math.max(11, 9 - distFromCenter * 0.4)) * shrink
             const font = getCurrentTheme().titleFont
 
             if (isSingleWord) {
@@ -534,11 +534,11 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${rgba(getGOLD(), 0.08)}` }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: rgba(getGOLD(), 0.5), letterSpacing: '0.06em' }}>{tools.length} 기능</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: rgba(getCurrentTheme().fg, 0.2), cursor: 'pointer', fontSize: 13, padding: '2px 4px' }}>x</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: rgba(getCurrentTheme().fg, 0.5), cursor: 'pointer', fontSize: 14, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>x</button>
         </div>
 
         {favTools.length > 0 && <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', color: rgba(getGOLD(), 0.5), marginBottom: 6, textTransform: 'uppercase' }}>즐겨찾기</div>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: rgba(getGOLD(), 0.5), marginBottom: 6, textTransform: 'uppercase', lineHeight: 1.4 }}>즐겨찾기</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
             {favTools.map(t => <OvCard key={t.id} tool={t} fav onSelect={onSelect} onToggleFav={onToggleFav} />)}
           </div>
@@ -552,7 +552,7 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
 })
 
 const Lbl = memo(function Lbl({ text }: { text: string }) {
-  return <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', color: rgba(getGOLD(), 0.3), marginBottom: 5, textTransform: 'uppercase' }}>{text}</div>
+  return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: rgba(getGOLD(), 0.5), marginBottom: 5, textTransform: 'uppercase', lineHeight: 1.4 }}>{text}</div>
 })
 
 const OvCard = memo(function OvCard({ tool, fav, onSelect, onToggleFav }: { tool: Tool; fav?: boolean; onSelect: (id: string) => void; onToggleFav?: (id: string) => void }) {
@@ -560,18 +560,19 @@ const OvCard = memo(function OvCard({ tool, fav, onSelect, onToggleFav }: { tool
   return (
     <button onClick={() => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       title={tool.description} aria-label={tool.label + (tool.description ? ': ' + tool.description : '')} style={{
-        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 4, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 8, padding: '10px 10px', borderRadius: 4, cursor: 'pointer',
         background: h ? rgba(getGOLD(), 0.06) : rgba(getCurrentTheme().fg, 0.015),
         border: `1px solid ${rgba(getGOLD(), h ? 0.2 : 0.06)}`,
         transition: 'all 0.15s ease', overflow: 'hidden', position: 'relative',
+        minHeight: 44,
       }}>
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: tool.color, opacity: h ? 0.5 : 0.2, borderRadius: '4px 0 0 4px', transition: 'opacity 0.15s ease' }} />
       <div style={{ width: 3, height: 3, borderRadius: '50%', background: tool.color, opacity: h ? 0.8 : 0.3, flexShrink: 0, marginLeft: 4 }} />
-      <span style={{ fontSize: 10, fontWeight: 500, color: h ? rgba(T.fg, 0.85) : rgba(T.fg, 0.45), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{tool.label}</span>
+      <span style={{ fontSize: 11, fontWeight: 500, color: h ? rgba(T.fg, 0.85) : rgba(T.fg, 0.5), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, lineHeight: 1.4 }}>{tool.label}</span>
       {onToggleFav && h && <span onClick={e => { e.stopPropagation(); onToggleFav(tool.id) }}
-        style={{ fontSize: 9, color: fav ? rgba(getGOLD(), 0.7) : rgba(T.fg, 0.2), cursor: 'pointer', flexShrink: 0, lineHeight: 1 }}
+        style={{ fontSize: 11, color: fav ? rgba(getGOLD(), 0.7) : rgba(T.fg, 0.3), cursor: 'pointer', flexShrink: 0, lineHeight: 1.4 }}
         title={fav ? '즐겨찾기 해제' : '즐겨찾기 추가'}>{fav ? '★' : '☆'}</span>}
-      {!h && fav && <span style={{ fontSize: 9, color: rgba(getGOLD(), 0.4), flexShrink: 0, lineHeight: 1 }}>★</span>}
+      {!h && fav && <span style={{ fontSize: 11, color: rgba(getGOLD(), 0.4), flexShrink: 0, lineHeight: 1.4 }}>★</span>}
     </button>
   )
 })
@@ -584,15 +585,15 @@ const SearchCard = memo(function SearchCard({ tool, animDuration, onSelect }: { 
   return (
     <button onClick={() => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       title={tool.description} style={{
-        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 4, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 4, cursor: 'pointer',
         background: h ? rgba(getGOLD(), 0.05) : rgba(getCurrentTheme().fg, 0.01),
         border: `1px solid ${rgba(getGOLD(), h ? 0.15 : 0.03)}`,
         transition: `all ${animDuration * 0.5}ms ease`, textAlign: 'left', width: '100%', color: 'inherit',
-        position: 'relative',
+        position: 'relative', minHeight: 44,
       }}>
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: tool.color, opacity: h ? 0.5 : 0.2, borderRadius: '4px 0 0 4px' }} />
       <div style={{ width: 4, height: 4, borderRadius: '50%', background: tool.color, opacity: h ? 0.7 : 0.3, flexShrink: 0, marginLeft: 4 }} />
-      <span style={{ fontSize: 12, fontWeight: 500, color: h ? rgba(T.fg, 0.85) : rgba(T.fg, 0.55), marginLeft: 4 }}>{tool.label}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, color: h ? rgba(T.fg, 0.85) : rgba(T.fg, 0.6), marginLeft: 4, lineHeight: 1.4 }}>{tool.label}</span>
     </button>
   )
 })
@@ -683,8 +684,8 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button onClick={() => rotate(-1)} className="spiral-nav-btn" aria-label="이전 도구">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M6 2L3 5l3 3"/></svg>
+          <button onClick={() => rotate(-1)} className="spiral-nav-btn" aria-label="이전 도구" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M6 2L3 5l3 3"/></svg>
           </button>
           <div style={{
             fontSize: 11, fontWeight: 500, color: rgba(getGOLD(), 0.7),
@@ -692,12 +693,13 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
             borderRadius: 4, padding: '4px 14px', backdropFilter: 'blur(16px)',
             minWidth: 100, textAlign: 'center', letterSpacing: '0.06em',
             fontFamily: getCurrentTheme().titleFont, textTransform: 'uppercase',
+            lineHeight: 1.4, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>{centerToolLabel}</div>
-          <button onClick={() => rotate(1)} className="spiral-nav-btn" aria-label="다음 도구">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M4 2l3 3-3 3"/></svg>
+          <button onClick={() => rotate(1)} className="spiral-nav-btn" aria-label="다음 도구" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M4 2l3 3-3 3"/></svg>
           </button>
-          <button onClick={() => setShowOverview(true)} title="전체" aria-label="전체 보기" className="spiral-overview-btn">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1"><rect x="1" y="1" width="3.5" height="3.5"/><rect x="5.5" y="1" width="3.5" height="3.5"/><rect x="1" y="5.5" width="3.5" height="3.5"/><rect x="5.5" y="5.5" width="3.5" height="3.5"/></svg>
+          <button onClick={() => setShowOverview(true)} title="전체" aria-label="전체 보기" className="spiral-overview-btn" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1"><rect x="1" y="1" width="3.5" height="3.5"/><rect x="5.5" y="1" width="3.5" height="3.5"/><rect x="1" y="5.5" width="3.5" height="3.5"/><rect x="5.5" y="5.5" width="3.5" height="3.5"/></svg>
           </button>
         </div>
       </div>

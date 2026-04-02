@@ -225,12 +225,12 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
               key={t}
               onClick={() => setTab(t)}
               style={{
-                padding: '4px 14px', borderRadius: 14,
+                padding: '8px 14px', borderRadius: 14,
                 border: tab === t ? `1px solid ${rgba(T.gold, 0.4)}` : '1px solid transparent',
                 background: tab === t ? rgba(T.gold, 0.2) : 'transparent',
                 color: tab === t ? 'rgba(220,200,140,0.9)' : rgba(T.fg, 0.65),
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', marginRight: 6,
-                transition: 'all 0.15s ease',
+                transition: 'all 0.15s ease', minHeight: 44, lineHeight: 1.4,
               }}
             >
               {t === 'chat' ? '채팅' : t === 'history' ? '기록' : '설정'}
@@ -331,9 +331,10 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
                 key={t}
                 onClick={() => setTab(t)}
                 style={{
-                  fontSize: 11, padding: '3px 10px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                  fontSize: 11, padding: '8px 10px', borderRadius: 4, border: 'none', cursor: 'pointer',
                   background: tab === t ? 'var(--win-accent)' : 'transparent',
                   color: tab === t ? T.fg : 'var(--win-text-sub)',
+                  minHeight: 44, lineHeight: 1.4,
                 }}
               >{t === 'chat' ? '채팅' : '설정'}</button>
             ))}
@@ -341,8 +342,9 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           <button
             onClick={onClose}
             style={{
-              marginLeft: 10, width: 24, height: 24, borderRadius: 4, border: 'none',
+              marginLeft: 10, width: 44, height: 44, borderRadius: 4, border: 'none',
               background: 'transparent', color: 'var(--win-text-muted)', cursor: 'pointer', fontSize: 14,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >✕</button>
         </div>
