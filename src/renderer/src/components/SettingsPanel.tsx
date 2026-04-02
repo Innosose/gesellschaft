@@ -307,7 +307,7 @@ export default function SettingsPanel(): React.ReactElement {
                       background: localAnim === s ? rgba(T.fg, 0.12) : 'transparent',
                       color: localAnim === s ? rgba(T.fg, 0.95) : rgba(T.fg, 0.4),
                       transition: 'all 0.2s ease',
-                      boxShadow: localAnim === s ? '0 1px 3px rgba(0,0,0,0.2)' : 'none',
+                      boxShadow: localAnim === s ? '0 3px 8px rgba(0,0,0,0.12), 0 1px 1px rgba(0,0,0,0.08)' : 'none',
                     }}>
                     {s === 'slow' ? '천천히' : s === 'normal' ? '보통' : s === 'fast' ? '빠르게' : '없음'}
                   </button>
@@ -333,7 +333,7 @@ export default function SettingsPanel(): React.ReactElement {
                   }}
                   style={{
                     width: 51, height: 31, borderRadius: 16, border: 'none',
-                    background: loginItem ? '#34c759' : rgba(T.fg, 0.16),
+                    background: loginItem ? '#30D158' : rgba(T.fg, 0.16),
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
                     transition: 'background 0.25s ease',
                   }}
@@ -342,7 +342,7 @@ export default function SettingsPanel(): React.ReactElement {
                     position: 'absolute', top: 2, width: 27, height: 27, borderRadius: '50%',
                     background: 'white', transition: 'left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                     left: loginItem ? 22 : 2,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.25), 0 0 1px rgba(0,0,0,0.1)',
+                    boxShadow: '0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.06)',
                   }} />
                 </button>
               </label>
@@ -355,7 +355,7 @@ export default function SettingsPanel(): React.ReactElement {
                   onClick={() => setAutoScan(!autoScan)}
                   style={{
                     width: 51, height: 31, borderRadius: 16, border: 'none',
-                    background: autoScan ? '#34c759' : rgba(T.fg, 0.16),
+                    background: autoScan ? '#30D158' : rgba(T.fg, 0.16),
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
                     transition: 'background 0.25s ease',
                   }}
@@ -364,7 +364,7 @@ export default function SettingsPanel(): React.ReactElement {
                     position: 'absolute', top: 2, width: 27, height: 27, borderRadius: '50%',
                     background: 'white', transition: 'left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                     left: autoScan ? 22 : 2,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.25), 0 0 1px rgba(0,0,0,0.1)',
+                    boxShadow: '0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.06)',
                   }} />
                 </button>
               </label>
@@ -383,7 +383,7 @@ export default function SettingsPanel(): React.ReactElement {
               }}
               style={{
                 fontSize: 17, fontWeight: 400,
-                color: '#0a84ff',
+                color: '#0A84FF',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',

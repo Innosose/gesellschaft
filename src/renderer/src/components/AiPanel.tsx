@@ -315,8 +315,8 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
       <div style={{
         position: 'fixed', top: 32, right: 0, bottom: 0, width: 'min(380px, 85vw)', zIndex: 201,
         display: 'flex', flexDirection: 'column',
-        background: rgba(T.fg, 0.04), backdropFilter: 'blur(40px) saturate(1.5)',
-        WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+        background: rgba(T.fg, 0.04), backdropFilter: 'blur(40px) saturate(1.8)',
+        WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
         borderLeft: `0.5px solid ${rgba(T.fg, 0.08)}`,
         transform: effectiveOpen ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',

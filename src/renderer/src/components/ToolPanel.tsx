@@ -97,8 +97,8 @@ export default function ToolPanel({ toolId, toolColor, toolLabel, onBack }: Tool
         height: 'min(640px, 82vh)',
         borderRadius: 12, border: 'none',
         background: rgba(T.fg, 0.04),
-        backdropFilter: 'blur(40px) saturate(1.5)',
-        WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+        backdropFilter: 'blur(40px) saturate(1.8)',
+        WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
         boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       } as React.CSSProperties} onClick={e => e.stopPropagation()}>

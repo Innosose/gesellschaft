@@ -749,7 +749,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: rgba(T.fg, 0.08), borderRadius: 100, padding: '3px', backdropFilter: 'blur(24px) saturate(1.4)', WebkitBackdropFilter: 'blur(24px) saturate(1.4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: rgba(T.fg, 0.08), borderRadius: 100, padding: '3px', backdropFilter: 'blur(24px) saturate(1.8)', WebkitBackdropFilter: 'blur(24px) saturate(1.8)' }}>
           <button onClick={() => rotate(-1)} aria-label="이전 도구" style={{ width: 36, height: 36, borderRadius: 18, border: 'none', background: 'transparent', color: rgba(T.fg, 0.55), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.15s' }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 3L5 8l5 5"/></svg>
           </button>
