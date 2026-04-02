@@ -38,17 +38,18 @@ export const useAppStore = create<AppState>((set) => ({
   setHubColor: (color: string) => {
     set({ hubColor: color })
     document.documentElement.style.setProperty('--gs-accent', color)
-    window.api.settings.setTheme(color)
+    window.api?.settings.setTheme(color)
   },
 
   setAutoScan: (v: boolean) => set({ autoScan: v }),
 
   setDisplay: (patch: Partial<DisplaySettings>) => {
     set(patch)
-    window.api.settings.setDisplay(patch as Record<string, unknown>)
+    window.api?.settings.setDisplay(patch as Record<string, unknown>)
   },
 
   loadFromAPI: async () => {
+    if (!window.api) return
     const [color, display] = await Promise.all([
       window.api.settings.getTheme(),
       window.api.settings.getDisplay(),

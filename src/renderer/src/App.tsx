@@ -65,6 +65,9 @@ const Particles = memo(function Particles({ theme }: {
   )
 })
 
+/** True when running in a normal browser (not Electron) */
+const isWeb = !('__electron__' in window || navigator.userAgent.includes('Electron'))
+
 export default function App(): React.ReactElement {
   const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, autoScan, loadFromAPI } = useAppStore()
   const theme = useTheme() // re-render entire app on theme change
@@ -122,6 +125,7 @@ export default function App(): React.ReactElement {
   const handleBack = useCallback(() => { setActiveTool(null); setUiState('menu'); setToolSearch('') }, [])
 
   const handleScan = useCallback(async () => {
+    if (isWeb) { addNotification('화면 분석은 데스크톱 앱에서만 사용 가능합니다.', 'info'); return }
     setScanning(true)
     try {
       const result = await window.api.screen.captureAndAnalyze()
@@ -154,7 +158,7 @@ export default function App(): React.ReactElement {
     }
   }, [uiState, autoScan, recommended.length, scanning, handleScan])
 
-  const handleHide = useCallback(() => window.api.window.hide(), [])
+  const handleHide = useCallback(() => { if (isWeb) setUiState('hub'); else window.api.window.hide() }, [])
   const handleOpenSettings = useCallback(() => {
     setActiveTool({ id: 'settings', icon: '', label: '설정', color: T.gold }); setUiState('tool')
   }, [])
@@ -162,6 +166,8 @@ export default function App(): React.ReactElement {
   const handleMenuSelect = useCallback((id: string) => { setToolSearch(''); handleToolSelect(id) }, [handleToolSelect])
 
   useEffect(() => {
+    // Click-through is an Electron-only feature (frameless transparent window)
+    if (isWeb) return
     if (uiState !== 'hub') { window.api.window.setIgnoreMouseEvents(false); return }
     window.api.window.setIgnoreMouseEvents(true, { forward: true })
     let lastCall = 0, lastHit = false
@@ -190,7 +196,8 @@ export default function App(): React.ReactElement {
 
   return (
     <div role="application" style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden',
-      fontFamily: "'Pretendard', 'Segoe UI Variable', system-ui, sans-serif" }}>
+      fontFamily: "'Pretendard', 'Segoe UI Variable', system-ui, sans-serif",
+      background: isWeb ? '#0a0804' : undefined }}>
 
       <a href="#main-content" style={{
         position: 'absolute', left: '-9999px', top: 'auto',
