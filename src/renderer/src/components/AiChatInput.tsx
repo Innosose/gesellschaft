@@ -17,15 +17,14 @@ export default function AiChatInput({
   input, setInput, streaming, onSend, onCancel, onKeyDown, inputRef, dark = false,
 }: AiChatInputProps): React.ReactElement {
   const bg    = dark ? rgba(T.bg, 0.9)                : 'var(--win-surface-2)'
-  const border = dark ? `1px solid ${rgba(T.fg, 0.08)}` : '1px solid var(--win-border)'
-  const inputBg = dark ? rgba(T.fg, 0.05)    : 'var(--win-surface)'
+  const inputBg = dark ? rgba(T.fg, 0.06)    : 'var(--win-surface)'
   const color = dark ? rgba(T.fg, 0.85)       : 'var(--win-text)'
-  const accent = dark ? rgba(T.gold, 0.8)        : 'var(--win-accent)'
-  const mutedColor = dark ? rgba(T.fg, 0.48)  : 'var(--win-text-muted)'
+  const accent = dark ? T.teal        : 'var(--win-accent)'
+  const mutedColor = dark ? rgba(T.fg, 0.35)  : 'var(--win-text-muted)'
 
   return (
-    <div style={{ padding: '10px 14px 14px', borderTop: border, background: bg, flexShrink: 0 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+    <div style={{ padding: '12px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))', borderTop: `1px solid ${rgba(T.fg, 0.06)}`, background: bg, flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
         <textarea
           ref={inputRef}
           value={input}
@@ -34,8 +33,8 @@ export default function AiChatInput({
           placeholder="메시지 입력... (Enter로 전송)"
           rows={2}
           style={{
-            flex: 1, resize: 'none', padding: '8px 10px', fontSize: 12,
-            borderRadius: 6, border,
+            flex: 1, resize: 'none', padding: '12px 16px', fontSize: 15,
+            borderRadius: 20, border: 'none',
             background: inputBg, color,
             outline: 'none', lineHeight: 1.5, fontFamily: 'inherit',
           }}
@@ -44,8 +43,9 @@ export default function AiChatInput({
           <button
             onClick={onCancel}
             style={{
-              height: 54, width: 50, borderRadius: 6, border: 'none', cursor: 'pointer',
-              background: T.danger, color: T.fg, fontSize: 18, flexShrink: 0,
+              height: 44, width: 44, borderRadius: 22, border: 'none', cursor: 'pointer',
+              background: T.danger, color: '#fff', fontSize: 16, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
             aria-label="스트리밍 중단"
           >⏹</button>
@@ -54,12 +54,13 @@ export default function AiChatInput({
             onClick={onSend}
             disabled={!input.trim()}
             style={{
-              height: 54, width: 50, borderRadius: 6, border: 'none',
+              height: 44, width: 44, borderRadius: 22, border: 'none',
               cursor: input.trim() ? 'pointer' : 'default',
-              background: input.trim() ? accent : (dark ? rgba(T.fg, 0.05) : 'var(--win-surface)'),
-              color: input.trim() ? T.fg : mutedColor,
+              background: input.trim() ? accent : (dark ? rgba(T.fg, 0.06) : 'var(--win-surface)'),
+              color: input.trim() ? '#fff' : mutedColor,
               fontSize: 18, flexShrink: 0,
-              transition: 'background 0.12s ease',
+              transition: 'background 0.15s ease',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
             aria-label="메시지 전송"
           >↑</button>

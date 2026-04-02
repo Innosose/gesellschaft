@@ -267,8 +267,8 @@ export default function App(): React.ReactElement {
                 style={{
                   fontSize: 13, padding: '8px 16px', borderRadius: 20, cursor: 'pointer',
                   border: 'none',
-                  background: toolSearch === cat ? rgba(T.gold, 0.18) : rgba(T.fg, 0.06),
-                  color: toolSearch === cat ? T.gold : rgba(T.fg, 0.6),
+                  background: toolSearch === cat ? rgba(T.gold, 0.2) : rgba(T.fg, 0.1),
+                  color: toolSearch === cat ? T.gold : rgba(T.fg, 0.75),
                   fontWeight: 500, transition: 'all 0.15s ease',
                   backdropFilter: 'blur(10px)', minHeight: 36,
                 }}>{cat}</button>

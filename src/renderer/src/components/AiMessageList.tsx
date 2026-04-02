@@ -86,10 +86,10 @@ export default function AiMessageList({
     <>
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: mutedColor, fontSize: 12, marginTop: 40 }}>
-            <div style={{ fontSize: 14, marginBottom: 10, color: rgba(T.fg, 0.3) }}>AI</div>
-            <div>무엇이든 질문해보세요</div>
-            <div style={{ marginTop: 6, fontSize: 11 }}>Shift+Enter로 줄바꿈</div>
+          <div style={{ textAlign: 'center', color: mutedColor, fontSize: 15, marginTop: 80 }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>💬</div>
+            <div style={{ fontWeight: 500, color: rgba(T.fg, 0.6) }}>무엇이든 질문해보세요</div>
+            <div style={{ marginTop: 8, fontSize: 13, color: rgba(T.fg, 0.35) }}>Shift+Enter로 줄바꿈</div>
           </div>
         )}
         {hiddenCount > 0 && (
