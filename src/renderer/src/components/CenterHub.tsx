@@ -332,11 +332,11 @@ export default memo(function CenterHub({
                 position: 'absolute',
                 left: -orbitR - satSize / 2, top: -satSize / 2,
                 width: satSize, height: satSize, borderRadius: '50%',
-                border: `1.5px solid ${rgba(gold, 0.5)}`,
-                background: rgba(T.bg, 0.9),
+                border: `1.5px solid ${rgba(gold, 0.60)}`,
+                background: rgba(T.bg, 0.92),
 
 
-                color: rgba(gold, 0.9),
+                color: rgba(gold, 0.92),
                 fontSize: 9, fontWeight: 600,
                 cursor: scanning ? 'wait' : 'pointer',
                 opacity: scanning ? 0.7 : 1,
