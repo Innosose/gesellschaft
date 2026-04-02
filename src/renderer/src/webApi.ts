@@ -557,5 +557,8 @@ export function installWebApi(): void {
     (window as Window).api = webApi
     // Mark web mode for CSS (safe area background fill)
     document.documentElement.classList.add('web-mode')
+    // Inline style as fallback — ensures Safari safe area is dark
+    document.documentElement.style.background = '#0a0804'
+    document.body.style.background = '#0a0804'
   }
 }
