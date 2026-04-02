@@ -528,32 +528,32 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
       <div onClick={e => e.stopPropagation()} style={{
         width: 'min(720px, 92vw)', maxHeight: '82vh', overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
-        background: '#0a0804', backdropFilter: 'blur(40px)',
+        background: T.bg, backdropFilter: 'blur(40px)',
         borderRadius: 14, border: 'none',
         boxShadow: '0 32px 80px rgba(0,0,0,0.7)', padding: 'clamp(16px, 4vw, 24px)',
         animation: 'popIn 0.18s ease both',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: rgba(T.fg, 0.9), letterSpacing: '-0.01em' }}>{tools.length}개 기능</span>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: rgba(getCurrentTheme().fg, 0.6), cursor: 'pointer', fontSize: 14, width: 44, height: 44, borderRadius: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          <button onClick={onClose} style={{ background: rgba(T.fg, 0.08), border: 'none', color: rgba(T.fg, 0.6), cursor: 'pointer', fontSize: 14, width: 44, height: 44, borderRadius: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
         </div>
 
         {favTools.length > 0 && <div style={{ marginBottom: 20 }}>
           <Lbl text="즐겨찾기" />
-          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ background: rgba(T.fg, 0.04), borderRadius: 12, overflow: 'hidden' }}>
             {favTools.map((t, i) => <OvCard key={t.id} tool={t} fav onSelect={onSelect} onToggleFav={onToggleFav} last={i === favTools.length - 1} />)}
           </div>
         </div>}
 
-        {recentTools.length > 0 && <div style={{ marginBottom: 20 }}><Lbl text="최근" /><div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, overflow: 'hidden' }}>{recentTools.map((t, i) => <OvCard key={t.id} tool={t} fav={favoriteIds.includes(t.id)} onSelect={onSelect} onToggleFav={onToggleFav} last={i === recentTools.length - 1} />)}</div></div>}
-        {categorized.map(g => <div key={g.label} style={{ marginBottom: 20 }}><Lbl text={g.label} /><div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, overflow: 'hidden' }}>{g.tools.map((t, i) => <OvCard key={t.id} tool={t} fav={favoriteIds.includes(t.id)} onSelect={onSelect} onToggleFav={onToggleFav} last={i === g.tools.length - 1} />)}</div></div>)}
+        {recentTools.length > 0 && <div style={{ marginBottom: 20 }}><Lbl text="최근" /><div style={{ background: rgba(T.fg, 0.04), borderRadius: 12, overflow: 'hidden' }}>{recentTools.map((t, i) => <OvCard key={t.id} tool={t} fav={favoriteIds.includes(t.id)} onSelect={onSelect} onToggleFav={onToggleFav} last={i === recentTools.length - 1} />)}</div></div>}
+        {categorized.map(g => <div key={g.label} style={{ marginBottom: 20 }}><Lbl text={g.label} /><div style={{ background: rgba(T.fg, 0.04), borderRadius: 12, overflow: 'hidden' }}>{g.tools.map((t, i) => <OvCard key={t.id} tool={t} fav={favoriteIds.includes(t.id)} onSelect={onSelect} onToggleFav={onToggleFav} last={i === g.tools.length - 1} />)}</div></div>)}
       </div>
     </div>
   )
 })
 
 const Lbl = memo(function Lbl({ text }: { text: string }) {
-  return <div style={{ fontSize: 13, fontWeight: 400, letterSpacing: '-0.01em', color: rgba(T.fg, 0.45), marginBottom: 8, paddingLeft: 16, lineHeight: 1.4 }}>{text}</div>
+  return <div style={{ fontSize: 13, fontWeight: 400, letterSpacing: '-0.01em', color: rgba(getGOLD(), 0.5), marginBottom: 8, paddingLeft: 16, lineHeight: 1.4 }}>{text}</div>
 })
 
 const OvCard = memo(function OvCard({ tool, fav, onSelect, onToggleFav, last }: { tool: Tool; fav?: boolean; onSelect: (id: string) => void; onToggleFav?: (id: string) => void; last?: boolean }) {
@@ -562,9 +562,9 @@ const OvCard = memo(function OvCard({ tool, fav, onSelect, onToggleFav, last }: 
     <button onClick={() => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       title={tool.description} aria-label={tool.label + (tool.description ? ': ' + tool.description : '')} style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', borderRadius: 0, cursor: 'pointer',
-        background: h ? 'rgba(255,255,255,0.06)' : 'transparent',
+        background: h ? rgba(T.fg, 0.06) : 'transparent',
         border: 'none',
-        borderBottom: last ? 'none' : '1px solid rgba(255,255,255,0.06)',
+        borderBottom: last ? 'none' : `1px solid ${rgba(T.fg, 0.06)}`,
         transition: 'background 0.15s ease', overflow: 'hidden', position: 'relative',
         minHeight: 48, width: '100%', textAlign: 'left',
       }}>
@@ -590,8 +590,8 @@ const SearchCard = memo(function SearchCard({ tool, animDuration, onSelect }: { 
     <button onClick={() => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       title={tool.description} style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', cursor: 'pointer',
-        background: h ? 'rgba(255,255,255,0.06)' : 'transparent',
-        border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: h ? rgba(T.fg, 0.06) : 'transparent',
+        border: 'none', borderBottom: `1px solid ${rgba(T.fg, 0.06)}`,
         transition: `background ${animDuration * 0.5}ms ease`, textAlign: 'left', width: '100%', color: 'inherit',
         minHeight: 48,
       }}>
@@ -660,14 +660,14 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
     <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15, pointerEvents: 'none' }}>
       <div style={{ pointerEvents: 'auto', width: 'min(420px, 92vw)', maxHeight: '65vh', overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
-        background: '#0a0804', backdropFilter: 'blur(32px)',
+        background: T.bg, backdropFilter: 'blur(32px)',
         borderRadius: 14, border: 'none',
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)', padding: 'clamp(8px, 2vw, 16px)',
         display: 'flex', flexDirection: 'column', gap: 0, animation: 'fadeIn 0.12s ease both',
       }}>
         {filteredTools.length === 0
           ? <div style={{ padding: '20px 0', textAlign: 'center', color: rgba(T.fg, 0.35), fontSize: 15 }}>결과 없음</div>
-          : <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, overflow: 'hidden' }}>{filteredTools.map(t => <SearchCard key={t.id} tool={t} animDuration={animDuration} onSelect={handleSelect} />)}</div>}
+          : <div style={{ background: rgba(T.fg, 0.04), borderRadius: 12, overflow: 'hidden' }}>{filteredTools.map(t => <SearchCard key={t.id} tool={t} animDuration={animDuration} onSelect={handleSelect} />)}</div>}
       </div>
     </div>
   )
