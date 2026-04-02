@@ -253,10 +253,10 @@ export default function App(): React.ReactElement {
               }} />
             {toolSearch && (
               <button onClick={() => setToolSearch('')} style={{
-                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', color: rgba(T.fg, 0.3),
-                cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 4,
-                minWidth: 32, minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', color: rgba(T.fg, 0.5),
+                cursor: 'pointer', fontSize: 14, lineHeight: 1.3, padding: 4,
+                minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>x</button>
             )}
           </div>
@@ -265,10 +265,10 @@ export default function App(): React.ReactElement {
             {['Core', 'Overlay', 'Quick Use', 'Schedule', 'Documents', 'System'].map(cat => (
               <button key={cat} onClick={() => setToolSearch(toolSearch === cat ? '' : cat)}
                 style={{
-                  fontSize: 10, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
-                  border: `1px solid ${toolSearch === cat ? rgba(T.gold, 0.3) : rgba(T.gold, 0.08)}`,
+                  fontSize: 11, padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
+                  border: `1px solid ${toolSearch === cat ? rgba(T.gold, 0.3) : rgba(T.gold, 0.12)}`,
                   background: toolSearch === cat ? rgba(T.gold, 0.12) : 'rgba(10,10,8,0.7)',
-                  color: toolSearch === cat ? T.gold : rgba(T.fg, 0.35),
+                  color: toolSearch === cat ? T.gold : rgba(T.fg, 0.5),
                   fontWeight: 500, letterSpacing: '0.04em', transition: 'all 0.12s ease',
                   backdropFilter: 'blur(10px)',
                 }}>{cat}</button>
@@ -308,8 +308,9 @@ export default function App(): React.ReactElement {
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{n.message}</span>
               <button onClick={() => dismissNotification(n.id)} style={{
-                background: 'none', border: 'none', color: c.color, opacity: 0.35,
-                cursor: 'pointer', fontSize: 10, padding: '0 0 0 4px', lineHeight: 1, flexShrink: 0,
+                background: 'none', border: 'none', color: c.color, opacity: 0.5,
+                cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1.3, flexShrink: 0,
+                minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>x</button>
             </div>
           )
@@ -349,7 +350,7 @@ export default function App(): React.ReactElement {
         }}>
           <div onClick={e => e.stopPropagation()} style={{ padding: '28px 36px', borderRadius: 12, border: `1px solid ${rgba(T.gold, 0.15)}`, background: rgba(T.bg, 0.95), minWidth: 340, maxWidth: 440 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: rgba(T.fg, 0.9), marginBottom: 4, fontFamily: theme.titleFont }}>키보드 단축키</div>
-            <div style={{ fontSize: 10, color: rgba(T.fg, 0.35), marginBottom: 18 }}>아무 곳이나 클릭하거나 Esc를 눌러 닫기</div>
+            <div style={{ fontSize: 11, color: rgba(T.fg, 0.5), marginBottom: 18 }}>아무 곳이나 클릭하거나 Esc를 눌러 닫기</div>
 
             {([
               { label: '일반', items: [
@@ -370,11 +371,11 @@ export default function App(): React.ReactElement {
               ]},
             ] as const).map(section => (
               <div key={section.label} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: rgba(T.gold, 0.45), letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>{section.label}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: rgba(T.gold, 0.55), letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>{section.label}</div>
                 {section.items.map(([key, desc]) => (
                   <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${rgba(T.gold, 0.04)}` }}>
                     <kbd style={{ fontSize: 11, fontWeight: 600, color: T.teal, fontFamily: 'monospace', background: rgba(T.teal, 0.06), padding: '2px 10px', borderRadius: 4, border: `1px solid ${rgba(T.teal, 0.1)}`, minWidth: 60, textAlign: 'center' }}>{key}</kbd>
-                    <span style={{ fontSize: 11, color: rgba(T.fg, 0.55) }}>{desc}</span>
+                    <span style={{ fontSize: 12, color: rgba(T.fg, 0.65) }}>{desc}</span>
                   </div>
                 ))}
               </div>
