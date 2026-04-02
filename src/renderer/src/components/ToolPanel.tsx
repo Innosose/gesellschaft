@@ -81,9 +81,9 @@ export default function ToolPanel({ toolId, toolColor, toolLabel, onBack }: Tool
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex',
-      animation: 'panelSlideIn 0.28s cubic-bezier(0.2,0,0,1) both' }}>
+      animation: 'panelSlideIn 0.32s cubic-bezier(0.32,0.72,0,1) both' }}>
       {!isMobile && (
-        <div style={{ position: 'absolute', inset: 0, background: rgba(T.bg, 0.94), backdropFilter: 'blur(40px)' }}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
           aria-label="닫기" role="button" tabIndex={-1}
           onClick={onBack} />
       )}
@@ -93,29 +93,32 @@ export default function ToolPanel({ toolId, toolColor, toolLabel, onBack }: Tool
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       } : {
         position: 'relative', margin: 'auto',
-        width: 'clamp(600px, 84vw, 84vh * 16 / 9)', maxWidth: 1200,
-        aspectRatio: '16 / 9',
-        borderRadius: 20, border: 'none',
-        background: rgba(T.bg, 0.98),
-        boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+        width: 'min(900px, 88vw)', maxWidth: 1100,
+        height: 'min(640px, 82vh)',
+        borderRadius: 12, border: 'none',
+        background: rgba(T.fg, 0.04),
+        backdropFilter: 'blur(40px) saturate(1.5)',
+        WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      }} onClick={e => e.stopPropagation()}>
+      } as React.CSSProperties} onClick={e => e.stopPropagation()}>
         <div style={{
-          height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
-          borderBottom: `1px solid ${rgba(T.fg, 0.06)}`,
+          height: 52, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
+          borderBottom: `0.5px solid ${rgba(T.fg, 0.08)}`,
         }}>
           <button onClick={onBack} style={{
-            width: 36, height: 36, borderRadius: 18,
-            border: 'none', background: rgba(T.fg, 0.06),
-            color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex',
+            width: 30, height: 30, borderRadius: 15,
+            border: 'none', background: rgba(T.fg, 0.08),
+            color: rgba(T.fg, 0.5), cursor: 'pointer', display: 'flex',
             alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            transition: 'background 0.15s',
           }} aria-label="뒤로 가기">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M7.5 2L3.5 6l4 4"/>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M8.5 3L4.5 7l4 4"/>
             </svg>
           </button>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: toolColor, opacity: 0.5, flexShrink: 0 }} />
-          <span style={{ fontSize: 17, fontWeight: 600, color: rgba(T.fg, 0.95), letterSpacing: '-0.01em', flex: 1 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: toolColor, opacity: 0.6, flexShrink: 0 }} />
+          <span style={{ fontSize: 17, fontWeight: 600, color: rgba(T.fg, 0.9), letterSpacing: '-0.02em', flex: 1 }}>
             {toolLabel}
           </span>
         </div>
