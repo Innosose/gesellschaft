@@ -315,28 +315,31 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
       <div style={{
         position: 'fixed', top: 32, right: 0, bottom: 0, width: 'min(380px, 85vw)', zIndex: 201,
         display: 'flex', flexDirection: 'column',
-        background: 'var(--win-surface)', borderLeft: '1px solid var(--win-border)',
+        background: rgba(T.fg, 0.04), backdropFilter: 'blur(40px) saturate(1.8)',
+        WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+        borderLeft: `0.5px solid ${rgba(T.fg, 0.08)}`,
         transform: effectiveOpen ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.22s cubic-bezier(0.2, 0, 0, 1)',
-        boxShadow: effectiveOpen ? '-4px 0 24px rgba(0,0,0,0.4)' : 'none',
+        transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
+        boxShadow: effectiveOpen ? '-8px 0 32px rgba(0,0,0,0.3)' : 'none',
       }}>
         {/* Header */}
         <div style={{
-          display: 'flex', alignItems: 'center', height: 42,
-          padding: '0 14px', borderBottom: '1px solid var(--win-border)',
-          background: 'var(--win-surface-2)', flexShrink: 0,
+          display: 'flex', alignItems: 'center', height: 52,
+          padding: '0 16px', borderBottom: `0.5px solid ${rgba(T.fg, 0.08)}`,
+          flexShrink: 0,
         }}>
-          <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>AI 어시스턴트</span>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <span style={{ fontSize: 17, fontWeight: 600, flex: 1, letterSpacing: '-0.02em', color: rgba(T.fg, 0.9) }}>AI</span>
+          <div style={{ display: 'flex', gap: 2, background: rgba(T.fg, 0.06), borderRadius: 8, padding: 2 }}>
             {(['chat', 'settings'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 style={{
-                  fontSize: 11, padding: '8px 10px', borderRadius: 4, border: 'none', cursor: 'pointer',
-                  background: tab === t ? 'var(--win-accent)' : 'transparent',
-                  color: tab === t ? T.fg : 'var(--win-text-sub)',
-                  minHeight: 44, lineHeight: 1.4,
+                  fontSize: 13, padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                  background: tab === t ? rgba(T.fg, 0.1) : 'transparent',
+                  color: tab === t ? rgba(T.fg, 0.9) : rgba(T.fg, 0.4),
+                  fontWeight: tab === t ? 600 : 400,
+                  transition: 'all 0.15s ease', lineHeight: 1.3,
                 }}
               >{t === 'chat' ? '채팅' : '설정'}</button>
             ))}
@@ -344,11 +347,11 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           <button
             onClick={onClose}
             style={{
-              marginLeft: 10, width: 44, height: 44, borderRadius: 4, border: 'none',
-              background: 'transparent', color: 'var(--win-text-muted)', cursor: 'pointer', fontSize: 14,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginLeft: 10, width: 30, height: 30, borderRadius: 15, border: 'none',
+              background: rgba(T.fg, 0.08), color: rgba(T.fg, 0.4), cursor: 'pointer', fontSize: 12,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s',
             }}
-          >✕</button>
+          ><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5"/></svg></button>
         </div>
 
         {tab === 'chat' && (
