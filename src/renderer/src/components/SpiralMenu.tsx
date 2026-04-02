@@ -691,23 +691,22 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button onClick={() => rotate(-1)} className="spiral-nav-btn" aria-label="이전 도구" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M6 2L3 5l3 3"/></svg>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: rgba(T.fg, 0.06), borderRadius: 22, padding: '4px', backdropFilter: 'blur(20px)' }}>
+          <button onClick={() => rotate(-1)} aria-label="이전 도구" style={{ width: 40, height: 40, borderRadius: 20, border: 'none', background: rgba(T.fg, 0.06), color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2L3 5l3 3"/></svg>
           </button>
           <div style={{
-            fontSize: 11, fontWeight: 500, color: rgba(getGOLD(), 0.7),
-            background: rgba(T.bg, 0.9), border: `1px solid ${rgba(getGOLD(), 0.1)}`,
-            borderRadius: 4, padding: '4px 14px', backdropFilter: 'blur(16px)',
-            minWidth: 100, textAlign: 'center', letterSpacing: '0.06em',
+            fontSize: 13, fontWeight: 500, color: rgba(T.fg, 0.85),
+            padding: '0 16px',
+            minWidth: 100, textAlign: 'center',
             fontFamily: getCurrentTheme().titleFont, textTransform: 'uppercase',
-            lineHeight: 1.4, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1.4,
           }}>{centerToolLabel}</div>
-          <button onClick={() => rotate(1)} className="spiral-nav-btn" aria-label="다음 도구" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M4 2l3 3-3 3"/></svg>
+          <button onClick={() => rotate(1)} aria-label="다음 도구" style={{ width: 40, height: 40, borderRadius: 20, border: 'none', background: rgba(T.fg, 0.06), color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 2l3 3-3 3"/></svg>
           </button>
-          <button onClick={() => setShowOverview(true)} title="전체" aria-label="전체 보기" className="spiral-overview-btn" style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="12" height="12" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1"><rect x="1" y="1" width="3.5" height="3.5"/><rect x="5.5" y="1" width="3.5" height="3.5"/><rect x="1" y="5.5" width="3.5" height="3.5"/><rect x="5.5" y="5.5" width="3.5" height="3.5"/></svg>
+          <button onClick={() => setShowOverview(true)} title="전체" aria-label="전체 보기" style={{ width: 40, height: 40, borderRadius: 20, border: 'none', background: rgba(T.fg, 0.06), color: rgba(T.fg, 0.6), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1"><rect x="1" y="1" width="3.5" height="3.5"/><rect x="5.5" y="1" width="3.5" height="3.5"/><rect x="1" y="5.5" width="3.5" height="3.5"/><rect x="5.5" y="5.5" width="3.5" height="3.5"/></svg>
           </button>
         </div>
       </div>

@@ -244,33 +244,33 @@ export default function App(): React.ReactElement {
           <div style={{ position: 'relative', pointerEvents: 'auto', width: '100%' }}>
             <input autoFocus value={toolSearch} onChange={e => setToolSearch(e.target.value)}
               aria-label="도구 검색" placeholder="Search the Library..." style={{
-                width: '100%', padding: '10px 32px 10px 14px', borderRadius: 4,
-                border: `1px solid ${toolSearch ? rgba(T.gold, 0.25) : rgba(T.gold, 0.1)}`,
+                width: '100%', padding: '12px 44px 12px 16px', borderRadius: 14,
+                border: 'none',
                 fontFamily: theme.titleFont,
-                background: 'rgba(10,10,8,0.88)', color: rgba(T.fg, 0.88),
-                fontSize: 13, fontWeight: 500, backdropFilter: 'blur(20px)', outline: 'none',
-                transition: 'border-color 0.15s ease',
+                background: rgba(T.fg, 0.08), color: rgba(T.fg, 0.9),
+                fontSize: 15, fontWeight: 400, backdropFilter: 'blur(20px)', outline: 'none',
+                transition: 'background 0.15s ease', minHeight: 48,
               }} />
             {toolSearch && (
               <button onClick={() => setToolSearch('')} style={{
                 position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', color: rgba(T.fg, 0.5),
-                cursor: 'pointer', fontSize: 14, lineHeight: 1.3, padding: 4,
-                minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>x</button>
+                background: rgba(T.fg, 0.12), border: 'none', color: rgba(T.fg, 0.5),
+                cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: 0,
+                width: 22, height: 22, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>✕</button>
             )}
           </div>
           {/* Category filter chips */}
-          <div style={{ display: 'flex', gap: 6, pointerEvents: 'auto', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, pointerEvents: 'auto', flexWrap: 'wrap', justifyContent: 'center' }}>
             {['Core', 'Overlay', 'Quick Use', 'Schedule', 'Documents', 'System'].map(cat => (
               <button key={cat} onClick={() => setToolSearch(toolSearch === cat ? '' : cat)}
                 style={{
-                  fontSize: 11, padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
-                  border: `1px solid ${toolSearch === cat ? rgba(T.gold, 0.3) : rgba(T.gold, 0.12)}`,
-                  background: toolSearch === cat ? rgba(T.gold, 0.12) : 'rgba(10,10,8,0.7)',
-                  color: toolSearch === cat ? T.gold : rgba(T.fg, 0.5),
-                  fontWeight: 500, letterSpacing: '0.04em', transition: 'all 0.12s ease',
-                  backdropFilter: 'blur(10px)',
+                  fontSize: 13, padding: '8px 16px', borderRadius: 20, cursor: 'pointer',
+                  border: 'none',
+                  background: toolSearch === cat ? rgba(T.gold, 0.18) : rgba(T.fg, 0.06),
+                  color: toolSearch === cat ? T.gold : rgba(T.fg, 0.6),
+                  fontWeight: 500, transition: 'all 0.15s ease',
+                  backdropFilter: 'blur(10px)', minHeight: 36,
                 }}>{cat}</button>
             ))}
           </div>
@@ -296,22 +296,22 @@ export default function App(): React.ReactElement {
           const isDismissing = dismissing.has(n.id)
           return (
             <div key={n.id} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 10px', borderRadius: 8, background: c.bg,
-              border: `1px solid ${c.border}`, borderLeft: `2px solid ${rgba(T.gold, 0.4)}`, color: c.color,
-              fontSize: 11, fontWeight: 500, backdropFilter: 'blur(20px)',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.4)', maxWidth: 260,
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '14px 16px', borderRadius: 14, background: rgba(T.fg, 0.06),
+              border: 'none', color: rgba(T.fg, 0.85),
+              fontSize: 15, fontWeight: 400, backdropFilter: 'blur(40px)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)', maxWidth: 320,
               pointerEvents: 'auto',
               animation: isDismissing ? 'slideOutRight 0.2s ease both' : 'slideInRight 0.2s ease both',
-              letterSpacing: '0.01em', lineHeight: 1.35,
+              lineHeight: 1.4,
             }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{n.message}</span>
               <button onClick={() => dismissNotification(n.id)} style={{
-                background: 'none', border: 'none', color: c.color, opacity: 0.5,
-                cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1.3, flexShrink: 0,
-                minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>x</button>
+                background: rgba(T.fg, 0.1), border: 'none', color: rgba(T.fg, 0.5),
+                cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0,
+                width: 28, height: 28, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>✕</button>
             </div>
           )
         })}
@@ -325,15 +325,25 @@ export default function App(): React.ReactElement {
       )}
 
       {/* Top controls */}
-      <button className="app-top-btn" onClick={handleOpenSettings} title="설정"
-        style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top, 14px))', right: 52, zIndex: 100 }}>
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <button onClick={handleOpenSettings} title="설정"
+        style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top, 14px))', right: 60, zIndex: 100,
+          width: 40, height: 40, borderRadius: 20, border: 'none',
+          background: rgba(T.fg, 0.08), backdropFilter: 'blur(20px)',
+          color: rgba(T.fg, 0.6), cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
           <circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4"/>
         </svg>
       </button>
-      <button className="app-top-btn app-top-btn--quit" onClick={handleHide} title={isWeb ? '메뉴 닫기' : '숨기기'}
-        style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top, 14px))', right: 16, zIndex: 100 }}>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <button onClick={handleHide} title={isWeb ? '메뉴 닫기' : '숨기기'}
+        style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top, 14px))', right: 14, zIndex: 100,
+          width: 40, height: 40, borderRadius: 20, border: 'none',
+          background: rgba(T.fg, 0.08), backdropFilter: 'blur(20px)',
+          color: rgba(T.fg, 0.6), cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/>
         </svg>
       </button>
@@ -348,9 +358,9 @@ export default function App(): React.ReactElement {
           background: rgba(T.bg, 0.9), backdropFilter: 'blur(20px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <div onClick={e => e.stopPropagation()} style={{ padding: '28px 36px', borderRadius: 12, border: `1px solid ${rgba(T.gold, 0.15)}`, background: rgba(T.bg, 0.95), minWidth: 340, maxWidth: 440 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: rgba(T.fg, 0.9), marginBottom: 4, fontFamily: theme.titleFont }}>키보드 단축키</div>
-            <div style={{ fontSize: 11, color: rgba(T.fg, 0.5), marginBottom: 18 }}>아무 곳이나 클릭하거나 Esc를 눌러 닫기</div>
+          <div onClick={e => e.stopPropagation()} style={{ padding: 'clamp(20px, 5vw, 32px)', borderRadius: 20, border: 'none', background: rgba(T.bg, 0.97), minWidth: 340, maxWidth: 440, backdropFilter: 'blur(40px)' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: rgba(T.fg, 0.95), marginBottom: 4, fontFamily: theme.titleFont }}>키보드 단축키</div>
+            <div style={{ fontSize: 13, color: rgba(T.fg, 0.45), marginBottom: 20 }}>아무 곳이나 클릭하거나 Esc를 눌러 닫기</div>
 
             {([
               { label: '일반', items: [
@@ -370,14 +380,16 @@ export default function App(): React.ReactElement {
                 ['카테고리 클릭', '분류별 필터'],
               ]},
             ] as const).map(section => (
-              <div key={section.label} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: rgba(T.gold, 0.55), letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>{section.label}</div>
-                {section.items.map(([key, desc]) => (
-                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${rgba(T.gold, 0.04)}` }}>
-                    <kbd style={{ fontSize: 11, fontWeight: 600, color: T.teal, fontFamily: 'monospace', background: rgba(T.teal, 0.06), padding: '2px 10px', borderRadius: 4, border: `1px solid ${rgba(T.teal, 0.1)}`, minWidth: 60, textAlign: 'center' }}>{key}</kbd>
-                    <span style={{ fontSize: 12, color: rgba(T.fg, 0.65) }}>{desc}</span>
+              <div key={section.label} style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 400, color: rgba(T.fg, 0.45), marginBottom: 8, paddingLeft: 16 }}>{section.label}</div>
+                <div style={{ background: rgba(T.fg, 0.04), borderRadius: 12, overflow: 'hidden' }}>
+                {section.items.map(([key, desc], i) => (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', minHeight: 48, borderBottom: i < section.items.length - 1 ? `1px solid ${rgba(T.fg, 0.06)}` : 'none' }}>
+                    <kbd style={{ fontSize: 13, fontWeight: 600, color: T.teal, fontFamily: 'monospace', background: rgba(T.teal, 0.08), padding: '4px 12px', borderRadius: 8, border: 'none', minWidth: 60, textAlign: 'center' }}>{key}</kbd>
+                    <span style={{ fontSize: 15, color: rgba(T.fg, 0.7) }}>{desc}</span>
                   </div>
                 ))}
+                </div>
               </div>
             ))}
           </div>
