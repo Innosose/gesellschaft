@@ -313,7 +313,7 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
       )}
 
       <div style={{
-        position: 'fixed', top: 32, right: 0, bottom: 0, width: 380, zIndex: 201,
+        position: 'fixed', top: 32, right: 0, bottom: 0, width: 'min(380px, 85vw)', zIndex: 201,
         display: 'flex', flexDirection: 'column',
         background: 'var(--win-surface)', borderLeft: '1px solid var(--win-border)',
         transform: effectiveOpen ? 'translateX(0)' : 'translateX(100%)',

@@ -13,13 +13,17 @@ interface SpiralMenuProps {
 
 const ANIM_MS: Record<string, number> = { slow: 600, normal: 350, fast: 180, none: 0 }
 const STAGGER_MS: Record<string, number> = { slow: 50, normal: 30, fast: 12, none: 0 }
-/* Responsive card size — scales with viewport, smaller on mobile */
+
+/** Detect mobile OR landscape phone (small height) */
+function isCompact(vw: number, vh: number): boolean { return vw <= 768 || vh <= 500 }
+
+/* Responsive card size — scales with viewport, smaller on mobile/landscape */
 function getCardSize(vw: number, vh: number): { w: number; h: number } {
   const ar = getCurrentTheme().shape.aspectRatio
-  const isMobile = vw <= 768
-  const minW = isMobile ? 90 : 90
-  const maxW = isMobile ? 130 : 150
-  const factor = isMobile ? 0.18 : 0.085
+  const compact = isCompact(vw, vh)
+  const minW = compact ? 90 : 90
+  const maxW = compact ? 130 : 150
+  const factor = compact ? 0.18 : 0.085
   const w = Math.round(Math.min(Math.max(vw * factor, minW), maxW))
   const h = Math.round(w / ar)
   return { w, h }
@@ -72,9 +76,12 @@ const FAV_KEY = 'gs-favorites'
 function getFavorites(): string[] { try { return JSON.parse(localStorage.getItem(FAV_KEY) ?? '[]') } catch { return [] } }
 function toggleFavorite(id: string): string[] { const f = getFavorites(); const next = f.includes(id) ? f.filter(x => x !== id) : [...f, id]; localStorage.setItem(FAV_KEY, JSON.stringify(next)); return next }
 function getArcParams(vw: number, vh: number, scale: number) {
-  const isMobile = vw <= 768
-  const r = isMobile ? Math.min(vh * 0.52 * scale, 500) : Math.min(vh * 0.62 * scale, 820)
-  return { radius: r, arcCenterX: vw / 2, arcCenterY: (isMobile ? vh * 0.50 : vh * 0.55) + r }
+  const compact = isCompact(vw, vh)
+  const landscape = vh <= 500 && vw > vh
+  const r = compact
+    ? Math.min(vh * (landscape ? 0.42 : 0.52) * scale, landscape ? 300 : 500)
+    : Math.min(vh * 0.62 * scale, 820)
+  return { radius: r, arcCenterX: vw / 2, arcCenterY: (compact ? vh * (landscape ? 0.45 : 0.50) : vh * 0.55) + r }
 }
 function cardPosition(deg: number, r: number, cx: number, cy: number) { const rad = (deg * Math.PI) / 180; return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) } }
 
@@ -699,7 +706,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
 
   if (isSearching) return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 15, pointerEvents: 'none' }}>
-      <div style={{ pointerEvents: 'auto', width: 'min(420px, 92vw)', maxHeight: '65vh', overflowY: 'auto',
+      <div style={{ pointerEvents: 'auto', width: 'min(420px, 92vw)', maxHeight: vh <= 500 ? '80vh' : '65vh', overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
         background: T.bg, backdropFilter: 'blur(32px)',
         borderRadius: 14, border: 'none',
@@ -726,7 +733,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
       ))}
 
       <div style={{
-        position: 'fixed', bottom: 'clamp(160px, 20vh, 210px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
+        position: 'fixed', bottom: vh <= 500 ? Math.max(70, vh * 0.18) : 'clamp(160px, 20vh, 210px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
