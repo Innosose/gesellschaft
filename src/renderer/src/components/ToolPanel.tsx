@@ -82,15 +82,20 @@ export default function ToolPanel({ toolId, toolColor, toolLabel, onBack }: Tool
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex',
       animation: 'panelSlideIn 0.28s cubic-bezier(0.2,0,0,1) both' }}>
-      <div style={{ position: 'absolute', inset: 0, background: rgba(T.bg, 0.94), backdropFilter: 'blur(40px)' }}
-        aria-label="닫기" role="button" tabIndex={-1}
-        onClick={onBack} />
-      <div style={{
-        position: 'relative', margin: isMobile ? 0 : 'auto',
-        width: isMobile ? '100%' : 'clamp(600px, 84vw, 84vh * 16 / 9)', maxWidth: isMobile ? undefined : 1200,
-        aspectRatio: isMobile ? undefined : '16 / 9',
-        height: isMobile ? '100%' : undefined,
-        borderRadius: isMobile ? 0 : 6, border: isMobile ? 'none' : `1px solid ${T.gold10}`,
+      {!isMobile && (
+        <div style={{ position: 'absolute', inset: 0, background: rgba(T.bg, 0.94), backdropFilter: 'blur(40px)' }}
+          aria-label="닫기" role="button" tabIndex={-1}
+          onClick={onBack} />
+      )}
+      <div style={isMobile ? {
+        position: 'absolute', inset: 0,
+        background: rgba(T.bg, 0.98),
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      } : {
+        position: 'relative', margin: 'auto',
+        width: 'clamp(600px, 84vw, 84vh * 16 / 9)', maxWidth: 1200,
+        aspectRatio: '16 / 9',
+        borderRadius: 6, border: `1px solid ${T.gold10}`,
         background: rgba(T.bg, 0.98),
         boxShadow: `0 0 40px ${rgba(T.gold, 0.03)}, 0 32px 80px rgba(0,0,0,0.6)`,
         display: 'flex', flexDirection: 'column', overflow: 'hidden',

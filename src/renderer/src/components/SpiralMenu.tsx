@@ -675,7 +675,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
       ))}
 
       <div style={{
-        position: 'fixed', bottom: 'clamp(100px, 14vh, 160px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
+        position: 'fixed', bottom: 'clamp(120px, 16vh, 180px)', left: '50%', transform: 'translateX(-50%)', zIndex: 22,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
