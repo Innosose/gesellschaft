@@ -555,5 +555,7 @@ export const webApi: Window['api'] = {
 export function installWebApi(): void {
   if (typeof window !== 'undefined' && !window.api) {
     (window as Window).api = webApi
+    // Mark web mode for CSS (safe area background fill)
+    document.documentElement.classList.add('web-mode')
   }
 }

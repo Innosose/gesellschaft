@@ -78,12 +78,12 @@ button {
 }
 
 html, body {
-  background: transparent !important;
+  background: transparent;
 }
 
-html {
-  /* Safari safe area support */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+/* Web mode: fill safe area with dark background instead of white */
+html.web-mode, html.web-mode body {
+  background: #0a0804 !important;
 }
 
 body {
