@@ -44,6 +44,27 @@ const CATEGORIES: { label: string; ids: string[] }[] = [
   { label: 'System',     ids: ['vault','yourInfo'] },
 ]
 
+const IS_WEB = !('__electron__' in window || navigator.userAgent.includes('Electron'))
+
+/** Tools that require desktop/Electron APIs — disabled on web/mobile */
+const WEB_DISABLED_TOOLS = new Set([
+  'finder',     // file search — needs fs
+  'excelTool',  // Excel — needs file dialog
+  'pdfTool',    // PDF — needs file dialog
+  'imageTools', // image tools — needs file dialog
+  'launcher',   // app launcher — needs shell
+  'clipboard',  // clipboard history — needs system clipboard
+  'zone',       // window zones — needs Electron windows
+  'notepin',    // screen pin — needs Electron overlay
+  'batch',      // batch rename — needs fs
+  'upload',     // file check — needs fs
+  'xcolor',     // color picker — needs screen capture
+  'yourInfo',   // PC info — needs system APIs
+  'keyboard',   // keyboard macros — needs system shortcuts
+])
+
+function isToolDisabled(id: string): boolean { return IS_WEB && WEB_DISABLED_TOOLS.has(id) }
+
 function getRecentTools(): string[] { try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') } catch { return [] } }
 function addRecentTool(id: string): void { const p = getRecentTools().filter(x => x !== id); localStorage.setItem(RECENT_KEY, JSON.stringify([id, ...p].slice(0, MAX_RECENT))) }
 
@@ -247,11 +268,12 @@ const FanCard = memo(function FanCard({
   tool, slotIndex, total, radius, arcCenterX, arcCenterY,
   isFavorite, isCenter, animDuration, staggerMs, cardW, cardH, onSelect, onRotateTo,
 }: FanCardProps) {
+  const disabled = isToolDisabled(tool.id)
   const [hovered, setHovered] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [contentFade, setContentFade] = useState(false)
   const prevId = useRef(tool.id)
-  const typedDesc = useTypewriter(tool.description ?? '', isCenter && hovered, 25, 550)
+  const typedDesc = useTypewriter(tool.description ?? '', isCenter && hovered && !disabled, 25, 550)
 
   useEffect(() => { const t = setTimeout(() => setMounted(true), slotIndex * staggerMs + 20); return () => clearTimeout(t) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -262,19 +284,19 @@ const FanCard = memo(function FanCard({
   const distFromCenter = Math.abs(slotIndex - midIndex)
   const tNorm = midIndex > 0 ? distFromCenter / midIndex : 0
   const baseScale = CARD_MIN_SCALE + CARD_SCALE_PEAK * Math.exp(-CARD_SCALE_FALLOFF * tNorm)
-  const activeScale = hovered ? baseScale * 1.06 : isCenter ? baseScale : baseScale * (1 - tNorm * 0.03)
+  const activeScale = hovered && !disabled ? baseScale * 1.06 : isCenter ? baseScale : baseScale * (1 - tNorm * 0.03)
   const baseOpacity = Math.max(CARD_MIN_OPACITY, 1.0 - 0.5 * tNorm * tNorm) // quadratic falloff — gentler
   const blurPx = tNorm * tNorm * CARD_MAX_BLUR // quadratic — sharp center, gentle edges
   const stepsToCenter = slotIndex - Math.floor(total / 2)
   const angleDeg = total <= 1 ? 0 : -TOTAL_ARC_DEG / 2 + slotIndex * (TOTAL_ARC_DEG / (total - 1))
   const { x, y } = cardPosition(angleDeg, radius, arcCenterX, arcCenterY)
-  const handleClick = isCenter ? () => onSelect(tool.id) : () => onRotateTo(stepsToCenter)
-  const open = isCenter && hovered
+  const handleClick = disabled ? (isCenter ? undefined : () => onRotateTo(stepsToCenter)) : (isCenter ? () => onSelect(tool.id) : () => onRotateTo(stepsToCenter))
+  const open = isCenter && hovered && !disabled
 
   const enterDelay = slotIndex * staggerMs
 
   return (
-    <div role="button" tabIndex={0} aria-label={tool.label} onClick={handleClick} onKeyDown={e => e.key === 'Enter' && handleClick()} onMouseEnter={IS_TOUCH ? undefined : () => setHovered(true)} onMouseLeave={IS_TOUCH ? undefined : () => setHovered(false)}
+    <div role="button" tabIndex={disabled ? -1 : 0} aria-label={tool.label} aria-disabled={disabled || undefined} onClick={handleClick} onKeyDown={e => e.key === 'Enter' && handleClick?.()} onMouseEnter={IS_TOUCH ? undefined : () => setHovered(true)} onMouseLeave={IS_TOUCH ? undefined : () => setHovered(false)}
       style={{
         position: 'fixed',
         left: x - cardW / 2,
@@ -284,9 +306,9 @@ const FanCard = memo(function FanCard({
           ? `scale(${activeScale})`
           : 'scale(0.7) translateY(30px)',
         transformOrigin: 'center',
-        opacity: mounted ? (hovered ? 1 : contentFade ? 0.15 : baseOpacity) : 0,
-        filter: blurPx > 0.1 ? `blur(${blurPx}px)` : undefined,
-        cursor: isCenter ? 'pointer' : stepsToCenter < 0 ? 'w-resize' : 'e-resize',
+        opacity: mounted ? (disabled ? baseOpacity * 0.4 : hovered ? 1 : contentFade ? 0.15 : baseOpacity) : 0,
+        filter: disabled ? `grayscale(0.8)${blurPx > 0.1 ? ` blur(${blurPx}px)` : ''}` : blurPx > 0.1 ? `blur(${blurPx}px)` : undefined,
+        cursor: disabled ? 'not-allowed' : isCenter ? 'pointer' : stepsToCenter < 0 ? 'w-resize' : 'e-resize',
         perspective: CARD_PERSPECTIVE,
         transition: [
           `left ${animDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`,
@@ -493,7 +515,17 @@ const FanCard = memo(function FanCard({
       </div>
       )})()}
 
-      {hovered && !IS_TOUCH && !isCenter && tool.description && (
+      {disabled && isCenter && (
+        <div style={{
+          position: 'absolute', bottom: -28, left: '50%', transform: 'translateX(-50%)',
+          padding: '4px 10px', borderRadius: 8, fontSize: 10, fontWeight: 500,
+          background: rgba(T.bg, 0.95), color: rgba(T.fg, 0.4),
+          whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 30,
+        }}>
+          데스크톱 전용
+        </div>
+      )}
+      {!disabled && hovered && !IS_TOUCH && !isCenter && tool.description && (
         <div style={{
           position: 'absolute', bottom: -28, left: '50%', transform: 'translateX(-50%)',
           padding: '4px 10px', borderRadius: 4, fontSize: 10,
@@ -559,24 +591,28 @@ const Lbl = memo(function Lbl({ text }: { text: string }) {
 })
 
 const OvCard = memo(function OvCard({ tool, fav, onSelect, onToggleFav, last }: { tool: Tool; fav?: boolean; onSelect: (id: string) => void; onToggleFav?: (id: string) => void; last?: boolean }) {
+  const disabled = isToolDisabled(tool.id)
   const [h, setH] = useState(false)
   return (
-    <button onClick={() => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-      title={tool.description} aria-label={tool.label + (tool.description ? ': ' + tool.description : '')} style={{
-        display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', borderRadius: 0, cursor: 'pointer',
-        background: h ? rgba(T.fg, 0.06) : 'transparent',
+    <button onClick={disabled ? undefined : () => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      title={disabled ? '데스크톱 전용 기능' : tool.description} aria-label={tool.label + (tool.description ? ': ' + tool.description : '')} aria-disabled={disabled || undefined} style={{
+        display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', borderRadius: 0,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        background: !disabled && h ? rgba(T.fg, 0.06) : 'transparent',
         border: 'none',
         borderBottom: last ? 'none' : `1px solid ${rgba(T.fg, 0.06)}`,
         transition: 'background 0.15s ease', overflow: 'hidden', position: 'relative',
         minHeight: 48, width: '100%', textAlign: 'left',
+        opacity: disabled ? 0.35 : 1,
       }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: tool.color, opacity: h ? 0.9 : 0.4, flexShrink: 0 }} />
-      <span style={{ fontSize: 15, fontWeight: 400, color: h ? rgba(T.fg, 0.95) : rgba(T.fg, 0.85), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, lineHeight: 1.4 }}>{tool.label}</span>
-      {fav && <span style={{ fontSize: 13, color: rgba(getGOLD(), 0.5), flexShrink: 0, lineHeight: 1 }}>★</span>}
-      {onToggleFav && h && !fav && <span onClick={e => { e.stopPropagation(); onToggleFav(tool.id) }}
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: tool.color, opacity: disabled ? 0.3 : h ? 0.9 : 0.4, flexShrink: 0 }} />
+      <span style={{ fontSize: 15, fontWeight: 400, color: disabled ? rgba(T.fg, 0.4) : h ? rgba(T.fg, 0.95) : rgba(T.fg, 0.85), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, lineHeight: 1.4 }}>{tool.label}</span>
+      {disabled && <span style={{ fontSize: 11, color: rgba(T.fg, 0.3), flexShrink: 0, lineHeight: 1 }}>데스크톱</span>}
+      {!disabled && fav && <span style={{ fontSize: 13, color: rgba(getGOLD(), 0.5), flexShrink: 0, lineHeight: 1 }}>★</span>}
+      {!disabled && onToggleFav && h && !fav && <span onClick={e => { e.stopPropagation(); onToggleFav(tool.id) }}
         style={{ fontSize: 13, color: rgba(T.fg, 0.2), cursor: 'pointer', flexShrink: 0, lineHeight: 1 }}
         title="즐겨찾기 추가">☆</span>}
-      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, opacity: 0.25 }}>
+      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, opacity: disabled ? 0.1 : 0.25 }}>
         <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: rgba(T.fg, 0.5) }} />
       </svg>
     </button>
@@ -587,19 +623,22 @@ const OvCard = memo(function OvCard({ tool, fav, onSelect, onToggleFav, last }: 
 // SECTION: Search Card (filtered results)
 // ═══════════════════════════════════════════════
 const SearchCard = memo(function SearchCard({ tool, animDuration, onSelect }: { tool: Tool; animDuration: number; onSelect: (id: string) => void }) {
+  const disabled = isToolDisabled(tool.id)
   const [h, setH] = useState(false)
   return (
-    <button onClick={() => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-      title={tool.description} style={{
-        display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', cursor: 'pointer',
-        background: h ? rgba(T.fg, 0.06) : 'transparent',
+    <button onClick={disabled ? undefined : () => onSelect(tool.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      title={disabled ? '데스크톱 전용 기능' : tool.description} aria-disabled={disabled || undefined} style={{
+        display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        background: !disabled && h ? rgba(T.fg, 0.06) : 'transparent',
         border: 'none', borderBottom: `1px solid ${rgba(T.fg, 0.06)}`,
         transition: `background ${animDuration * 0.5}ms ease`, textAlign: 'left', width: '100%', color: 'inherit',
-        minHeight: 48,
+        minHeight: 48, opacity: disabled ? 0.35 : 1,
       }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: tool.color, opacity: h ? 0.9 : 0.4, flexShrink: 0 }} />
-      <span style={{ fontSize: 15, fontWeight: 400, color: h ? rgba(T.fg, 0.95) : rgba(T.fg, 0.85), lineHeight: 1.4 }}>{tool.label}</span>
-      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, marginLeft: 'auto', opacity: 0.25 }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: tool.color, opacity: disabled ? 0.3 : h ? 0.9 : 0.4, flexShrink: 0 }} />
+      <span style={{ fontSize: 15, fontWeight: 400, color: disabled ? rgba(T.fg, 0.4) : h ? rgba(T.fg, 0.95) : rgba(T.fg, 0.85), lineHeight: 1.4 }}>{tool.label}</span>
+      {disabled && <span style={{ fontSize: 11, color: rgba(T.fg, 0.3), marginLeft: 'auto', flexShrink: 0 }}>데스크톱</span>}
+      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, marginLeft: disabled ? 8 : 'auto', opacity: disabled ? 0.1 : 0.25 }}>
         <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: rgba(T.fg, 0.5) }} />
       </svg>
     </button>
@@ -654,7 +693,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
     return () => { window.removeEventListener('touchstart', onStart); window.removeEventListener('touchend', onEnd) }
   }, [rotate, isSearching, showOverview])
 
-  const handleSelect = useCallback((id: string) => { addRecentTool(id); setRecentIds(getRecentTools()); onSelectTool(id) }, [onSelectTool])
+  const handleSelect = useCallback((id: string) => { if (isToolDisabled(id)) return; addRecentTool(id); setRecentIds(getRecentTools()); onSelectTool(id) }, [onSelectTool])
   const handleToggleFav = useCallback((id: string) => { setFavoriteIds(toggleFavorite(id)) }, [])
   const centerToolLabel = slotTools[Math.floor(slotTools.length / 2)]?.label ?? ''
 
