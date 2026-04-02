@@ -48,8 +48,8 @@ const TOOL_REGISTRY: Record<string, React.LazyExoticComponent<React.ComponentTyp
 /** Fullscreen overlay tools render via OverlayPortal — no modal wrapper needed */
 const FULLSCREEN_TOOLS = new Set(['ruler', 'whiteboard', 'zone', 'notepin'])
 
-/** Reactive mobile check */
-const MOBILE_MQ = typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)') : null
+/** Reactive mobile check — includes landscape phones (small height) */
+const MOBILE_MQ = typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px), (max-height: 500px)') : null
 function useMobile(): boolean {
   return useSyncExternalStore(
     (cb) => { MOBILE_MQ?.addEventListener('change', cb); return () => MOBILE_MQ?.removeEventListener('change', cb) },
