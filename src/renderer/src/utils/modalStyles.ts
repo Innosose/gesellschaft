@@ -16,8 +16,8 @@ import { T, rgba } from './theme'
 
 /** Common inline style patterns for modal content */
 export const MS = {
-  /** Standard section container with padding */
-  section: { padding: 20, display: 'flex', flexDirection: 'column' as const, gap: 14, height: '100%', overflow: 'auto' as const },
+  /** Standard section container with padding — responsive */
+  section: { padding: 'clamp(12px, 3vw, 20px)' as unknown as number, display: 'flex', flexDirection: 'column' as const, gap: 12, height: '100%', overflow: 'auto' as const, WebkitOverflowScrolling: 'touch' as const },
   /** Input row with gap */
   inputRow: { display: 'flex', gap: 8, flexWrap: 'wrap' as const, alignItems: 'center' as const },
   /** Standard themed input */

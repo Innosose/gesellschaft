@@ -236,33 +236,36 @@ export default function App(): React.ReactElement {
 
       {/* Search */}
       {uiState === 'menu' && (
-        <div style={{ position: 'fixed', left: '50%', bottom: 'clamp(24px, 4vh, 50px)', transform: 'translateX(-50%)',
-          zIndex: 22, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-          pointerEvents: 'none', animation: 'slideUp 0.3s cubic-bezier(0.25,1,0.5,1) 0.12s both' }}>
-          <div style={{ position: 'relative', pointerEvents: 'auto' }}>
+        <div style={{ position: 'fixed', left: '50%', bottom: 'clamp(12px, 3vh, 50px)', transform: 'translateX(-50%)',
+          zIndex: 22, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+          pointerEvents: 'none', animation: 'slideUp 0.3s cubic-bezier(0.25,1,0.5,1) 0.12s both',
+          width: 'min(92vw, 400px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+          <div style={{ position: 'relative', pointerEvents: 'auto', width: '100%' }}>
             <input autoFocus value={toolSearch} onChange={e => setToolSearch(e.target.value)}
               aria-label="도구 검색" placeholder="Search the Library..." style={{
-                width: 'min(280px, 50vw)', padding: '9px 32px 9px 14px', borderRadius: 4,
+                width: '100%', padding: '10px 32px 10px 14px', borderRadius: 4,
                 border: `1px solid ${toolSearch ? rgba(T.gold, 0.25) : rgba(T.gold, 0.1)}`,
                 fontFamily: theme.titleFont,
                 background: 'rgba(10,10,8,0.88)', color: rgba(T.fg, 0.88),
-                fontSize: 12, fontWeight: 500, backdropFilter: 'blur(20px)', outline: 'none',
+                fontSize: 13, fontWeight: 500, backdropFilter: 'blur(20px)', outline: 'none',
                 transition: 'border-color 0.15s ease',
               }} />
             {toolSearch && (
               <button onClick={() => setToolSearch('')} style={{
                 position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
                 background: 'none', border: 'none', color: rgba(T.fg, 0.3),
-                cursor: 'pointer', fontSize: 11, lineHeight: 1, padding: 2,
+                cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 4,
+                minWidth: 32, minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>x</button>
             )}
           </div>
           {/* Category filter chips */}
-          <div style={{ display: 'flex', gap: 4, pointerEvents: 'auto', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 6, pointerEvents: 'auto', flexWrap: 'wrap', justifyContent: 'center' }}>
             {['Core', 'Overlay', 'Quick Use', 'Schedule', 'Documents', 'System'].map(cat => (
               <button key={cat} onClick={() => setToolSearch(toolSearch === cat ? '' : cat)}
                 style={{
-                  fontSize: 9, padding: '2px 8px', borderRadius: 3, cursor: 'pointer',
+                  fontSize: 10, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
                   border: `1px solid ${toolSearch === cat ? rgba(T.gold, 0.3) : rgba(T.gold, 0.08)}`,
                   background: toolSearch === cat ? rgba(T.gold, 0.12) : 'rgba(10,10,8,0.7)',
                   color: toolSearch === cat ? T.gold : rgba(T.fg, 0.35),
@@ -285,7 +288,8 @@ export default function App(): React.ReactElement {
       )}
 
       {/* Notifications */}
-      <div aria-live="polite" style={{ position: 'fixed', top: 'clamp(32px, 4vh, 56px)', right: 'clamp(20px, 5vw, 80px)', zIndex: 300,
+      <div aria-live="polite" style={{ position: 'fixed', top: 'max(clamp(32px, 4vh, 56px), env(safe-area-inset-top, 32px))',
+        right: 'clamp(12px, 3vw, 80px)', left: 'clamp(12px, 3vw, unset)', zIndex: 300,
         display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end', pointerEvents: 'none' }}>
         {notifications.map(n => {
           const c = NC[n.type]
@@ -321,13 +325,13 @@ export default function App(): React.ReactElement {
 
       {/* Top controls */}
       <button className="app-top-btn" onClick={handleOpenSettings} title="설정"
-        style={{ position: 'fixed', top: 14, right: 48, zIndex: 100 }}>
+        style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top, 14px))', right: 52, zIndex: 100 }}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4"/>
         </svg>
       </button>
-      <button className="app-top-btn app-top-btn--quit" onClick={handleHide} title="숨기기"
-        style={{ position: 'fixed', top: 14, right: 16, zIndex: 100 }}>
+      <button className="app-top-btn app-top-btn--quit" onClick={handleHide} title={isWeb ? '메뉴 닫기' : '숨기기'}
+        style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top, 14px))', right: 16, zIndex: 100 }}>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
           <line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/>
         </svg>
