@@ -107,7 +107,7 @@ export default function TitleBar({
                 height: 22, padding: '0 10px', borderRadius: 4, border: '1px solid var(--win-border)',
                 background: 'var(--win-surface-2)', color: 'var(--win-text-sub)',
                 fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                transition: 'background 0.1s',
+                transition: 'background 0.15s',
               }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--win-surface-3)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--win-surface-2)' }}
@@ -140,7 +140,7 @@ export default function TitleBar({
           ].map((btn, i) => (
             <button
               key={i}
-              className="titlebar-win-btn w-11 h-full flex items-center justify-center transition-colors duration-100"
+              className="titlebar-win-btn w-11 h-full flex items-center justify-center transition-colors duration-150"
               style={{ background: 'transparent', color: 'var(--win-text-muted)' }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--win-surface-3)' }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
@@ -152,7 +152,7 @@ export default function TitleBar({
           ))}
 
           <button
-            className="titlebar-win-btn close-btn w-11 h-full flex items-center justify-center transition-colors duration-100"
+            className="titlebar-win-btn close-btn w-11 h-full flex items-center justify-center transition-colors duration-150"
             style={{ background: 'transparent', color: 'var(--win-text-muted)' }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--win-danger)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text)' }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--win-text-muted)' }}

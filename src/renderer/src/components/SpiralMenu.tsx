@@ -8,7 +8,7 @@ interface Tool { id: string; icon: string; label: string; color: string; descrip
 interface SpiralMenuProps {
   tools: Tool[]
   spiralScale: number; animSpeed: 'slow' | 'normal' | 'fast' | 'none'
-  filterQuery: string; onSelectTool: (id: string) => void
+  filterQuery?: string; onSelectTool: (id: string) => void
 }
 
 const ANIM_MS: Record<string, number> = { slow: 600, normal: 350, fast: 180, none: 0 }
@@ -578,7 +578,7 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <span style={{ fontSize: 20, fontWeight: 700, color: rgba(T.fg, 0.95), letterSpacing: '-0.02em' }}>{tools.length}개 기능</span>
-          <button onClick={onClose} style={{ background: rgba(T.fg, 0.1), border: 'none', color: rgba(T.fg, 0.5), cursor: 'pointer', fontSize: 15, fontWeight: 600, width: 30, height: 30, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={onClose} style={{ background: rgba(T.fg, 0.1), border: 'none', color: rgba(T.fg, 0.60), cursor: 'pointer', fontSize: 15, fontWeight: 600, width: 30, height: 30, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
           </button>
         </div>
@@ -619,14 +619,14 @@ const OvCard = memo(function OvCard({ tool, fav, onSelect, onToggleFav, last }: 
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: tool.color, opacity: disabled ? 0.3 : 0.8 }} />
       </div>
       <div style={{ flex: 1, minWidth: 0, borderBottom: last ? 'none' : `0.5px solid ${rgba(T.fg, 0.08)}`, minHeight: 44, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 17, fontWeight: 400, color: disabled ? rgba(T.fg, 0.3) : rgba(T.fg, 0.9), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, lineHeight: 1.3, letterSpacing: '-0.02em' }}>{tool.label}</span>
-        {disabled && <span style={{ fontSize: 12, color: rgba(T.fg, 0.25), flexShrink: 0 }}>데스크톱</span>}
-        {!disabled && fav && <span style={{ fontSize: 12, color: rgba(T.fg, 0.3), flexShrink: 0 }}>★</span>}
+        <span style={{ fontSize: 17, fontWeight: 400, color: disabled ? rgba(T.fg, 0.40) : rgba(T.fg, 0.92), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, lineHeight: 1.3, letterSpacing: '-0.41px' }}>{tool.label}</span>
+        {disabled && <span style={{ fontSize: 12, color: rgba(T.fg, 0.20), flexShrink: 0 }}>데스크톱</span>}
+        {!disabled && fav && <span style={{ fontSize: 12, color: rgba(T.fg, 0.40), flexShrink: 0 }}>★</span>}
         {!disabled && onToggleFav && h && !fav && <span onClick={e => { e.stopPropagation(); onToggleFav(tool.id) }}
           style={{ fontSize: 12, color: rgba(T.fg, 0.2), cursor: 'pointer', flexShrink: 0 }}
           title="즐겨찾기 추가">☆</span>}
         <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, opacity: disabled ? 0.08 : 0.2 }}>
-          <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: rgba(T.fg, 0.3) }} />
+          <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: rgba(T.fg, 0.40) }} />
         </svg>
       </div>
     </button>
@@ -653,10 +653,10 @@ const SearchCard = memo(function SearchCard({ tool, animDuration, onSelect }: { 
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: tool.color, opacity: disabled ? 0.3 : 0.8 }} />
       </div>
       <div style={{ flex: 1, minWidth: 0, borderBottom: `0.5px solid ${rgba(T.fg, 0.08)}`, minHeight: 44, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 17, fontWeight: 400, color: disabled ? rgba(T.fg, 0.3) : rgba(T.fg, 0.9), lineHeight: 1.3, letterSpacing: '-0.02em', flex: 1 }}>{tool.label}</span>
-        {disabled && <span style={{ fontSize: 12, color: rgba(T.fg, 0.25), flexShrink: 0 }}>데스크톱</span>}
+        <span style={{ fontSize: 17, fontWeight: 400, color: disabled ? rgba(T.fg, 0.40) : rgba(T.fg, 0.92), lineHeight: 1.3, letterSpacing: '-0.41px', flex: 1 }}>{tool.label}</span>
+        {disabled && <span style={{ fontSize: 12, color: rgba(T.fg, 0.20), flexShrink: 0 }}>데스크톱</span>}
         <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, opacity: disabled ? 0.08 : 0.2 }}>
-          <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: rgba(T.fg, 0.3) }} />
+          <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: rgba(T.fg, 0.40) }} />
         </svg>
       </div>
     </button>
@@ -666,7 +666,7 @@ const SearchCard = memo(function SearchCard({ tool, animDuration, onSelect }: { 
 // ═══════════════════════════════════════════════
 // SECTION: Main SpiralMenu Component
 // ═══════════════════════════════════════════════
-export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery, onSelectTool }: SpiralMenuProps): React.ReactElement {
+export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery: externalQuery, onSelectTool }: SpiralMenuProps): React.ReactElement {
   const theme = useTheme() // triggers re-render on theme change
   const [vw, setVw] = useState(window.innerWidth)
   const [vh, setVh] = useState(window.innerHeight)
@@ -674,6 +674,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
   const [showOverview, setShowOverview] = useState(false)
   const [recentIds, setRecentIds] = useState<string[]>(getRecentTools)
   const [favoriteIds, setFavoriteIds] = useState<string[]>(getFavorites)
+  const [localSearch, setLocalSearch] = useState('')
   const wheelCooldown = useRef(false)
 
   useEffect(() => { const h = (): void => { setVw(window.innerWidth); setVh(window.innerHeight) }; window.addEventListener('resize', h); return () => window.removeEventListener('resize', h) }, [])
@@ -682,6 +683,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
   const staggerMs = STAGGER_MS[animSpeed] ?? 22
   const { radius, arcCenterX, arcCenterY } = useMemo(() => getArcParams(vw, vh, spiralScale), [vw, vh, spiralScale])
   const { w: cardW, h: cardH } = useMemo(() => getCardSize(vw, vh), [vw, vh])
+  const filterQuery = localSearch || externalQuery || ''
   const isSearching = filterQuery.length > 0
   const filteredTools = useMemo(() => {
     if (!filterQuery) return tools
@@ -726,7 +728,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
         display: 'flex', flexDirection: 'column', gap: 0, animation: 'fadeIn 0.12s ease both',
       }}>
         {filteredTools.length === 0
-          ? <div style={{ padding: '24px 0', textAlign: 'center', color: rgba(T.fg, 0.3), fontSize: 15 }}>결과 없음</div>
+          ? <div style={{ padding: '24px 0', textAlign: 'center', color: rgba(T.fg, 0.40), fontSize: 15, letterSpacing: '-0.41px' }}>결과 없음</div>
           : <div style={{ background: rgba(T.fg, 0.06), borderRadius: 10, overflow: 'hidden' }}>{filteredTools.map(t => <SearchCard key={t.id} tool={t} animDuration={animDuration} onSelect={handleSelect} />)}</div>}
       </div>
     </div>
@@ -749,12 +751,12 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         pointerEvents: 'auto', animation: 'slideUpFade 0.3s ease 0.2s both',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: rgba(T.fg, 0.08), borderRadius: 100, padding: '3px', backdropFilter: 'blur(24px) saturate(1.8)', WebkitBackdropFilter: 'blur(24px) saturate(1.8)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: rgba(T.fg, 0.08), borderRadius: 100, padding: '3px', backdropFilter: 'blur(40px) saturate(1.8)', WebkitBackdropFilter: 'blur(40px) saturate(1.8)' }}>
           <button onClick={() => rotate(-1)} aria-label="이전 도구" style={{ width: 36, height: 36, borderRadius: 18, border: 'none', background: 'transparent', color: rgba(T.fg, 0.55), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.15s' }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 3L5 8l5 5"/></svg>
           </button>
           <div style={{
-            fontSize: 13, fontWeight: 600, color: rgba(T.fg, 0.9),
+            fontSize: 13, fontWeight: 600, color: rgba(T.fg, 0.92),
             padding: '0 8px',
             maxWidth: 120, textAlign: 'center',
             letterSpacing: '-0.01em',

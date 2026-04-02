@@ -331,9 +331,10 @@ export function setTheme(id: string): void {
     // Sync --win-* CSS variables with theme
     root.style.setProperty('--win-bg', found.bg)
     root.style.setProperty('--win-surface', found.surface)
+    /* Apple HIG label hierarchy: primary 0.92 / secondary 0.60 / tertiary 0.40 */
     root.style.setProperty('--win-text', rgba(found.fg, 0.92))
-    root.style.setProperty('--win-text-sub', rgba(found.fg, 0.6))
-    root.style.setProperty('--win-text-muted', rgba(found.fg, 0.5))
+    root.style.setProperty('--win-text-sub', rgba(found.fg, 0.60))
+    root.style.setProperty('--win-text-muted', rgba(found.fg, 0.40))
     root.style.setProperty('--win-danger', found.danger)
     // Dynamic neon keyframes
     let dynStyle = document.getElementById('gs-theme-dynamic') as HTMLStyleElement | null
@@ -389,14 +390,20 @@ export interface ThemeTokens {
   teal08: string; teal15: string; teal25: string; teal30: string
 }
 
-/** Derive color tokens (rgba pre-computed values) from a theme preset */
+/** Derive color tokens (rgba pre-computed values) from a theme preset
+ *  Text opacities aligned to Apple HIG semantic label hierarchy:
+ *  - label (primary):     1.0  → text   0.92 (adjusted for dark fantasy aesthetic)
+ *  - secondaryLabel:      0.6  → textSub 0.60
+ *  - tertiaryLabel:       0.3  → textMuted 0.40
+ *  - quaternaryLabel:     0.18 → used as needed
+ */
 function buildTokens(theme: ThemePreset): ThemeTokens {
   const { primary: p, accent: a, fg: f, danger: d, success: s, warning: w } = theme
   const pr = parseInt(p.slice(1,3),16), pg = parseInt(p.slice(3,5),16), pb = parseInt(p.slice(5,7),16)
   return {
     gold: p, teal: a, fg: f, danger: d, success: s, warning: w, bg: theme.bg,
     surface: theme.surface, surface1: theme.surface, surface2: theme.surface, surface3: theme.surface,
-    text: rgba(f, 0.92), textSub: rgba(f, 0.65), textMuted: rgba(f, 0.5),
+    text: rgba(f, 0.92), textSub: rgba(f, 0.60), textMuted: rgba(f, 0.40),
     error: d,
     gold06: `rgba(${pr},${pg},${pb},0.06)`, gold10: `rgba(${pr},${pg},${pb},0.1)`,
     gold15: `rgba(${pr},${pg},${pb},0.15)`, gold20: `rgba(${pr},${pg},${pb},0.2)`,

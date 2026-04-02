@@ -77,7 +77,7 @@ export default function App(): React.ReactElement {
   const [reasons, setReasons] = useState<Record<string, string>>({})
   const recommendClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [scanning, setScanning] = useState(false)
-  const [toolSearch, setToolSearch] = useState('')
+  // toolSearch moved into SpiralMenu
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showRecommend, setShowRecommend] = useState(false)
@@ -122,7 +122,7 @@ export default function App(): React.ReactElement {
     setRecommended([]); setReasons({})
   }, [])
 
-  const handleBack = useCallback(() => { setActiveTool(null); setUiState('menu'); setToolSearch('') }, [])
+  const handleBack = useCallback(() => { setActiveTool(null); setUiState('menu') }, [])
 
   const handleScan = useCallback(async () => {
     if (isWeb) { addNotification('화면 분석은 데스크톱 앱에서만 사용 가능합니다.', 'info'); return }
@@ -154,7 +154,7 @@ export default function App(): React.ReactElement {
         handleScan()
       }
     } else if (uiState === 'menu') {
-      setToolSearch(''); setUiState('hub')
+      setUiState('hub')
     }
   }, [uiState, autoScan, recommended.length, scanning, handleScan])
 
@@ -163,7 +163,7 @@ export default function App(): React.ReactElement {
     setActiveTool({ id: 'settings', icon: '', label: '설정', color: T.gold }); setUiState('tool')
   }, [])
   const handleBackdropClick = useCallback(() => setUiState(s => s === 'menu' ? 'hub' : s), [])
-  const handleMenuSelect = useCallback((id: string) => { setToolSearch(''); handleToolSelect(id) }, [handleToolSelect])
+  const handleMenuSelect = useCallback((id: string) => { handleToolSelect(id) }, [handleToolSelect])
 
   useEffect(() => {
     // Click-through is an Electron-only feature (frameless transparent window)
@@ -197,7 +197,7 @@ export default function App(): React.ReactElement {
   return (
     <div role="application" style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden',
       fontFamily: "'Pretendard', 'Segoe UI Variable', system-ui, sans-serif",
-      background: isWeb ? '#0a0804' : undefined }}>
+      background: isWeb ? theme.bg : undefined }}>
 
       <a href="#main-content" style={{
         position: 'absolute', left: '-9999px', top: 'auto',
@@ -212,11 +212,13 @@ export default function App(): React.ReactElement {
       <div id="gs-sr-announce" role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }} />
 
       <div className={`app-backdrop ${uiState !== 'hub' ? 'active' : ''}`}
-        style={uiState !== 'hub' ? {
+        style={uiState !== 'hub' ? (isWeb ? {
+          background: theme.bg,
+        } : {
           background: `${theme.bg}e0`,
-          backdropFilter: `blur(${theme.blurStrength}px) saturate(1.3) brightness(${theme.brightness})`,
-          WebkitBackdropFilter: `blur(${theme.blurStrength}px) saturate(1.3) brightness(${theme.brightness})`,
-        } : undefined}
+          backdropFilter: `blur(${theme.blurStrength}px) saturate(1.8) brightness(${theme.brightness})`,
+          WebkitBackdropFilter: `blur(${theme.blurStrength}px) saturate(1.8) brightness(${theme.brightness})`,
+        }) : undefined}
         onClick={handleBackdropClick} />
 
       {/* Floating particles — theme-driven, memoized to avoid re-renders from App state */}
@@ -230,56 +232,8 @@ export default function App(): React.ReactElement {
 
       {uiState === 'menu' && (
         <SpiralMenu tools={ALL_TOOLS}
-          spiralScale={spiralScale} animSpeed={animSpeed} filterQuery={toolSearch}
+          spiralScale={spiralScale} animSpeed={animSpeed}
           onSelectTool={handleMenuSelect} />
-      )}
-
-      {/* Search */}
-      {uiState === 'menu' && (
-        <div style={{ position: 'fixed', left: '50%', bottom: 'clamp(12px, 3vh, 50px)', transform: 'translateX(-50%)',
-          zIndex: 22, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-          pointerEvents: 'none', animation: 'slideUp 0.3s cubic-bezier(0.25,1,0.5,1) 0.12s both',
-          width: 'min(92vw, 400px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-          <div style={{ position: 'relative', pointerEvents: 'auto', width: '100%' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.35, pointerEvents: 'none' }}>
-              <circle cx="7" cy="7" r="5.5" stroke={T.fg} strokeWidth="1.5"/><path d="M11 11l3.5 3.5" stroke={T.fg} strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            <input autoFocus value={toolSearch} onChange={e => setToolSearch(e.target.value)}
-              aria-label="도구 검색" placeholder="검색" style={{
-                width: '100%', padding: '10px 40px 10px 36px', borderRadius: 10,
-                border: 'none',
-                background: rgba(T.fg, 0.1), color: rgba(T.fg, 0.9),
-                fontSize: 17, fontWeight: 400, backdropFilter: 'blur(24px) saturate(1.8)',
-                WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
-                outline: 'none',
-                transition: 'background 0.15s ease', minHeight: 36,
-                letterSpacing: '-0.02em',
-              }} />
-            {toolSearch && (
-              <button onClick={() => setToolSearch('')} style={{
-                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                background: rgba(T.fg, 0.15), border: 'none', color: rgba(T.fg, 0.4),
-                cursor: 'pointer', fontSize: 10, lineHeight: 1, padding: 0,
-                width: 18, height: 18, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>✕</button>
-            )}
-          </div>
-          {/* Category filter chips */}
-          <div style={{ display: 'flex', gap: 6, pointerEvents: 'auto', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {['Core', 'Overlay', 'Quick Use', 'Schedule', 'Documents', 'System'].map(cat => (
-              <button key={cat} onClick={() => setToolSearch(toolSearch === cat ? '' : cat)}
-                style={{
-                  fontSize: 13, padding: '6px 14px', borderRadius: 100, cursor: 'pointer',
-                  border: 'none',
-                  background: toolSearch === cat ? rgba(T.teal, 0.2) : rgba(T.fg, 0.08),
-                  color: toolSearch === cat ? T.teal : rgba(T.fg, 0.6),
-                  fontWeight: 500, transition: 'all 0.2s ease',
-                  backdropFilter: 'blur(10px)', minHeight: 32, letterSpacing: '-0.01em',
-                }}>{cat}</button>
-            ))}
-          </div>
-        </div>
       )}
 
       {/* AI Recommendation overlay */}
@@ -301,23 +255,24 @@ export default function App(): React.ReactElement {
           const isDismissing = dismissing.has(n.id)
           return (
             <div key={n.id} style={{
-              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-              padding: '12px 14px', borderRadius: 14,
+              display: 'flex', alignItems: 'center', gap: 'clamp(8px, 0.83vw, 12px)', width: '100%',
+              padding: 'clamp(8px, 0.83vw, 12px) clamp(10px, 1.11vw, 16px)', borderRadius: 'clamp(10px, 1.11vw, 16px)',
               background: rgba(T.fg, 0.08),
-              backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)',
-              color: rgba(T.fg, 0.9),
-              fontSize: 15, fontWeight: 400,
-              boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(40px) saturate(1.8)', WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+              color: rgba(T.fg, 0.92),
+              fontSize: 'clamp(12px, 1.04vw, 15px)', fontWeight: 400,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)',
               pointerEvents: 'auto',
               animation: isDismissing ? 'slideOutUp 0.25s cubic-bezier(0.32,0,0.67,0) both' : 'slideInDown 0.35s cubic-bezier(0.32,0.72,0,1) both',
-              lineHeight: 1.4,
+              lineHeight: 1.33, letterSpacing: '-0.41px',
             }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: 14, letterSpacing: '-0.01em' }}>{n.message}</span>
+              <span style={{ flex: 1, fontSize: 15, letterSpacing: '-0.41px' }}>{n.message}</span>
               <button onClick={() => dismissNotification(n.id)} style={{
-                background: rgba(T.fg, 0.08), border: 'none', color: rgba(T.fg, 0.4),
+                background: rgba(T.fg, 0.08), border: 'none', color: rgba(T.fg, 0.40),
                 cursor: 'pointer', fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0,
-                width: 24, height: 24, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 'clamp(22px, 1.94vw, 28px)', height: 'clamp(22px, 1.94vw, 28px)', borderRadius: 'clamp(11px, 0.97vw, 14px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                minWidth: 44, minHeight: 44,
               }}>✕</button>
             </div>
           )
@@ -325,35 +280,39 @@ export default function App(): React.ReactElement {
       </div>
 
       {uiState === 'tool' && activeTool && (
-        <div id="main-content" style={{ animation: 'toolPanelIn 0.2s ease both', position: 'fixed', inset: 0, zIndex: 50 }}>
+        <div id="main-content" style={{ animation: 'toolPanelIn 0.3s cubic-bezier(0.32,0.72,0,1) both', position: 'fixed', inset: 0, zIndex: 150 }}>
           <ToolPanel key={activeTool.id} toolId={activeTool.id}
-            toolColor={activeTool.color} toolLabel={activeTool.label} onBack={handleBack} />
+            toolColor={activeTool.color} toolLabel={activeTool.label} onBack={handleBack}
+            tools={ALL_TOOLS} onSelectTool={handleMenuSelect} />
         </div>
       )}
 
       {/* Top controls — hidden in hub state */}
       {uiState !== 'hub' && <>
+      {/* Apple HIG: 44pt touch target buttons with material blur */}
       <button onClick={handleOpenSettings} title="설정"
-        style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top, 12px))', right: 52, zIndex: 100,
-          width: 34, height: 34, borderRadius: 17, border: 'none',
-          background: rgba(T.fg, 0.1), backdropFilter: 'blur(24px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
-          color: rgba(T.fg, 0.5), cursor: 'pointer',
+        style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top, 12px))', right: 'clamp(40px, 3.89vw, 56px)', zIndex: 100,
+          width: 'clamp(28px, 2.5vw, 36px)', height: 'clamp(28px, 2.5vw, 36px)', borderRadius: 'clamp(14px, 1.25vw, 18px)', border: 'none',
+          background: rgba(T.fg, 0.1), backdropFilter: 'blur(40px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+          color: rgba(T.fg, 0.40), cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          animation: 'fadeIn 0.2s ease', transition: 'background 0.15s',
+          animation: 'fadeIn 0.25s ease', transition: 'background 0.2s, transform 0.1s',
+          minWidth: 44, minHeight: 44,
         }}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
           <circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4"/>
         </svg>
       </button>
       <button onClick={handleHide} title={isWeb ? '메뉴 닫기' : '숨기기'}
-        style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top, 12px))', right: 12, zIndex: 100,
-          width: 34, height: 34, borderRadius: 17, border: 'none',
-          background: rgba(T.fg, 0.1), backdropFilter: 'blur(24px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
-          color: rgba(T.fg, 0.5), cursor: 'pointer',
+        style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top, 12px))', right: 'clamp(8px, 0.83vw, 12px)', zIndex: 100,
+          width: 'clamp(28px, 2.5vw, 36px)', height: 'clamp(28px, 2.5vw, 36px)', borderRadius: 'clamp(14px, 1.25vw, 18px)', border: 'none',
+          background: rgba(T.fg, 0.1), backdropFilter: 'blur(40px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+          color: rgba(T.fg, 0.40), cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          animation: 'fadeIn 0.2s ease', transition: 'background 0.15s',
+          animation: 'fadeIn 0.25s ease', transition: 'background 0.2s, transform 0.1s',
+          minWidth: 44, minHeight: 44,
         }}>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
           <line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/>
@@ -371,9 +330,10 @@ export default function App(): React.ReactElement {
           background: rgba(T.bg, 0.9), backdropFilter: 'blur(20px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <div onClick={e => e.stopPropagation()} style={{ padding: 'clamp(20px, 5vw, 28px)', borderRadius: 16, border: 'none', background: rgba(T.fg, 0.06), minWidth: 340, maxWidth: 440, backdropFilter: 'blur(40px) saturate(1.5)', WebkitBackdropFilter: 'blur(40px) saturate(1.5)', boxShadow: '0 16px 48px rgba(0,0,0,0.4)' }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: rgba(T.fg, 0.95), marginBottom: 4, letterSpacing: '-0.02em' }}>키보드 단축키</div>
-            <div style={{ fontSize: 13, color: rgba(T.fg, 0.35), marginBottom: 20 }}>아무 곳이나 클릭하거나 Esc를 눌러 닫기</div>
+          {/* Apple HIG: modal with 16px radius, Title 2 (22pt) header, footnote (13pt) subtitle */}
+        <div onClick={e => e.stopPropagation()} style={{ padding: 'clamp(20px, 5vw, 32px)', borderRadius: 'clamp(10px, 1.11vw, 16px)', border: 'none', background: rgba(T.fg, 0.06), minWidth: 'min(340px, 90vw)', maxWidth: 'min(440px, 95vw)', backdropFilter: 'blur(40px) saturate(1.8)', WebkitBackdropFilter: 'blur(40px) saturate(1.8)', boxShadow: '0 24px 80px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.35)' }}>
+            <div style={{ fontSize: 'clamp(18px, 1.53vw, 22px)', fontWeight: 700, color: rgba(T.fg, 0.92), marginBottom: 'clamp(2px, 0.28vw, 4px)', letterSpacing: '0.35px', lineHeight: 1.27 }}>키보드 단축키</div>
+            <div style={{ fontSize: 'clamp(11px, 0.90vw, 13px)', color: rgba(T.fg, 0.40), marginBottom: 'clamp(12px, 1.67vw, 24px)', lineHeight: 1.38 }}>아무 곳이나 클릭하거나 Esc를 눌러 닫기</div>
 
             {([
               { label: '일반', items: [
@@ -394,12 +354,13 @@ export default function App(): React.ReactElement {
               ]},
             ] as const).map(section => (
               <div key={section.label} style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 400, color: rgba(T.fg, 0.35), marginBottom: 6, paddingLeft: 16, textTransform: 'uppercase' }}>{section.label}</div>
-                <div style={{ background: rgba(T.fg, 0.06), borderRadius: 10, overflow: 'hidden' }}>
+                {/* Apple HIG: footnote (13pt) section header, 12px group radius, 44pt rows */}
+                <div style={{ fontSize: 'clamp(11px, 0.90vw, 13px)', fontWeight: 400, color: rgba(T.fg, 0.40), marginBottom: 'clamp(4px, 0.56vw, 8px)', paddingLeft: 16, textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.38 }}>{section.label}</div>
+                <div style={{ background: rgba(T.fg, 0.06), borderRadius: 'clamp(8px, 0.83vw, 12px)', overflow: 'hidden' }}>
                 {section.items.map(([key, desc], i) => (
-                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', minHeight: 44, borderBottom: i < section.items.length - 1 ? `0.5px solid ${rgba(T.fg, 0.08)}` : 'none' }}>
-                    <kbd style={{ fontSize: 12, fontWeight: 600, color: rgba(T.fg, 0.6), fontFamily: 'ui-monospace, "SF Mono", monospace', background: rgba(T.fg, 0.06), padding: '3px 10px', borderRadius: 6, border: 'none', minWidth: 52, textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>{key}</kbd>
-                    <span style={{ fontSize: 15, color: rgba(T.fg, 0.6), letterSpacing: '-0.01em' }}>{desc}</span>
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(8px, 1.11vw, 16px)', minHeight: 'clamp(36px, 3.06vw, 44px)', borderBottom: i < section.items.length - 1 ? `0.5px solid ${rgba(T.fg, 0.08)}` : 'none' }}>
+                    <kbd style={{ fontSize: 'clamp(10px, 0.83vw, 12px)', fontWeight: 600, color: rgba(T.fg, 0.60), fontFamily: 'ui-monospace, "SF Mono", monospace', background: rgba(T.fg, 0.06), padding: 'clamp(2px, 0.28vw, 4px) clamp(8px, 0.83vw, 12px)', borderRadius: 'clamp(4px, 0.56vw, 8px)', border: 'none', minWidth: 52, textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.15)', lineHeight: 1.33 }}>{key}</kbd>
+                    <span style={{ fontSize: 'clamp(12px, 1.04vw, 15px)', color: rgba(T.fg, 0.60), letterSpacing: '-0.41px', lineHeight: 1.33 }}>{desc}</span>
                   </div>
                 ))}
                 </div>

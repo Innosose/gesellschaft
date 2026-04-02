@@ -1,6 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { T, THEME_PRESETS, rgba, setTheme, useTheme } from '../utils/theme'
 import { useAppStore } from '../store/appStore'
+
+const isWeb = !('__electron__' in window || navigator.userAgent.includes('Electron'))
+const COMPACT_MQ = typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px), (max-height: 500px)') : null
+function useCompact(): boolean {
+  return useSyncExternalStore(
+    (cb) => { COMPACT_MQ?.addEventListener('change', cb); return () => COMPACT_MQ?.removeEventListener('change', cb) },
+    () => COMPACT_MQ?.matches ?? false,
+  )
+}
 
 interface AiConfig {
   provider: string
@@ -54,8 +63,8 @@ function Slider({
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'baseline' }}>
-        <span style={{ fontSize: 15, color: rgba(T.fg, 0.9), fontWeight: 400, letterSpacing: '-0.01em' }}>{label}</span>
-        <span style={{ fontSize: 15, color: rgba(T.fg, 0.5), fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{format(value)}</span>
+        <span style={{ fontSize: 17, lineHeight: 1.29, color: rgba(T.fg, 0.92), fontWeight: 400, letterSpacing: '-0.41px' }}>{label}</span>
+        <span style={{ fontSize: 15, lineHeight: 1.33, color: rgba(T.fg, 0.60), fontWeight: 500, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.41px' }}>{format(value)}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
@@ -80,7 +89,7 @@ function KeyBadge({ keys, color, inline }: { keys: string; color: string; inline
           }}>
             {k}
           </span>
-          {i < parts.length - 1 && <span style={{ color: rgba(T.fg, 0.5), fontSize: 10 }}>+</span>}
+          {i < parts.length - 1 && <span style={{ color: rgba(T.fg, 0.60), fontSize: 10 }}>+</span>}
         </React.Fragment>
       ))}
     </div>
@@ -210,66 +219,101 @@ export default function SettingsPanel(): React.ReactElement {
   const aiProvider = (aiDraft.provider ?? aiConfig?.provider ?? '') as string
   const aiModels = aiProvider === 'ollama' ? aiOllamaModels : (aiPresetModels[aiProvider] ?? [])
 
-  return (
-    <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-      {/* Left sidebar */}
-      <div style={{
-        width: 180,
-        flexShrink: 0,
-        borderRight: `0.5px solid ${rgba(T.fg, 0.08)}`,
-        padding: '20px 10px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-      }}>
-        <div style={{
-          padding: '0 12px',
-          marginBottom: 16,
-          fontSize: 22, fontWeight: 700, color: rgba(T.fg, 0.9), letterSpacing: '-0.02em',
-        }}>
-          설정
-        </div>
-        <div role="tablist" aria-label="설정 탭" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {TABS.map(t => {
-          const isActive = tab === t.id
-          return (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={isActive}
-              aria-label={t.label}
-              aria-controls={`tabpanel-${t.id}`}
-              onClick={() => setTab(t.id)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                display: 'flex',
-                gap: 10,
-                alignItems: 'center',
-                cursor: 'pointer',
-                border: 'none',
-                borderRadius: 8,
-                background: isActive ? rgba(T.fg, 0.1) : 'transparent',
-                color: isActive ? rgba(T.fg, 0.95) : rgba(T.fg, 0.5),
-                textAlign: 'left',
-                transition: 'all 0.15s ease',
-                minHeight: 36,
-              }}
-            >
-              <span style={{ fontSize: 15, fontWeight: isActive ? 600 : 400, letterSpacing: '-0.01em' }}>{t.label}</span>
-            </button>
-          )
-        })}
-        </div>
-      </div>
+  const compact = useCompact() || isWeb
 
-      {/* Right content area */}
-      <div role="tabpanel" id={`tabpanel-${tab}`} style={{ flex: 1, overflowY: 'auto', padding: 'clamp(20px, 4vw, 32px)' }}>
+  return (
+    <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', flex: 1, overflow: 'hidden' }}>
+      {compact ? (
+        <div style={{
+          flexShrink: 0,
+          padding: 'clamp(12px, 3vw, 16px) clamp(12px, 4vw, 20px)',
+          borderBottom: `0.5px solid ${rgba(T.fg, 0.08)}`,
+        }}>
+          <div role="tablist" aria-label="설정 탭" style={{
+            display: 'flex', gap: 'clamp(2px, 0.28vw, 4px)',
+            background: rgba(T.fg, 0.06), borderRadius: 'clamp(8px, 0.83vw, 12px)', padding: 'clamp(2px, 0.14vw, 3px)',
+            overflow: 'auto', WebkitOverflowScrolling: 'touch',
+          }}>
+          {TABS.map(t => {
+            const isActive = tab === t.id
+            return (
+              <button key={t.id} role="tab" aria-selected={isActive} onClick={() => setTab(t.id)}
+                style={{
+                  flex: 1, minWidth: 0,
+                  padding: 'clamp(6px, 0.56vw, 8px) clamp(8px, 1.11vw, 14px)',
+                  cursor: 'pointer', border: 'none',
+                  borderRadius: 'clamp(6px, 0.69vw, 10px)',
+                  background: isActive ? rgba(T.fg, 0.1) : 'transparent',
+                  color: isActive ? rgba(T.fg, 0.92) : rgba(T.fg, 0.60),
+                  fontSize: 'clamp(11px, 0.90vw, 13px)', fontWeight: isActive ? 600 : 500,
+                  letterSpacing: '-0.41px', lineHeight: 1.38,
+                  whiteSpace: 'nowrap', transition: 'all 0.2s ease',
+                  minHeight: 'clamp(28px, 2.22vw, 32px)',
+                }}>
+                {t.label}
+              </button>
+            )
+          })}
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          width: 'clamp(120px, 12.5vw, 180px)',
+          flexShrink: 0,
+          borderRight: `0.5px solid ${rgba(T.fg, 0.08)}`,
+          padding: 'clamp(16px, 1.67vw, 24px) clamp(8px, 0.83vw, 12px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}>
+          <div style={{
+            padding: '0 12px',
+            marginBottom: 'clamp(16px, 1.67vw, 24px)',
+            fontSize: 'clamp(18px, 1.53vw, 22px)', fontWeight: 700, color: rgba(T.fg, 0.92), letterSpacing: '0.35px', lineHeight: 1.27,
+          }}>
+            설정
+          </div>
+          <div role="tablist" aria-label="설정 탭" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {TABS.map(t => {
+            const isActive = tab === t.id
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={isActive}
+                aria-label={t.label}
+                aria-controls={`tabpanel-${t.id}`}
+                onClick={() => setTab(t.id)}
+                style={{
+                  width: '100%',
+                  padding: 'clamp(6px, 0.56vw, 8px) clamp(8px, 0.83vw, 12px)',
+                  display: 'flex',
+                  gap: 10,
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  border: 'none',
+                  borderRadius: 'clamp(8px, 0.83vw, 12px)',
+                  background: isActive ? rgba(T.fg, 0.1) : 'transparent',
+                  color: isActive ? rgba(T.fg, 0.92) : rgba(T.fg, 0.60),
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  minHeight: 'clamp(36px, 3.06vw, 44px)',
+                }}
+              >
+                <span style={{ fontSize: 15, lineHeight: 1.33, fontWeight: isActive ? 600 : 400, letterSpacing: '-0.41px' }}>{t.label}</span>
+              </button>
+            )
+          })}
+          </div>
+        </div>
+      )}
+
+      <div role="tabpanel" id={`tabpanel-${tab}`} style={{ flex: 1, overflowY: 'auto', padding: 'clamp(16px, 4vw, 32px)' }}>
 
         {/* ════ DISPLAY TAB ════ */}
         {tab === 'display' && (
           <div>
-            <p style={{ fontSize: 13, color: rgba(T.fg, 0.3), marginBottom: 20, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13, lineHeight: 1.38, color: rgba(T.fg, 0.40), marginBottom: 20 }}>
               허브 크기, 오버레이 투명도, 나선 간격, 애니메이션 속도를 조절합니다.
             </p>
 
@@ -297,15 +341,15 @@ export default function SettingsPanel(): React.ReactElement {
 
             {/* Animation speed */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 15, color: rgba(T.fg, 0.9), fontWeight: 400, marginBottom: 10, letterSpacing: '-0.01em' }}>애니메이션 속도</div>
-              <div style={{ display: 'flex', background: rgba(T.fg, 0.06), borderRadius: 9, padding: 2 }}>
+              <div style={{ fontSize: 17, lineHeight: 1.29, color: rgba(T.fg, 0.92), fontWeight: 400, marginBottom: 10, letterSpacing: '-0.41px' }}>애니메이션 속도</div>
+              <div style={{ display: 'flex', background: rgba(T.fg, 0.06), borderRadius: 12, padding: 2 }}>
                 {(['slow', 'normal', 'fast', 'none'] as const).map(s => (
                   <button key={s} onClick={() => { setLocalAnim(s); saveDisplay({ animSpeed: s }) }}
                     style={{
-                      flex: 1, padding: '7px 0', borderRadius: 7, cursor: 'pointer', fontSize: 13, fontWeight: localAnim === s ? 600 : 400,
+                      flex: 1, padding: '7px 0', borderRadius: 10, cursor: 'pointer', fontSize: 13, lineHeight: 1.38, fontWeight: localAnim === s ? 600 : 400,
                       border: 'none',
                       background: localAnim === s ? rgba(T.fg, 0.12) : 'transparent',
-                      color: localAnim === s ? rgba(T.fg, 0.95) : rgba(T.fg, 0.4),
+                      color: localAnim === s ? rgba(T.fg, 0.92) : rgba(T.fg, 0.40),
                       transition: 'all 0.2s ease',
                       boxShadow: localAnim === s ? '0 3px 8px rgba(0,0,0,0.12), 0 1px 1px rgba(0,0,0,0.08)' : 'none',
                     }}>
@@ -317,12 +361,12 @@ export default function SettingsPanel(): React.ReactElement {
 
             {/* Startup settings */}
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 13, color: rgba(T.fg, 0.45), marginBottom: 8, paddingLeft: 16 }}>기본 설정</div>
+              <div style={{ fontSize: 13, lineHeight: 1.38, color: rgba(T.fg, 0.40), marginBottom: 8, paddingLeft: 16 }}>기본 설정</div>
               <div style={{ background: rgba(T.fg, 0.06), borderRadius: 10, overflow: 'hidden' }}>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12, padding: '12px 16px', borderBottom: `0.5px solid ${rgba(T.fg, 0.08)}` }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 17, color: rgba(T.fg, 0.9), fontWeight: 400, letterSpacing: '-0.02em' }}>자동 실행</div>
-                  <div style={{ fontSize: 13, color: rgba(T.fg, 0.35), marginTop: 2 }}>로그인 시 자동 시작</div>
+                  <div style={{ fontSize: 'clamp(14px, 1.18vw, 17px)', lineHeight: 1.29, color: rgba(T.fg, 0.92), fontWeight: 400, letterSpacing: '-0.41px' }}>자동 실행</div>
+                  <div style={{ fontSize: 'clamp(11px, 0.90vw, 13px)', lineHeight: 1.38, color: rgba(T.fg, 0.40), marginTop: 2 }}>로그인 시 자동 시작</div>
                 </div>
                 <button
                   onClick={async () => {
@@ -332,38 +376,38 @@ export default function SettingsPanel(): React.ReactElement {
                     if (!result?.success) setLoginItem(!next)
                   }}
                   style={{
-                    width: 51, height: 31, borderRadius: 16, border: 'none',
+                    width: 'clamp(40px, 3.54vw, 51px)', height: 'clamp(24px, 2.15vw, 31px)', borderRadius: 'clamp(12px, 1.11vw, 16px)', border: 'none',
                     background: loginItem ? '#30D158' : rgba(T.fg, 0.16),
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
                     transition: 'background 0.25s ease',
                   }}
                 >
                   <div style={{
-                    position: 'absolute', top: 2, width: 27, height: 27, borderRadius: '50%',
+                    position: 'absolute', top: 2, width: 'clamp(20px, 1.88vw, 27px)', height: 'clamp(20px, 1.88vw, 27px)', borderRadius: '50%',
                     background: 'white', transition: 'left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                    left: loginItem ? 22 : 2,
+                    left: loginItem ? 'clamp(17px, 1.53vw, 22px)' : 'clamp(1px, 0.14vw, 2px)',
                     boxShadow: '0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.06)',
                   }} />
                 </button>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12, padding: '12px 16px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 17, color: rgba(T.fg, 0.9), fontWeight: 400, letterSpacing: '-0.02em' }}>자동 AI 분석</div>
-                  <div style={{ fontSize: 13, color: rgba(T.fg, 0.35), marginTop: 2 }}>메뉴 열 때 화면 분석</div>
+                  <div style={{ fontSize: 'clamp(14px, 1.18vw, 17px)', lineHeight: 1.29, color: rgba(T.fg, 0.92), fontWeight: 400, letterSpacing: '-0.41px' }}>자동 AI 분석</div>
+                  <div style={{ fontSize: 'clamp(11px, 0.90vw, 13px)', lineHeight: 1.38, color: rgba(T.fg, 0.40), marginTop: 2 }}>메뉴 열 때 화면 분석</div>
                 </div>
                 <button
                   onClick={() => setAutoScan(!autoScan)}
                   style={{
-                    width: 51, height: 31, borderRadius: 16, border: 'none',
+                    width: 'clamp(40px, 3.54vw, 51px)', height: 'clamp(24px, 2.15vw, 31px)', borderRadius: 'clamp(12px, 1.11vw, 16px)', border: 'none',
                     background: autoScan ? '#30D158' : rgba(T.fg, 0.16),
                     cursor: 'pointer', position: 'relative', flexShrink: 0,
                     transition: 'background 0.25s ease',
                   }}
                 >
                   <div style={{
-                    position: 'absolute', top: 2, width: 27, height: 27, borderRadius: '50%',
+                    position: 'absolute', top: 2, width: 'clamp(20px, 1.88vw, 27px)', height: 'clamp(20px, 1.88vw, 27px)', borderRadius: '50%',
                     background: 'white', transition: 'left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                    left: autoScan ? 22 : 2,
+                    left: autoScan ? 'clamp(17px, 1.53vw, 22px)' : 'clamp(1px, 0.14vw, 2px)',
                     boxShadow: '0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.06)',
                   }} />
                 </button>
@@ -388,8 +432,8 @@ export default function SettingsPanel(): React.ReactElement {
                 border: 'none',
                 cursor: 'pointer',
                 padding: '12px 0',
-                transition: 'opacity 0.15s ease',
-                letterSpacing: '-0.02em',
+                transition: 'opacity 0.2s ease',
+                letterSpacing: '-0.41px',
               }}
             >
               기본값으로 재설정
@@ -402,7 +446,7 @@ export default function SettingsPanel(): React.ReactElement {
           const current = currentTheme // alias for brevity in JSX
           return (
             <div>
-              <p style={{ fontSize: 11, color: rgba(T.fg, 0.62), marginBottom: 22, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 13, lineHeight: 1.38, color: rgba(T.fg, 0.60), marginBottom: 22 }}>
                 앱 전체의 색상 테마를 변경합니다. Primary(장식)와 Accent(강조) 색이 바뀝니다.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
@@ -452,7 +496,7 @@ export default function SettingsPanel(): React.ReactElement {
         {/* ════ SHORTCUT TAB ════ */}
         {tab === 'shortcut' && (
           <div>
-            <p style={{ fontSize: 11, color: rgba(T.fg, 0.62), marginBottom: 18, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, lineHeight: 1.38, color: rgba(T.fg, 0.60), marginBottom: 18 }}>
               오버레이를 표시/숨기는 글로벌 단축키입니다. Ctrl, Alt, Shift 중 하나 이상 + 키 조합이 필요합니다.
             </p>
 
@@ -473,19 +517,19 @@ export default function SettingsPanel(): React.ReactElement {
                   background: recording ? rgba(T.gold, 0.07) : rgba(T.fg, 0.03),
                   boxShadow: recording ? `0 0 20px ${rgba(T.gold, 0.12)}` : 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                  transition: 'all 0.15s ease',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 {recording
                   ? <span style={{ fontSize: 12, color: rgba(T.gold, 0.8), fontStyle: 'italic' }}>키 조합을 입력하세요...</span>
                   : <KeyBadge keys={pendingShortcut || currentShortcut} color={T.gold} inline />
                 }
-                <span style={{ fontSize: 10, color: rgba(T.fg, 0.48), flexShrink: 0 }}>
+                <span style={{ fontSize: 10, color: rgba(T.fg, 0.40), flexShrink: 0 }}>
                   {recording ? '입력 대기 중' : '클릭하여 변경'}
                 </span>
               </div>
               {recording && (
-                <button onClick={() => setRecording(false)} style={{ marginTop: 6, fontSize: 11, color: rgba(T.fg, 0.52), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <button onClick={() => setRecording(false)} style={{ marginTop: 6, fontSize: 11, color: rgba(T.fg, 0.60), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   취소
                 </button>
               )}
@@ -500,9 +544,9 @@ export default function SettingsPanel(): React.ReactElement {
                 style={{
                   padding: '8px 22px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600,
                   background: (savingShortcut || recording || !shortcutChanged) ? rgba(T.gold, 0.22) : rgba(T.gold, 0.88),
-                  color: (savingShortcut || recording || !shortcutChanged) ? rgba(T.fg, 0.48) : T.fg,
+                  color: (savingShortcut || recording || !shortcutChanged) ? rgba(T.fg, 0.40) : T.fg,
                   cursor: (savingShortcut || recording || !shortcutChanged) ? 'default' : 'pointer',
-                  transition: 'background 0.12s ease',
+                  transition: 'background 0.2s ease',
                 }}
               >
                 {savingShortcut ? '저장 중...' : '저장'}
@@ -522,7 +566,7 @@ export default function SettingsPanel(): React.ReactElement {
                   {section.items.map(([key, desc]) => (
                     <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
                       <kbd style={{ fontSize: 10, fontWeight: 600, color: T.teal, fontFamily: 'monospace', background: rgba(T.teal, 0.06), padding: '1px 8px', borderRadius: 3, border: `1px solid ${rgba(T.teal, 0.08)}`, minWidth: 50, textAlign: 'center' }}>{key}</kbd>
-                      <span style={{ fontSize: 10, color: rgba(T.fg, 0.5) }}>{desc}</span>
+                      <span style={{ fontSize: 10, color: rgba(T.fg, 0.60) }}>{desc}</span>
                     </div>
                   ))}
                 </div>
@@ -534,11 +578,11 @@ export default function SettingsPanel(): React.ReactElement {
         {/* ════ AI TAB ════ */}
         {tab === 'ai' && (
           <div>
-            <p style={{ fontSize: 11, color: rgba(T.fg, 0.62), marginBottom: 22, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, lineHeight: 1.38, color: rgba(T.fg, 0.60), marginBottom: 22 }}>
               AI 채팅 및 화면 분석에 사용할 제공자와 모델을 설정합니다.
             </p>
             {aiLoading && (
-              <div style={{ color: rgba(T.fg, 0.55), fontSize: 12, textAlign: 'center', paddingTop: 40 }}>불러오는 중...</div>
+              <div style={{ color: rgba(T.fg, 0.60), fontSize: 12, textAlign: 'center', paddingTop: 40 }}>불러오는 중...</div>
             )}
             {!aiLoading && aiConfig && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -552,8 +596,8 @@ export default function SettingsPanel(): React.ReactElement {
                           flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
                           border: aiProvider === p ? `2px solid ${T.gold}` : `2px solid ${rgba(T.fg, 0.1)}`,
                           background: aiProvider === p ? rgba(T.gold, 0.15) : rgba(T.fg, 0.07),
-                          color: aiProvider === p ? T.gold : rgba(T.fg, 0.65),
-                          transition: 'all 0.15s ease',
+                          color: aiProvider === p ? T.gold : rgba(T.fg, 0.60),
+                          transition: 'all 0.2s ease',
                         }}>
                         {p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic' : 'Ollama'}
                       </button>
@@ -587,7 +631,7 @@ export default function SettingsPanel(): React.ReactElement {
                       onChange={e => setAiDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
                       placeholder={aiConfig.apiKey ? `현재: ••••${aiConfig.apiKey.slice(-4)}` : 'API 키를 입력하세요...'}
                       style={{ width: '100%', height: 32, fontSize: 12, padding: '0 10px', background: rgba(T.bg, 0.95), color: rgba(T.fg, 0.88), border: `1px solid ${rgba(T.fg, 0.16)}`, borderRadius: 8, boxSizing: 'border-box' }} />
-                    <div style={{ fontSize: 10, color: rgba(T.fg, 0.52), marginTop: 4 }}>
+                    <div style={{ fontSize: 10, color: rgba(T.fg, 0.60), marginTop: 4 }}>
                       비워두면 기존 키가 유지됩니다.
                       {aiProvider === 'openai' && ' OpenAI 대시보드에서 발급하세요.'}
                       {aiProvider === 'anthropic' && ' Anthropic Console에서 발급하세요.'}
