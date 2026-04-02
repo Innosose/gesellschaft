@@ -81,9 +81,20 @@ html, body {
   background: transparent;
 }
 
-/* Web mode: fill safe area with dark background instead of white */
-html.web-mode, html.web-mode body {
+/* Web mode: fill entire viewport including safe areas with dark background */
+html.web-mode {
   background: #0a0804 !important;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+html.web-mode body {
+  background: #0a0804 !important;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+html.web-mode #root {
+  min-height: 100%;
+  min-height: 100dvh;
 }
 
 body {
