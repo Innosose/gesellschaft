@@ -309,10 +309,9 @@ export const PARTICLE_CONFIGS: Record<ParticleShape, ParticleConfig> = {
 
 // ─── Theme Store ─────────────────────────────
 let _current: ThemePreset = THEME_PRESETS[0]
-let _version = 0
 const _listeners = new Set<() => void>()
 
-function emitChange(): void { _version++; _listeners.forEach(fn => fn()) }
+function emitChange(): void { _listeners.forEach(fn => fn()) }
 
 /** Switch active theme and update all CSS variables */
 export function setTheme(id: string): void {

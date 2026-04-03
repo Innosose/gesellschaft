@@ -33,7 +33,7 @@ function getTodoCount(): number {
       const raw = localStorage.getItem(key)
       if (raw) {
         const items = JSON.parse(raw)
-        if (Array.isArray(items)) return items.filter((t: any) => !t.done && !t.completed).length
+        if (Array.isArray(items)) return items.filter((t: { done?: boolean; completed?: boolean }) => !t.done && !t.completed).length
       }
     }
     return 0

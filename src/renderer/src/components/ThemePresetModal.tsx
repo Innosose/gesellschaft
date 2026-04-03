@@ -30,7 +30,7 @@ export default function ThemePresetModal({ onClose, asPanel }: { onClose: () => 
 
   const applyTheme = useCallback((theme: Theme) => {
     try {
-      (window as any).api?.settings?.setTheme?.(theme.color)
+      (window as unknown as { api?: { settings?: { setTheme?: (c: string) => void } } }).api?.settings?.setTheme?.(theme.color)
     } catch { /* ignore */ }
     setApplied(theme.id)
     setTimeout(() => setApplied(null), 2000)

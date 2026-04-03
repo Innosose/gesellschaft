@@ -550,7 +550,7 @@ const FanCard = memo(function FanCard({
 // ═══════════════════════════════════════════════
 // SECTION: Overview Grid (all-tools view)
 // ═══════════════════════════════════════════════
-const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds, animDuration, onSelect, onClose, onToggleFav }: {
+const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds, animDuration: _animDuration, onSelect, onClose, onToggleFav }: {
   tools: Tool[]; recentIds: string[]
   favoriteIds: string[]; animDuration: number; onSelect: (id: string) => void; onClose: () => void
   onToggleFav: (id: string) => void
@@ -674,7 +674,6 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery:
   const [showOverview, setShowOverview] = useState(false)
   const [recentIds, setRecentIds] = useState<string[]>(getRecentTools)
   const [favoriteIds, setFavoriteIds] = useState<string[]>(getFavorites)
-  const [localSearch, setLocalSearch] = useState('')
   const wheelCooldown = useRef(false)
 
   useEffect(() => { const h = (): void => { setVw(window.innerWidth); setVh(window.innerHeight) }; window.addEventListener('resize', h); return () => window.removeEventListener('resize', h) }, [])
@@ -683,7 +682,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery:
   const staggerMs = STAGGER_MS[animSpeed] ?? 22
   const { radius, arcCenterX, arcCenterY } = useMemo(() => getArcParams(vw, vh, spiralScale), [vw, vh, spiralScale])
   const { w: cardW, h: cardH } = useMemo(() => getCardSize(vw, vh), [vw, vh])
-  const filterQuery = localSearch || externalQuery || ''
+  const filterQuery = externalQuery || ''
   const isSearching = filterQuery.length > 0
   const filteredTools = useMemo(() => {
     if (!filterQuery) return tools

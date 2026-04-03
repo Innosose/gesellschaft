@@ -91,7 +91,6 @@ export function ColorPickerContent(): React.ReactElement {
   const [history, setHistory] = React.useState<string[]>(() => loadHistory())
   const [copiedKey, setCopiedKey] = React.useState('')
   const slPickerRef = React.useRef<HTMLDivElement>(null)
-  const hueWheelRef = React.useRef<HTMLDivElement>(null)
 
   const [r, g, b] = hslToRgb(hue, sat, lig)
   const hex = rgbToHex(r, g, b)
@@ -134,14 +133,6 @@ export function ColorPickerContent(): React.ReactElement {
     const newL = Math.round((1 - y) * 100)
     setSat(newS)
     setLig(newL)
-  }
-
-  const handleHueWheel = (e: React.MouseEvent<HTMLDivElement>): void => {
-    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
-    const cx = rect.left + rect.width / 2
-    const cy = rect.top + rect.height / 2
-    const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI
-    setHue(Math.round((angle + 360) % 360))
   }
 
   const handleCopy = async (key: string, val: string): Promise<void> => {

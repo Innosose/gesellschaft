@@ -170,7 +170,7 @@ const ClockHands = memo(function ClockHands({ color, accent, active }: { color: 
 })
 
 export default memo(function CenterHub({
-  isOpen, scanning, hubColor, hubSize,
+  isOpen, scanning, hubColor: _hubColor, hubSize,
   onClick, onScan,
 }: CenterHubProps): React.ReactElement {
   // Scale down hub on small screens to prevent overflow

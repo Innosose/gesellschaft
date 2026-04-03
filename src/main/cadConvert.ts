@@ -17,7 +17,7 @@ const DirPathSchema   = z.string()
 // DXF → SVG string
 async function dxfToSvg(filePath: string): Promise<string> {
   const content = fs.readFileSync(filePath, 'utf-8')
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const { Helper } = require('dxf') as { Helper: new (content: string) => { toSVG: () => string } }
   const helper = new Helper(content)
   return helper.toSVG()

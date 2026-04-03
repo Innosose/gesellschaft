@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { T, rgba } from '../utils/theme'
 import OverlayPortal from '../utils/OverlayPortal'
 

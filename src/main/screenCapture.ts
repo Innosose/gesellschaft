@@ -114,7 +114,7 @@ JSON 배열만 반환:
       let reasons: Record<string, string> = {}
 
       if (cfg.provider === 'openai') {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const OpenAI = require('openai').default
         const client = new OpenAI({ apiKey: cfg.apiKey })
         const response = await withTimeout(
@@ -139,7 +139,7 @@ JSON 배열만 반환:
         ids = result.ids; reasons = result.reasons
 
       } else if (cfg.provider === 'anthropic') {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const Anthropic = require('@anthropic-ai/sdk').default
         const client = new Anthropic({ apiKey: cfg.apiKey })
 

@@ -183,7 +183,7 @@ export function registerAiAssistantHandlers(): void {
 
     try {
       if (cfg.provider === 'openai') {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const OpenAI = require('openai').default
         const client = new OpenAI({ apiKey: cfg.apiKey })
         const stream = await client.chat.completions.create({
@@ -198,7 +198,7 @@ export function registerAiAssistantHandlers(): void {
         }
 
       } else if (cfg.provider === 'anthropic') {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const Anthropic = require('@anthropic-ai/sdk').default
         const client = new Anthropic({ apiKey: cfg.apiKey })
         const system = withSystem.find(m => m.role === 'system')?.content

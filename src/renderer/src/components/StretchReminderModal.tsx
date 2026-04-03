@@ -10,10 +10,6 @@ interface StretchExercise {
   icon: string
 }
 
-interface Routine {
-  exerciseIds: number[]
-}
-
 const STORAGE_KEY = 'gs-stretch'
 
 const BUILT_IN: StretchExercise[] = [

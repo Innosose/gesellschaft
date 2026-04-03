@@ -38,14 +38,6 @@ export default function SpotlightModal({ onClose }: { onClose: () => void; asPan
   const spotSize = radius * 2
   const boxShadowCircle = `0 0 0 9999px rgba(0,0,0,${dimOpacity})`
 
-  const btnStyle = (active?: boolean): React.CSSProperties => ({
-    padding: '4px 10px', borderRadius: 4, fontSize: 10, cursor: 'pointer',
-    border: `1px solid ${rgba(T.gold, 0.12)}`,
-    background: active ? rgba(T.teal, 0.12) : rgba(T.gold, 0.04),
-    color: active ? T.teal : rgba(T.fg, 0.6),
-    fontWeight: active ? 600 : 400,
-  })
-
   return (
     <OverlayPortal>
       {/* Spotlight overlay */}

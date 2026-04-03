@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Modal } from './SearchModal'
-import { T, rgba } from '../utils/theme'
+import { T } from '../utils/theme'
 
 interface WishItem { id: number; name: string; price: number; priority: 'high' | 'medium' | 'low'; link: string; imageUrl: string; purchased: boolean }
 

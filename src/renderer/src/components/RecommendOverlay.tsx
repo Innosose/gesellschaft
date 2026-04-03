@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { T, rgba, getCurrentTheme } from '../utils/theme'
+import { rgba, getCurrentTheme } from '../utils/theme'
 import { ALL_TOOLS } from '../../../shared/constants'
 
 interface Props {

@@ -8,7 +8,6 @@ function computeDiff(a: string, b: string): DiffLine[] {
   const linesA = a.split('\n')
   const linesB = b.split('\n')
   const result: DiffLine[] = []
-  const max = Math.max(linesA.length, linesB.length)
   // Simple line-by-line comparison using LCS approach (simplified)
   const m = linesA.length, n = linesB.length
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))

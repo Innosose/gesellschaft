@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import React, { memo, useEffect, useState, useCallback, useRef } from 'react'
 import CenterHub from './components/CenterHub'
 import SpiralMenu from './components/SpiralMenu'
 import ToolPanel from './components/ToolPanel'
@@ -69,7 +69,7 @@ const Particles = memo(function Particles({ theme }: {
 const isWeb = !('__electron__' in window || navigator.userAgent.includes('Electron'))
 
 export default function App(): React.ReactElement {
-  const { hubColor, hubSize, overlayOpacity, spiralScale, animSpeed, autoScan, loadFromAPI } = useAppStore()
+  const { hubColor, hubSize, spiralScale, animSpeed, autoScan, loadFromAPI } = useAppStore()
   const theme = useTheme() // re-render entire app on theme change
   const [uiState, setUiState] = useState<UIState>('hub')
   const [activeTool, setActiveTool] = useState<Tool | null>(null)

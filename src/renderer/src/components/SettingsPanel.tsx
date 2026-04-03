@@ -76,7 +76,7 @@ function Slider({
 }
 
 // --- KeyBadge ---
-function KeyBadge({ keys, color, inline }: { keys: string; color: string; inline?: boolean }): React.ReactElement {
+function KeyBadge({ keys, color: _color, inline }: { keys: string; color: string; inline?: boolean }): React.ReactElement {
   const parts = keys.split('+')
   return (
     <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: inline ? 'nowrap' : 'wrap' }}>
