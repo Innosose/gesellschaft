@@ -1,10 +1,9 @@
-import { ipcMain, app } from 'electron'
-import fs from 'fs'
+import { app } from 'electron'
 import path from 'path'
 import { z } from 'zod'
-import log from './logger'
+import { createCrudStore } from './createCrudStore'
 
-export interface SmartFolder {
+interface SmartFolder {
   id: string
   name: string
   options: {
@@ -38,61 +37,15 @@ const SmartFolderSchema = z.object({
   }),
 })
 
-const SmartFolderIdSchema = z.string().min(1)
-
-function getSmartFoldersPath(): string {
-  return path.join(app.getPath('userData'), 'smartFolders.json')
-}
-
-function loadSmartFolders(): SmartFolder[] {
-  try {
-    const data = fs.readFileSync(getSmartFoldersPath(), 'utf-8')
-    const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-      log.warn('[smartFolders] 파일 로드 실패', err)
-    }
-    return []
-  }
-}
-
-function saveSmartFolders(items: SmartFolder[]): void {
-  try {
-    fs.writeFileSync(getSmartFoldersPath(), JSON.stringify(items, null, 2))
-  } catch (err) {
-    log.error('[smartFolders] 파일 저장 실패', err)
-  }
-}
+const store = createCrudStore<SmartFolder>({
+  channel: 'smartFolders',
+  getPath: () => path.join(app.getPath('userData'), 'smartFolders.json'),
+  saveSchema: SmartFolderSchema,
+  uncached: true,
+  createItem: (data) => data as unknown as SmartFolder,
+  updateItem: (_existing, data) => data as unknown as SmartFolder,
+})
 
 export function registerSmartFoldersHandlers(): void {
-  ipcMain.handle('smartFolders:get', () => loadSmartFolders())
-
-  ipcMain.handle('smartFolders:save', (_, raw: unknown) => {
-    const result = SmartFolderSchema.safeParse(raw)
-    if (!result.success) {
-      log.warn('[smartFolders:save] 유효하지 않은 입력', result.error.flatten())
-      return { success: false, error: '유효하지 않은 스마트 폴더 데이터' }
-    }
-    const folder = result.data
-    const items = loadSmartFolders()
-    const idx = items.findIndex(i => i.id === folder.id)
-    if (idx >= 0) {
-      items[idx] = folder
-    } else {
-      items.push(folder)
-    }
-    saveSmartFolders(items)
-    log.debug(`[smartFolders:save] id=${folder.id} name="${folder.name}"`)
-    return items
-  })
-
-  ipcMain.handle('smartFolders:delete', (_, raw: unknown) => {
-    const result = SmartFolderIdSchema.safeParse(raw)
-    if (!result.success) return { success: false, error: '유효하지 않은 id' }
-    const items = loadSmartFolders().filter(i => i.id !== result.data)
-    saveSmartFolders(items)
-    log.debug(`[smartFolders:delete] id=${result.data}`)
-    return items
-  })
+  store.register()
 }

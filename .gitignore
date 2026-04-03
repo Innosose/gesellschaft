@@ -1,7 +1,7 @@
 node_modules/
 out/
 dist/
-dist-web/
+coverage/
 *.log
 .DS_Store
 *.tsbuildinfo

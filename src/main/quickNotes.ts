@@ -1,11 +1,10 @@
-import { ipcMain, app } from 'electron'
+import { app } from 'electron'
 import { join } from 'path'
 import { z } from 'zod'
-import log from './logger'
 import { QUICK_NOTE_COLORS } from '../shared/constants'
-import { readJsonSync, writeJsonLocked } from './jsonStore'
+import { createCrudStore, generateId } from './createCrudStore'
 
-export interface QuickNote {
+interface QuickNote {
   id: string
   title: string
   content: string
@@ -20,68 +19,30 @@ const QuickNoteSaveSchema = z.object({
   color:   z.string().regex(/^#[0-9a-fA-F]{3,8}$/).optional(),
 })
 
-const QuickNoteIdSchema = z.string().min(1)
+let noteCount = 0
 
-let notes: QuickNote[] = []
-
-function getPath(): string {
-  return join(app.getPath('userData'), 'quick-notes.json')
-}
-
-function load(): void {
-  const raw = readJsonSync<unknown>(getPath(), [])
-  notes = Array.isArray(raw) ? raw : []
-  log.debug(`[quickNotes] ${notes.length}개 로드`)
-}
-
-async function save(): Promise<void> {
-  try {
-    await writeJsonLocked(getPath(), notes)
-  } catch (err) {
-    log.error('[quickNotes] 파일 저장 실패', err)
-  }
-}
+const store = createCrudStore<QuickNote>({
+  channel: 'quickNotes',
+  getPath: () => join(app.getPath('userData'), 'quick-notes.json'),
+  saveSchema: QuickNoteSaveSchema,
+  createItem: (data) => {
+    const colorIdx = noteCount++ % QUICK_NOTE_COLORS.length
+    return {
+      id:        generateId('note'),
+      title:     (data.title as string) ?? '',
+      content:   (data.content as string) ?? '',
+      color:     (data.color as string) ?? QUICK_NOTE_COLORS[colorIdx],
+      updatedAt: Date.now(),
+    }
+  },
+  updateItem: (existing, data) => ({
+    ...existing,
+    ...data,
+    updatedAt: Date.now(),
+  }),
+})
 
 export function registerQuickNotesHandlers(): void {
-  load()
-
-  ipcMain.handle('quickNotes:get', () => notes)
-
-  ipcMain.handle('quickNotes:save', async (_, raw: unknown) => {
-    const result = QuickNoteSaveSchema.safeParse(raw)
-    if (!result.success) {
-      log.warn('[quickNotes:save] 유효하지 않은 입력', result.error.flatten())
-      return { success: false, error: '유효하지 않은 메모 데이터' }
-    }
-    const note = result.data
-    const idx = notes.findIndex(n => n.id === note.id)
-    if (idx >= 0) {
-      notes[idx] = { ...notes[idx], ...note, updatedAt: Date.now() }
-    } else {
-      const colorIdx = notes.length % QUICK_NOTE_COLORS.length
-      notes.unshift({
-        id:        `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        title:     note.title   ?? '',
-        content:   note.content ?? '',
-        color:     note.color   ?? QUICK_NOTE_COLORS[colorIdx],
-        updatedAt: Date.now(),
-      })
-    }
-    await save()
-    return notes
-  })
-
-  ipcMain.handle('quickNotes:delete', async (_, raw: unknown) => {
-    const result = QuickNoteIdSchema.safeParse(raw)
-    if (!result.success) {
-      log.warn('[quickNotes:delete] 유효하지 않은 id')
-      return { success: false, error: '유효하지 않은 id' }
-    }
-    notes = notes.filter(n => n.id !== result.data)
-    await save()
-    log.debug(`[quickNotes:delete] id=${result.data}`)
-    return notes
-  })
+  store.register()
+  noteCount = store.getItems().length
 }
-
-export { QUICK_NOTE_COLORS }

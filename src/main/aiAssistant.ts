@@ -4,7 +4,7 @@ import * as path from 'path'
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 
-export interface AiConfig {
+interface AiConfig {
   provider: 'openai' | 'anthropic' | 'ollama'
   apiKey: string
   model: string
@@ -12,7 +12,7 @@ export interface AiConfig {
   ollamaUrl: string
 }
 
-export interface ChatMessage {
+interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
 }

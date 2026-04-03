@@ -10,7 +10,7 @@ interface AiConfig {
   ollamaUrl: string
 }
 
-// e.code → Electron accelerator key mapping (layout-independent, works with Korean IME)
+// e.code → Electron accelerator key mapping
 const CODE_MAP: Record<string, string> = {
   'Space': 'Space', 'Enter': 'Return', 'Escape': 'Escape', 'Tab': 'Tab',
   'Backspace': 'Backspace', 'Delete': 'Delete', 'Insert': 'Insert',
@@ -29,22 +29,124 @@ function keyEventToAccelerator(e: KeyboardEvent): string | null {
   if (parts.length === 0) return null
   const code = e.code
   let key: string
-  if (CODE_MAP[code]) {
-    key = CODE_MAP[code]
-  } else if (/^Key[A-Z]$/.test(code)) {
-    key = code.slice(3)
-  } else if (/^Digit[0-9]$/.test(code)) {
-    key = code.slice(5)
-  } else if (/^F\d+$/.test(code)) {
-    key = code
-  } else {
-    key = e.key.length === 1 ? e.key.toUpperCase() : e.key
-  }
+  if (CODE_MAP[code]) key = CODE_MAP[code]
+  else if (/^Key[A-Z]$/.test(code)) key = code.slice(3)
+  else if (/^Digit[0-9]$/.test(code)) key = code.slice(5)
+  else if (/^F\d+$/.test(code)) key = code
+  else key = e.key.length === 1 ? e.key.toUpperCase() : e.key
   parts.push(key)
   return parts.join('+')
 }
 
-// --- iOS-style Slider ---
+/* ─── macOS System Settings 색상 토큰 (다크 모드) ── */
+const C = {
+  bg: '#1e1e1e',
+  sidebar: '#2a2a2a',
+  sidebarHover: 'rgba(255,255,255,0.06)',
+  sidebarActive: '#0a84ff',
+  card: '#2a2a2a',
+  cardBorder: 'rgba(255,255,255,0.06)',
+  separator: 'rgba(255,255,255,0.08)',
+  text: 'rgba(255,255,255,0.92)',
+  textSecondary: 'rgba(255,255,255,0.55)',
+  textTertiary: 'rgba(255,255,255,0.35)',
+  accent: '#0a84ff',
+  green: '#30d158',
+  red: '#ff453a',
+  chevron: 'rgba(255,255,255,0.25)',
+} as const
+
+/* ─── 사이드바 메뉴 정의 ── */
+type MenuId = 'display' | 'theme' | 'shortcut' | 'ai'
+interface MenuItem { id: MenuId; icon: string; label: string; color: string }
+
+const MENU_ITEMS: MenuItem[] = [
+  { id: 'display',  icon: '🖥', label: '디스플레이',  color: '#5856d6' },
+  { id: 'theme',    icon: '🎨', label: '테마',        color: '#ff9f0a' },
+  { id: 'shortcut', icon: '⌨️', label: '단축키',      color: '#64d2ff' },
+  { id: 'ai',       icon: '🤖', label: 'AI',          color: '#bf5af2' },
+]
+
+/* ═══════════════ 공통 컴포넌트 ═══════════════ */
+
+function GroupCard({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <div style={{
+      background: C.card, borderRadius: 10,
+      border: `0.5px solid ${C.cardBorder}`,
+      overflow: 'hidden', marginBottom: 20,
+    }}>
+      {children}
+    </div>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <div style={{
+      fontSize: 13, color: C.textTertiary, fontWeight: 400,
+      paddingLeft: 2, marginBottom: 8,
+    }}>
+      {children}
+    </div>
+  )
+}
+
+function Row({
+  icon, title, description, right, last = false, onClick,
+}: {
+  icon?: string; title: string; description?: string
+  right?: React.ReactNode; last?: boolean; onClick?: () => void
+}): React.ReactElement {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        minHeight: 44, padding: '6px 12px',
+        borderBottom: last ? 'none' : `0.5px solid ${C.separator}`,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'background 0.1s',
+      }}
+      onMouseEnter={e => { if (onClick) (e.currentTarget.style.background = 'rgba(255,255,255,0.04)') }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+    >
+      {icon && <span style={{ fontSize: 18, flexShrink: 0, width: 24, textAlign: 'center' }}>{icon}</span>}
+      <div style={{ flex: 1, minWidth: 0, padding: description ? '2px 0' : 0 }}>
+        <div style={{ fontSize: 13, color: C.text, fontWeight: 400 }}>{title}</div>
+        {description && <div style={{ fontSize: 11, color: C.textTertiary, marginTop: 1 }}>{description}</div>}
+      </div>
+      {right}
+    </div>
+  )
+}
+
+function Chevron(): React.ReactElement {
+  return (
+    <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, opacity: 0.3 }}>
+      <path d="M1 1l5 5-5 5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ToggleSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }): React.ReactElement {
+  return (
+    <button onClick={onToggle} style={{
+      width: 40, height: 24, borderRadius: 12, border: 'none',
+      background: on ? C.green : 'rgba(255,255,255,0.16)',
+      cursor: 'pointer', position: 'relative', flexShrink: 0,
+      transition: 'background 0.2s ease',
+    }}>
+      <div style={{
+        position: 'absolute', top: 2, width: 20, height: 20, borderRadius: '50%',
+        background: 'white', transition: 'left 0.2s cubic-bezier(0.4,0,0.2,1)',
+        left: on ? 18 : 2,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+      }} />
+    </button>
+  )
+}
+
 function Slider({
   label, value, min, max, step = 1, format, onChange,
 }: {
@@ -52,150 +154,56 @@ function Slider({
   format: (v: number) => string; onChange: (v: number) => void
 }): React.ReactElement {
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '0 16px',
-      marginBottom: 8,
-    }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        minHeight: 44,
-      }}>
-        <span style={{ fontSize: 17, color: 'white', fontWeight: 400 }}>{label}</span>
-        <span style={{ fontSize: 17, color: 'rgba(255,255,255,0.35)', fontWeight: 400, fontVariantNumeric: 'tabular-nums' }}>{format(value)}</span>
+    <div style={{ padding: '8px 12px', borderBottom: `0.5px solid ${C.separator}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontSize: 13, color: C.text }}>{label}</span>
+        <span style={{ fontSize: 12, color: C.textTertiary, fontVariantNumeric: 'tabular-nums' }}>{format(value)}</span>
       </div>
-      <div style={{ paddingBottom: 12 }}>
-        <input
-          type="range" min={min} max={max} step={step} value={value}
-          onChange={e => onChange(Number(e.target.value))}
-          style={{ width: '100%', cursor: 'pointer' }}
-        />
-      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{ width: '100%', cursor: 'pointer', accentColor: C.accent }} />
     </div>
   )
 }
 
-// --- KeyBadge ---
-function KeyBadge({ keys, inline }: { keys: string; color?: string; inline?: boolean }): React.ReactElement {
-  const parts = keys.split('+')
+function KeyBadge({ keys }: { keys: string }): React.ReactElement {
   return (
-    <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: inline ? 'nowrap' : 'wrap' }}>
-      {parts.map((k, i) => (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+      {keys.split('+').map((k, i) => (
         <React.Fragment key={k}>
           <span style={{
-            padding: '4px 10px', borderRadius: 6, fontFamily: 'ui-monospace, "SF Mono", monospace', fontSize: 13, fontWeight: 600,
-            background: 'rgba(255,255,255,0.06)', border: 'none', color: 'rgba(255,255,255,0.60)',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-          }}>
-            {k}
-          </span>
-          {i < parts.length - 1 && <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10 }}>+</span>}
+            padding: '3px 8px', borderRadius: 5,
+            fontFamily: 'ui-monospace, "SF Mono", monospace',
+            fontSize: 12, fontWeight: 500,
+            background: 'rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.60)',
+            border: '0.5px solid rgba(255,255,255,0.1)',
+          }}>{k}</span>
+          {i < keys.split('+').length - 1 && <span style={{ color: C.textTertiary, fontSize: 9 }}>+</span>}
         </React.Fragment>
       ))}
     </div>
   )
 }
 
-// --- StatusMsg ---
 function StatusMsg({ ok, msg }: { ok: boolean; msg: string }): React.ReactElement {
   return (
     <div style={{
-      margin: '0 16px', marginBottom: 8, padding: '10px 14px', borderRadius: 10, fontSize: 13,
-      background: ok ? 'rgba(48,209,88,0.08)' : 'rgba(255,69,58,0.08)',
-      color: ok ? '#30d158' : '#ff453a',
-    }}>
-      {msg}
-    </div>
+      marginBottom: 12, padding: '8px 12px', borderRadius: 8, fontSize: 12,
+      background: ok ? 'rgba(48,209,88,0.1)' : 'rgba(255,69,58,0.1)',
+      color: ok ? C.green : C.red,
+    }}>{msg}</div>
   )
 }
 
-// --- iOS Toggle Switch ---
-function ToggleSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }): React.ReactElement {
-  return (
-    <button
-      onClick={onToggle}
-      style={{
-        width: 51, height: 31, borderRadius: 16, border: 'none',
-        background: on ? '#30d158' : 'rgba(255,255,255,0.16)',
-        cursor: 'pointer', position: 'relative', flexShrink: 0,
-        transition: 'background 0.2s ease',
-      }}
-    >
-      <div style={{
-        position: 'absolute', top: 2, width: 27, height: 27, borderRadius: '50%',
-        background: 'white', transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        left: on ? 22 : 2,
-        boxShadow: '0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.06)',
-      }} />
-    </button>
-  )
-}
-
-// --- iOS Section Header ---
-function SectionHeader({ children }: { children: React.ReactNode }): React.ReactElement {
-  return (
-    <div style={{
-      fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
-      paddingLeft: 16, marginBottom: 6, fontWeight: 400, letterSpacing: '-0.08px',
-    }}>
-      {children}
-    </div>
-  )
-}
-
-// --- iOS Setting Row ---
-function SettingRow({
-  title, description, right, last = false, onClick,
-}: {
-  title: string; description?: string; right?: React.ReactNode; last?: boolean; onClick?: () => void
-}): React.ReactElement {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        minHeight: 44, padding: '0 16px', gap: 12,
-        borderBottom: last ? 'none' : '0.33px solid rgba(255,255,255,0.06)',
-        cursor: onClick ? 'pointer' : 'default',
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0, padding: description ? '10px 0' : 0 }}>
-        <div style={{ fontSize: 17, color: 'white', fontWeight: 400 }}>{title}</div>
-        {description && (
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{description}</div>
-        )}
-      </div>
-      {right}
-    </div>
-  )
-}
-
-// --- iOS Settings Group ---
-function SettingsGroup({ children }: { children: React.ReactNode }): React.ReactElement {
-  return (
-    <div style={{
-      background: 'rgba(255,255,255,0.06)', borderRadius: 10, overflow: 'hidden',
-      marginBottom: 24,
-    }}>
-      {children}
-    </div>
-  )
-}
-
-type PanelTab = 'display' | 'theme' | 'shortcut' | 'ai'
-
-const TABS: { id: PanelTab; label: string }[] = [
-  { id: 'display',  label: '화면' },
-  { id: 'theme',    label: '테마' },
-  { id: 'shortcut', label: '단축키' },
-  { id: 'ai',       label: 'AI' },
-]
+/* ═══════════════ 메인 패널 ═══════════════ */
 
 export default function SettingsPanel(): React.ReactElement {
   const { hubSize, overlayOpacity, spiralScale, animSpeed, autoScan, setAutoScan, setDisplay } = useAppStore()
   const currentTheme = useTheme()
-  const [tab, setTab] = useState<PanelTab>('display')
+  const [activeMenu, setActiveMenu] = useState<MenuId>('display')
 
-  // ── Display state ──
+  // ── Display
   const [localHub, setLocalHub] = useState(hubSize)
   const [localOpacity, setLocalOpacity] = useState(Math.round(overlayOpacity * 100))
   const [localSpiral, setLocalSpiral] = useState(Math.round(spiralScale * 100))
@@ -203,13 +211,11 @@ export default function SettingsPanel(): React.ReactElement {
   const [loginItem, setLoginItem] = useState(false)
 
   useEffect(() => {
-    setLocalHub(hubSize)
-    setLocalOpacity(Math.round(overlayOpacity * 100))
-    setLocalSpiral(Math.round(spiralScale * 100))
-    setLocalAnim(animSpeed)
+    setLocalHub(hubSize); setLocalOpacity(Math.round(overlayOpacity * 100))
+    setLocalSpiral(Math.round(spiralScale * 100)); setLocalAnim(animSpeed)
   }, [hubSize, overlayOpacity, spiralScale, animSpeed])
 
-  // ── Shortcut state ──
+  // ── Shortcut
   const [currentShortcut, setCurrentShortcut] = useState('...')
   const [pendingShortcut, setPendingShortcut] = useState('')
   const [recording, setRecording] = useState(false)
@@ -217,7 +223,7 @@ export default function SettingsPanel(): React.ReactElement {
   const [savingShortcut, setSavingShortcut] = useState(false)
   const recorderRef = useRef<HTMLDivElement>(null)
 
-  // ── AI state ──
+  // ── AI
   const [aiConfig, setAiConfig] = useState<AiConfig | null>(null)
   const [aiDraft, setAiDraft] = useState<Partial<AiConfig & { apiKeyRaw?: string }>>({})
   const [aiLoading, setAiLoading] = useState(false)
@@ -231,11 +237,11 @@ export default function SettingsPanel(): React.ReactElement {
   }, [])
 
   useEffect(() => {
-    if (tab !== 'ai' || aiConfig !== null) return
+    if (activeMenu !== 'ai' || aiConfig !== null) return
     setAiLoading(true)
     window.api.ai.getConfig().then(cfg => { setAiConfig(cfg); setAiDraft({ ...cfg }) }).finally(() => setAiLoading(false))
     window.api.ai.getPresetModels().then(setAiPresetModels).catch(() => {})
-  }, [tab, aiConfig])
+  }, [activeMenu, aiConfig])
 
   useEffect(() => {
     if (!recording) return
@@ -250,7 +256,6 @@ export default function SettingsPanel(): React.ReactElement {
 
   useEffect(() => { if (recording) recorderRef.current?.focus() }, [recording])
 
-  // ── Handlers ──
   const saveDisplay = (patch: Partial<{ hubSize: number; overlayOpacity: number; spiralScale: number; animSpeed: 'slow' | 'normal' | 'fast' | 'none' }>): void => {
     setDisplay(patch)
   }
@@ -262,13 +267,11 @@ export default function SettingsPanel(): React.ReactElement {
     setSavingShortcut(false)
     if (res.success) {
       setCurrentShortcut(res.shortcut ?? pendingShortcut)
-      setShortcutStatus({ ok: true, msg: '저장되었습니다. 즉시 적용됩니다.' })
+      setShortcutStatus({ ok: true, msg: '저장되었습니다.' })
     } else {
       setShortcutStatus({ ok: false, msg: res.error ?? '저장 실패' })
     }
   }
-
-  const shortcutChanged = pendingShortcut !== currentShortcut && pendingShortcut !== ''
 
   const handleSaveAiConfig = async (): Promise<void> => {
     try {
@@ -276,7 +279,7 @@ export default function SettingsPanel(): React.ReactElement {
       const updated = await window.api.ai.getConfig()
       setAiConfig(updated); setAiDraft({ ...updated })
       setAiSaved(true); setTimeout(() => setAiSaved(false), 2000)
-    } catch { /* ignore */ }
+    } catch { /* */ }
   }
 
   const loadOllamaModels = async (): Promise<void> => {
@@ -285,405 +288,350 @@ export default function SettingsPanel(): React.ReactElement {
 
   const aiProvider = (aiDraft.provider ?? aiConfig?.provider ?? '') as string
   const aiModels = aiProvider === 'ollama' ? aiOllamaModels : (aiPresetModels[aiProvider] ?? [])
+  const shortcutChanged = pendingShortcut !== currentShortcut && pendingShortcut !== ''
 
-  // ── iOS-style input ──
   const inputStyle: React.CSSProperties = {
-    width: '100%', height: 44, fontSize: 17, padding: '0 16px',
+    width: '100%', height: 32, fontSize: 13, padding: '0 10px',
     background: 'rgba(255,255,255,0.06)', color: 'white',
-    border: 'none', borderRadius: 10, boxSizing: 'border-box',
-    fontFamily: 'inherit',
+    border: `0.5px solid ${C.cardBorder}`, borderRadius: 6,
+    boxSizing: 'border-box', fontFamily: 'inherit',
   }
 
-  const selectStyle: React.CSSProperties = {
-    ...inputStyle,
-    appearance: 'none' as const,
-    WebkitAppearance: 'none' as const,
-  }
-
+  /* ═══════════════ 렌더링 ═══════════════ */
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: '#000' }}>
-      {/* Segmented Control */}
-      <div style={{ flexShrink: 0, padding: '12px 16px 0' }}>
-        <div role="tablist" aria-label="설정 탭" style={{
-          display: 'flex', gap: 0,
-          background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: 2,
-        }}>
-          {TABS.map(t => {
-            const isActive = tab === t.id
-            return (
-              <button key={t.id} role="tab" aria-selected={isActive} onClick={() => setTab(t.id)}
-                style={{
-                  flex: 1, minWidth: 0,
-                  padding: 0,
-                  cursor: 'pointer', border: 'none',
-                  borderRadius: 8,
-                  background: isActive ? 'rgba(255,255,255,0.10)' : 'transparent',
-                  color: isActive ? 'white' : 'rgba(255,255,255,0.50)',
-                  fontSize: 13, fontWeight: isActive ? 600 : 400,
-                  lineHeight: 1,
-                  whiteSpace: 'nowrap', transition: 'all 0.2s ease',
-                  minHeight: 30,
-                }}>
-                {t.label}
-              </button>
-            )
-          })}
-        </div>
+    <div style={{
+      display: 'flex', flex: 1, overflow: 'hidden',
+      background: C.bg,
+    }}>
+
+      {/* ══ 사이드바 ══ */}
+      <div style={{
+        width: 200, flexShrink: 0,
+        background: C.sidebar,
+        borderRight: `0.5px solid ${C.cardBorder}`,
+        padding: '16px 8px',
+        overflowY: 'auto',
+        borderRadius: 0,
+      }}>
+        <div style={{
+          fontSize: 20, fontWeight: 700, color: C.text,
+          padding: '0 10px', marginBottom: 20,
+        }}>설정</div>
+
+        {MENU_ITEMS.map(item => {
+          const active = activeMenu === item.id
+          return (
+            <button key={item.id} onClick={() => setActiveMenu(item.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              width: '100%', padding: '6px 10px', marginBottom: 2,
+              borderRadius: 8, border: 'none', cursor: 'pointer',
+              background: active ? C.sidebarActive : 'transparent',
+              color: active ? '#fff' : C.text,
+              fontSize: 13, fontWeight: active ? 500 : 400,
+              textAlign: 'left',
+              transition: 'background 0.15s',
+            }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.sidebarHover }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
+            >
+              <span style={{
+                width: 24, height: 24, borderRadius: 6,
+                background: active ? 'rgba(255,255,255,0.2)' : item.color,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, flexShrink: 0,
+              }}>{item.icon}</span>
+              {item.label}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Scrollable content */}
-      <div role="tabpanel" id={`tabpanel-${tab}`} style={{
-        flex: 1, overflowY: 'auto', padding: '16px 16px',
-        paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
+      {/* ══ 콘텐츠 영역 ══ */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: 24,
+        minHeight: 0,
       }}>
 
-        {/* ════ DISPLAY TAB ════ */}
-        {tab === 'display' && (
-          <div>
-            <SectionHeader>디스플레이</SectionHeader>
-            <div style={{ marginBottom: 24 }}>
-              <Slider
-                label="허브 크기"
-                value={localHub}
-                min={72} max={180} step={2}
-                format={v => `${v}px`}
-                onChange={v => { setLocalHub(v); saveDisplay({ hubSize: v }) }}
-              />
-              <Slider
-                label="오버레이 불투명도"
-                value={localOpacity}
-                min={60} max={97} step={1}
-                format={v => `${v}%`}
-                onChange={v => { setLocalOpacity(v); saveDisplay({ overlayOpacity: v / 100 }) }}
-              />
-              <Slider
-                label="나선 간격"
-                value={localSpiral}
-                min={60} max={160} step={5}
-                format={v => `${v}%`}
-                onChange={v => { setLocalSpiral(v); saveDisplay({ spiralScale: v / 100 }) }}
-              />
-            </div>
+        {/* ════ 디스플레이 ════ */}
+        {activeMenu === 'display' && (
+          <div style={{ maxWidth: 560 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 4 }}>디스플레이</div>
+            <div style={{ fontSize: 13, color: C.textTertiary, marginBottom: 24 }}>허브 크기, 투명도, 애니메이션을 조정합니다.</div>
 
-            <SectionHeader>애니메이션 속도</SectionHeader>
-            <SettingsGroup>
-              <div style={{ padding: 2 }}>
-                <div style={{ display: 'flex', background: 'transparent', borderRadius: 8, padding: 0 }}>
-                  {(['slow', 'normal', 'fast', 'none'] as const).map(s => (
-                    <button key={s} onClick={() => { setLocalAnim(s); saveDisplay({ animSpeed: s }) }}
-                      style={{
-                        flex: 1, padding: 0, minHeight: 36, borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: localAnim === s ? 600 : 400,
-                        border: 'none',
-                        background: localAnim === s ? 'rgba(255,255,255,0.10)' : 'transparent',
-                        color: localAnim === s ? 'white' : 'rgba(255,255,255,0.50)',
-                        transition: 'all 0.2s ease',
-                      }}>
-                      {s === 'slow' ? '천천히' : s === 'normal' ? '보통' : s === 'fast' ? '빠르게' : '없음'}
-                    </button>
-                  ))}
-                </div>
+            <SectionLabel>크기 및 투명도</SectionLabel>
+            <GroupCard>
+              <Slider label="허브 크기" value={localHub} min={72} max={180} step={2}
+                format={v => `${v}px`} onChange={v => { setLocalHub(v); saveDisplay({ hubSize: v }) }} />
+              <Slider label="오버레이 불투명도" value={localOpacity} min={60} max={97}
+                format={v => `${v}%`} onChange={v => { setLocalOpacity(v); saveDisplay({ overlayOpacity: v / 100 }) }} />
+              <Slider label="나선 간격" value={localSpiral} min={60} max={160} step={5}
+                format={v => `${v}%`} onChange={v => { setLocalSpiral(v); saveDisplay({ spiralScale: v / 100 }) }} />
+            </GroupCard>
+
+            <SectionLabel>애니메이션 속도</SectionLabel>
+            <GroupCard>
+              <div style={{ display: 'flex', padding: 4 }}>
+                {(['slow', 'normal', 'fast', 'none'] as const).map(s => (
+                  <button key={s} onClick={() => { setLocalAnim(s); saveDisplay({ animSpeed: s }) }}
+                    style={{
+                      flex: 1, padding: 0, minHeight: 28, borderRadius: 6,
+                      cursor: 'pointer', fontSize: 12, fontWeight: localAnim === s ? 600 : 400,
+                      border: 'none',
+                      background: localAnim === s ? C.accent : 'transparent',
+                      color: localAnim === s ? '#fff' : C.textSecondary,
+                      transition: 'all 0.15s ease',
+                    }}>
+                    {s === 'slow' ? '천천히' : s === 'normal' ? '보통' : s === 'fast' ? '빠르게' : '없음'}
+                  </button>
+                ))}
               </div>
-            </SettingsGroup>
+            </GroupCard>
 
-            <SectionHeader>기본 설정</SectionHeader>
-            <SettingsGroup>
-              <SettingRow
-                title="자동 실행"
-                description="로그인 시 자동 시작"
-                right={
-                  <ToggleSwitch on={loginItem} onToggle={async () => {
-                    const next = !loginItem
-                    setLoginItem(next)
-                    const result = await window.api.appCtrl.setLoginItem(next).catch(() => null)
-                    if (!result?.success) setLoginItem(!next)
-                  }} />
-                }
-              />
-              <SettingRow
-                title="자동 AI 분석"
-                description="메뉴 열 때 화면 분석"
-                last
-                right={
-                  <ToggleSwitch on={autoScan} onToggle={() => setAutoScan(!autoScan)} />
-                }
-              />
-            </SettingsGroup>
+            <SectionLabel>일반</SectionLabel>
+            <GroupCard>
+              <Row icon="🚀" title="자동 실행" description="로그인 시 자동 시작"
+                right={<ToggleSwitch on={loginItem} onToggle={async () => {
+                  const next = !loginItem; setLoginItem(next)
+                  const result = await window.api.appCtrl.setLoginItem(next).catch(() => null)
+                  if (!result?.success) setLoginItem(!next)
+                }} />} />
+              <Row icon="🔍" title="자동 AI 분석" description="메뉴 열 때 화면 자동 분석" last
+                right={<ToggleSwitch on={autoScan} onToggle={() => setAutoScan(!autoScan)} />} />
+            </GroupCard>
 
-            <div style={{ textAlign: 'center' }}>
-              <button
-                onClick={() => {
-                  const BEST = { hubSize: 140, overlayOpacity: 0.92, spiralScale: 1.0, animSpeed: 'normal' as const }
-                  setLocalHub(BEST.hubSize)
-                  setLocalOpacity(Math.round(BEST.overlayOpacity * 100))
-                  setLocalSpiral(Math.round(BEST.spiralScale * 100))
-                  setLocalAnim(BEST.animSpeed)
-                  saveDisplay(BEST)
-                }}
-                style={{
-                  fontSize: 17, fontWeight: 400,
-                  color: '#0a84ff',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '12px 0',
-                }}
-              >
+            <div style={{ textAlign: 'center', paddingTop: 8 }}>
+              <button onClick={() => {
+                const D = { hubSize: 140, overlayOpacity: 0.92, spiralScale: 1.0, animSpeed: 'normal' as const }
+                setLocalHub(D.hubSize); setLocalOpacity(Math.round(D.overlayOpacity * 100))
+                setLocalSpiral(Math.round(D.spiralScale * 100)); setLocalAnim(D.animSpeed); saveDisplay(D)
+              }} style={{ fontSize: 13, color: C.accent, background: 'none', border: 'none', cursor: 'pointer' }}>
                 기본값으로 재설정
               </button>
             </div>
           </div>
         )}
 
-        {/* ════ THEME TAB ════ */}
-        {tab === 'theme' && (() => {
-          const current = currentTheme
-          return (
-            <div>
-              <SectionHeader>테마 선택</SectionHeader>
-              <SettingsGroup>
-                {THEME_PRESETS.map((t, i) => {
-                  const active = current.id === t.id
-                  return (
-                    <div key={t.id}
-                      onClick={() => setTheme(t.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        minHeight: 44, padding: '0 16px', cursor: 'pointer',
-                        borderBottom: i < THEME_PRESETS.length - 1 ? '0.33px solid rgba(255,255,255,0.06)' : 'none',
-                      }}
-                    >
-                      <div style={{
-                        width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-                        background: `linear-gradient(135deg, ${t.primary}, ${t.accent})`,
-                      }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ fontSize: 17, color: 'white', fontWeight: 400 }}>{t.name}</span>
-                      </div>
-                      {active && (
-                        <span style={{ fontSize: 17, color: '#0a84ff', fontWeight: 600 }}>&#10003;</span>
-                      )}
-                    </div>
-                  )
-                })}
-              </SettingsGroup>
+        {/* ════ 테마 ════ */}
+        {activeMenu === 'theme' && (
+          <div style={{ maxWidth: 560 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 4 }}>테마</div>
+            <div style={{ fontSize: 13, color: C.textTertiary, marginBottom: 24 }}>앱의 전체 분위기와 색상을 변경합니다.</div>
 
-              {/* Preview */}
-              <SectionHeader>미리보기</SectionHeader>
-              <SettingsGroup>
-                <div style={{ padding: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{
-                      width: 40, height: 40, borderRadius: '50%',
-                      border: `2px solid ${current.primary}`, background: '#000',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <span style={{ fontSize: 8, fontWeight: 900, color: current.accent, fontFamily: current.titleFont }}>GS</span>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 17, fontWeight: 600, color: current.accent, marginBottom: 2 }}>Gesellschaft</div>
-                      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>Book, Clock and Tools</div>
-                    </div>
+            <SectionLabel>테마 선택</SectionLabel>
+            <GroupCard>
+              {THEME_PRESETS.map((t, i) => {
+                const active = currentTheme.id === t.id
+                return (
+                  <Row key={t.id} title={t.name} last={i === THEME_PRESETS.length - 1}
+                    onClick={() => setTheme(t.id)}
+                    icon={undefined}
+                    right={active
+                      ? <span style={{ color: C.accent, fontSize: 16, fontWeight: 600 }}>✓</span>
+                      : <Chevron />
+                    }
+                    description={undefined}
+                  />
+                )
+              })}
+            </GroupCard>
+
+            <SectionLabel>미리보기</SectionLabel>
+            <GroupCard>
+              <div style={{ padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 10,
+                    background: `linear-gradient(135deg, ${currentTheme.primary}, ${currentTheme.accent})`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: `0 4px 12px ${currentTheme.primary}40`,
+                  }}>
+                    <span style={{ fontSize: 10, fontWeight: 900, color: '#fff', fontFamily: currentTheme.titleFont }}>GS</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 3, height: 3, borderRadius: 2, overflow: 'hidden', marginTop: 12 }}>
-                    <div style={{ flex: 1, background: current.primary, borderRadius: 2 }} />
-                    <div style={{ flex: 1, background: current.accent, borderRadius: 2 }} />
-                    <div style={{ flex: 1, background: `linear-gradient(90deg, ${current.primary}, ${current.accent})`, borderRadius: 2 }} />
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{currentTheme.name}</div>
+                    <div style={{ fontSize: 12, color: C.textTertiary }}>{currentTheme.titleFont.split(',')[0].replace(/'/g, '')}</div>
                   </div>
                 </div>
-              </SettingsGroup>
-            </div>
-          )
-        })()}
-
-        {/* ════ SHORTCUT TAB ════ */}
-        {tab === 'shortcut' && (
-          <div>
-            <SectionHeader>현재 단축키</SectionHeader>
-            <SettingsGroup>
-              <div style={{ minHeight: 44, padding: '0 16px', display: 'flex', alignItems: 'center' }}>
-                <KeyBadge keys={currentShortcut} color={T.gold} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[currentTheme.primary, currentTheme.accent, currentTheme.fg, currentTheme.danger, currentTheme.success].map((c, i) => (
+                    <div key={i} style={{
+                      flex: 1, height: 28, borderRadius: 6,
+                      background: c, border: `0.5px solid ${C.cardBorder}`,
+                    }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  {['primary', 'accent', 'fg', 'danger', 'success'].map(label => (
+                    <div key={label} style={{ flex: 1, fontSize: 10, color: C.textTertiary, textAlign: 'center' }}>{label}</div>
+                  ))}
+                </div>
               </div>
-            </SettingsGroup>
+            </GroupCard>
+          </div>
+        )}
 
-            <SectionHeader>새 단축키</SectionHeader>
-            <SettingsGroup>
-              <div
-                ref={recorderRef} tabIndex={0}
+        {/* ════ 단축키 ════ */}
+        {activeMenu === 'shortcut' && (
+          <div style={{ maxWidth: 560 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 4 }}>단축키</div>
+            <div style={{ fontSize: 13, color: C.textTertiary, marginBottom: 24 }}>글로벌 단축키와 앱 내 키보드 조작을 설정합니다.</div>
+
+            <SectionLabel>글로벌 단축키</SectionLabel>
+            <GroupCard>
+              <Row title="현재 단축키" right={<KeyBadge keys={currentShortcut} />} />
+              <div ref={recorderRef} tabIndex={0}
                 onClick={() => { setRecording(true); setShortcutStatus(null) }}
                 style={{
-                  minHeight: 44, padding: '0 16px', outline: 'none',
-                  cursor: recording ? 'default' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  minHeight: 44, padding: '6px 12px', cursor: 'pointer', outline: 'none',
                   background: recording ? 'rgba(255,165,0,0.06)' : 'transparent',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {recording
-                  ? <span style={{ fontSize: 17, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>키 조합을 입력하세요...</span>
-                  : <KeyBadge keys={pendingShortcut || currentShortcut} color={T.gold} inline />
-                }
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>
-                  {recording ? '입력 대기 중' : '클릭하여 변경'}
-                </span>
+                  transition: 'background 0.15s',
+                }}>
+                <div>
+                  <div style={{ fontSize: 13, color: C.text }}>
+                    {recording ? '키 조합을 입력하세요...' : '새 단축키'}
+                  </div>
+                  {!recording && pendingShortcut && pendingShortcut !== currentShortcut && (
+                    <div style={{ fontSize: 11, color: C.accent, marginTop: 2 }}>변경: {pendingShortcut}</div>
+                  )}
+                </div>
+                {!recording && <KeyBadge keys={pendingShortcut || currentShortcut} />}
               </div>
               {recording && (
-                <div style={{ padding: '0 16px 10px' }}>
-                  <button onClick={() => setRecording(false)} style={{
-                    fontSize: 13, color: '#0a84ff', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  }}>
+                <div style={{ padding: '4px 12px 8px' }}>
+                  <button onClick={() => setRecording(false)}
+                    style={{ fontSize: 12, color: C.accent, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                     취소
                   </button>
                 </div>
               )}
-            </SettingsGroup>
+            </GroupCard>
 
             {shortcutStatus && <StatusMsg ok={shortcutStatus.ok} msg={shortcutStatus.msg} />}
 
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-              <button
-                onClick={handleSaveShortcut}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+              <button onClick={handleSaveShortcut}
                 disabled={savingShortcut || recording || !shortcutChanged}
                 style={{
-                  padding: '10px 44px', borderRadius: 10, border: 'none', fontSize: 17, fontWeight: 400,
-                  background: (savingShortcut || recording || !shortcutChanged) ? 'rgba(255,255,255,0.06)' : '#0a84ff',
-                  color: (savingShortcut || recording || !shortcutChanged) ? 'rgba(255,255,255,0.35)' : 'white',
-                  cursor: (savingShortcut || recording || !shortcutChanged) ? 'default' : 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
+                  padding: '6px 32px', borderRadius: 6, border: 'none',
+                  fontSize: 13, fontWeight: 500, cursor: shortcutChanged ? 'pointer' : 'default',
+                  background: shortcutChanged ? C.accent : 'rgba(255,255,255,0.06)',
+                  color: shortcutChanged ? '#fff' : C.textTertiary,
+                  transition: 'all 0.15s',
+                }}>
                 {savingShortcut ? '저장 중...' : '저장'}
               </button>
             </div>
 
-            <SectionHeader>앱 내 단축키</SectionHeader>
+            <SectionLabel>앱 내 단축키</SectionLabel>
             {([
-              { label: '일반', items: [['Esc', '닫기 / 뒤로가기'], ['?', '단축키 도움말']] as [string, string][] },
-              { label: '메뉴 탐색', items: [['← →', '이전 / 다음 도구'], ['Home', '첫 번째 도구 (A)'], ['End', '마지막 도구 (Z)'], ['↑ ↓', '전체 보기 토글'], ['Enter', '도구 선택'], ['스크롤', '도구 회전']] as [string, string][] },
-              { label: '검색', items: [['텍스트 입력', '도구 이름으로 필터'], ['카테고리 클릭', '분류별 필터']] as [string, string][] },
-            ]).map(section => (
+              { label: '일반', items: [['Esc', '닫기 / 뒤로가기'], ['?', '단축키 도움말']] },
+              { label: '메뉴', items: [['← →', '이전 / 다음 도구'], ['Home / End', '처음 / 마지막'], ['Enter', '도구 선택']] },
+            ] as const).map(section => (
               <div key={section.label} style={{ marginBottom: 16 }}>
-                <div style={{
-                  fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.35)',
-                  textTransform: 'uppercase', paddingLeft: 16, marginBottom: 6,
-                }}>
-                  {section.label}
-                </div>
-                <SettingsGroup>
+                <SectionLabel>{section.label}</SectionLabel>
+                <GroupCard>
                   {section.items.map(([key, desc], i) => (
-                    <div key={key} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      minHeight: 44, padding: '0 16px',
-                      borderBottom: i < section.items.length - 1 ? '0.33px solid rgba(255,255,255,0.06)' : 'none',
-                    }}>
-                      <kbd style={{
-                        fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.60)',
-                        fontFamily: 'ui-monospace, "SF Mono", monospace',
-                        background: 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: 6,
-                        minWidth: 50, textAlign: 'center',
-                      }}>{key}</kbd>
-                      <span style={{ fontSize: 17, color: 'rgba(255,255,255,0.35)' }}>{desc}</span>
-                    </div>
+                    <Row key={key} title={desc as string} last={i === section.items.length - 1}
+                      right={<KeyBadge keys={key as string} />} />
                   ))}
-                </SettingsGroup>
+                </GroupCard>
               </div>
             ))}
           </div>
         )}
 
-        {/* ════ AI TAB ════ */}
-        {tab === 'ai' && (
-          <div>
-            {aiLoading && (
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 17, textAlign: 'center', paddingTop: 60 }}>불러오는 중...</div>
-            )}
+        {/* ════ AI ════ */}
+        {activeMenu === 'ai' && (
+          <div style={{ maxWidth: 560 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 4 }}>AI</div>
+            <div style={{ fontSize: 13, color: C.textTertiary, marginBottom: 24 }}>AI 어시스턴트의 제공자, 모델, API 키를 설정합니다.</div>
+
+            {aiLoading && <div style={{ color: C.textTertiary, fontSize: 13, textAlign: 'center', paddingTop: 40 }}>불러오는 중...</div>}
+
             {!aiLoading && aiConfig && (
               <>
-                <SectionHeader>AI 제공자</SectionHeader>
-                <SettingsGroup>
-                  <div style={{ padding: 2 }}>
-                    <div style={{ display: 'flex', borderRadius: 8 }}>
-                      {(['openai', 'anthropic', 'ollama'] as const).map(p => (
-                        <button key={p}
-                          onClick={() => setAiDraft(d => ({ ...d, provider: p, model: '' }))}
-                          style={{
-                            flex: 1, padding: 0, minHeight: 36, borderRadius: 8, cursor: 'pointer', fontSize: 13,
-                            fontWeight: aiProvider === p ? 600 : 400,
-                            border: 'none',
-                            background: aiProvider === p ? 'rgba(255,255,255,0.10)' : 'transparent',
-                            color: aiProvider === p ? 'white' : 'rgba(255,255,255,0.50)',
-                            transition: 'all 0.2s ease',
-                          }}>
-                          {p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic' : 'Ollama'}
-                        </button>
-                      ))}
-                    </div>
+                <SectionLabel>제공자</SectionLabel>
+                <GroupCard>
+                  <div style={{ display: 'flex', padding: 4 }}>
+                    {(['openai', 'anthropic', 'ollama'] as const).map(p => (
+                      <button key={p} onClick={() => setAiDraft(d => ({ ...d, provider: p, model: '' }))}
+                        style={{
+                          flex: 1, padding: 0, minHeight: 28, borderRadius: 6,
+                          cursor: 'pointer', fontSize: 12, fontWeight: aiProvider === p ? 600 : 400,
+                          border: 'none',
+                          background: aiProvider === p ? C.accent : 'transparent',
+                          color: aiProvider === p ? '#fff' : C.textSecondary,
+                          transition: 'all 0.15s',
+                        }}>
+                        {p === 'openai' ? 'OpenAI' : p === 'anthropic' ? 'Anthropic' : 'Ollama'}
+                      </button>
+                    ))}
                   </div>
-                </SettingsGroup>
+                </GroupCard>
 
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, paddingLeft: 16, marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>모델</span>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                    <SectionLabel>모델</SectionLabel>
                     {aiProvider === 'ollama' && (
-                      <button onClick={loadOllamaModels} style={{ fontSize: 13, color: '#0a84ff', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      <button onClick={loadOllamaModels}
+                        style={{ fontSize: 11, color: C.accent, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                         새로고침
                       </button>
                     )}
                   </div>
                   {aiModels.length > 0 ? (
                     <select value={aiDraft.model ?? ''} onChange={e => setAiDraft(d => ({ ...d, model: e.target.value }))}
-                      style={selectStyle}>
+                      style={{ ...inputStyle, appearance: 'none' as const }}>
                       {aiModels.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   ) : (
                     <input value={aiDraft.model ?? ''} onChange={e => setAiDraft(d => ({ ...d, model: e.target.value }))}
-                      placeholder={aiProvider === 'openai' ? 'gpt-4o' : aiProvider === 'anthropic' ? 'claude-sonnet-4-5' : '모델명 입력...'}
+                      placeholder={aiProvider === 'openai' ? 'gpt-4o' : aiProvider === 'anthropic' ? 'claude-sonnet-4-5' : '모델명'}
                       style={inputStyle} />
                   )}
                 </div>
 
                 {aiProvider !== 'ollama' && (
-                  <div style={{ marginBottom: 24 }}>
-                    <SectionHeader>API 키</SectionHeader>
+                  <div style={{ marginBottom: 20 }}>
+                    <SectionLabel>API 키</SectionLabel>
                     <input type="password" value={aiDraft.apiKeyRaw ?? ''}
                       onChange={e => setAiDraft(d => ({ ...d, apiKeyRaw: e.target.value }))}
-                      placeholder={aiConfig.apiKey ? `현재: ••••${aiConfig.apiKey.slice(-4)}` : 'API 키를 입력하세요...'}
+                      placeholder={aiConfig.apiKey ? `현재: ${aiConfig.apiKey}` : 'API 키 입력'}
                       style={inputStyle} />
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 6, paddingLeft: 16 }}>
+                    <div style={{ fontSize: 11, color: C.textTertiary, marginTop: 4 }}>
                       비워두면 기존 키가 유지됩니다.
-                      {aiProvider === 'openai' && ' OpenAI 대시보드에서 발급하세요.'}
-                      {aiProvider === 'anthropic' && ' Anthropic Console에서 발급하세요.'}
                     </div>
                   </div>
                 )}
 
                 {aiProvider === 'ollama' && (
-                  <div style={{ marginBottom: 24 }}>
-                    <SectionHeader>Ollama 서버 URL</SectionHeader>
+                  <div style={{ marginBottom: 20 }}>
+                    <SectionLabel>Ollama 서버</SectionLabel>
                     <input value={aiDraft.ollamaUrl ?? ''} onChange={e => setAiDraft(d => ({ ...d, ollamaUrl: e.target.value }))}
-                      placeholder="http://localhost:11434"
-                      style={inputStyle} />
+                      placeholder="http://localhost:11434" style={inputStyle} />
                   </div>
                 )}
 
-                <div style={{ marginBottom: 24 }}>
-                  <SectionHeader>시스템 프롬프트</SectionHeader>
+                <div style={{ marginBottom: 20 }}>
+                  <SectionLabel>시스템 프롬프트</SectionLabel>
                   <textarea value={aiDraft.systemPrompt ?? ''} onChange={e => setAiDraft(d => ({ ...d, systemPrompt: e.target.value }))}
-                    rows={4} placeholder="AI의 역할이나 응답 방식을 지정합니다. 비워두면 기본값 사용."
+                    rows={4} placeholder="AI의 역할이나 응답 방식을 지정합니다."
                     style={{
-                      ...inputStyle,
-                      height: 'auto', minHeight: 100, padding: '12px 16px',
+                      ...inputStyle, height: 'auto', minHeight: 80, padding: '8px 10px',
                       resize: 'vertical', lineHeight: 1.5,
                     }} />
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                   <button onClick={handleSaveAiConfig} style={{
-                    padding: '10px 44px', borderRadius: 10, border: 'none', fontSize: 17, fontWeight: 400, cursor: 'pointer',
-                    background: aiSaved ? 'rgba(48,209,88,0.15)' : '#0a84ff',
-                    color: aiSaved ? '#30d158' : 'white',
-                    transition: 'all 0.2s ease',
+                    padding: '6px 32px', borderRadius: 6, border: 'none',
+                    fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                    background: aiSaved ? 'rgba(48,209,88,0.15)' : C.accent,
+                    color: aiSaved ? C.green : '#fff',
+                    transition: 'all 0.15s',
                   }}>
-                    {aiSaved ? '저장됨' : '저장'}
+                    {aiSaved ? '저장됨 ✓' : '저장'}
                   </button>
                 </div>
               </>

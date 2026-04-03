@@ -4,7 +4,7 @@ import path from 'path'
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 
-export interface CompareEntry {
+interface CompareEntry {
   relativePath: string
   name: string
   status: 'only_a' | 'only_b' | 'modified' | 'same'

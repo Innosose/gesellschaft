@@ -4,7 +4,7 @@ import fs from 'fs'
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 
-export interface ConvertResult {
+interface ConvertResult {
   inputPath: string
   outputPath?: string
   success: boolean
