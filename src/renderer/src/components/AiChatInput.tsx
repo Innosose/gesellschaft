@@ -1,5 +1,5 @@
 import React from 'react'
-import { T, rgba } from '../utils/theme'
+import { T } from '../utils/theme'
 
 interface AiChatInputProps {
   input: string
@@ -16,13 +16,11 @@ interface AiChatInputProps {
 export default function AiChatInput({
   input, setInput, streaming, onSend, onCancel, onKeyDown, inputRef, dark = false,
 }: AiChatInputProps): React.ReactElement {
-  const inputBg = dark ? rgba(T.fg, 0.06) : rgba(T.fg, 0.06)
-  const color = dark ? rgba(T.fg, 0.92) : rgba(T.fg, 0.92)
   const accent = T.teal
 
   return (
-    <div style={{ padding: 'clamp(8px, 0.83vw, 12px) clamp(10px, 1.11vw, 16px)', paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))', borderTop: `0.5px solid ${rgba(T.fg, 0.08)}`, flexShrink: 0 }}>
-      <div style={{ display: 'flex', gap: 'clamp(4px, 0.56vw, 8px)', alignItems: 'flex-end' }}>
+    <div style={{ padding: '12px 16px', borderTop: '0.33px solid rgba(255,255,255,0.08)', background: '#000', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
         <textarea
           ref={inputRef}
           value={input}
@@ -31,20 +29,18 @@ export default function AiChatInput({
           placeholder="메시지 입력..."
           rows={2}
           style={{
-            flex: 1, resize: 'none', padding: 'clamp(8px, 0.69vw, 10px) clamp(10px, 1.11vw, 16px)', fontSize: 'clamp(14px, 1.18vw, 17px)',
-            borderRadius: 'clamp(14px, 1.39vw, 20px)', border: 'none',
-            background: inputBg, color,
-            outline: 'none', lineHeight: 1.29, fontFamily: 'inherit',
-            letterSpacing: '-0.41px',
+            flex: 1, resize: 'none', padding: '10px 16px', fontSize: 17,
+            borderRadius: 20, border: 'none',
+            background: 'rgba(255,255,255,0.06)', color: '#ffffff',
+            outline: 'none', lineHeight: 1.4, fontFamily: 'inherit',
           }}
         />
         {streaming ? (
           <button
             onClick={onCancel}
             style={{
-              height: 'clamp(28px, 2.5vw, 36px)', width: 'clamp(28px, 2.5vw, 36px)', borderRadius: 'clamp(14px, 1.25vw, 18px)', border: 'none', cursor: 'pointer',
-              minWidth: 44, minHeight: 44,
-              background: rgba(T.danger, 0.15), color: T.danger, fontSize: 14, flexShrink: 0,
+              height: 32, width: 32, borderRadius: 16, border: 'none', cursor: 'pointer',
+              background: 'rgba(255,69,58,0.12)', color: '#ff453a', fontSize: 14, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background 0.2s ease',
             }}
@@ -57,11 +53,10 @@ export default function AiChatInput({
             onClick={onSend}
             disabled={!input.trim()}
             style={{
-              height: 'clamp(28px, 2.5vw, 36px)', width: 'clamp(28px, 2.5vw, 36px)', borderRadius: 'clamp(14px, 1.25vw, 18px)', border: 'none',
-              minWidth: 44, minHeight: 44,
+              height: 32, width: 32, borderRadius: 16, border: 'none',
               cursor: input.trim() ? 'pointer' : 'default',
-              background: input.trim() ? accent : rgba(T.fg, 0.06),
-              color: input.trim() ? '#fff' : rgba(T.fg, 0.20),
+              background: input.trim() ? accent : 'rgba(255,255,255,0.06)',
+              color: input.trim() ? '#fff' : 'rgba(255,255,255,0.20)',
               fontSize: 16, flexShrink: 0,
               transition: 'all 0.2s ease',
               display: 'flex', alignItems: 'center', justifyContent: 'center',

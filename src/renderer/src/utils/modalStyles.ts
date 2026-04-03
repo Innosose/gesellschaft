@@ -1,64 +1,63 @@
 /**
- * Shared modal style utilities – fluid viewport-responsive design
+ * Shared modal style utilities – ultra-minimal iOS-native styling
  *
- * All values use clamp(min, fluid, max) for consistent proportions
- * across any screen size. Base design: 1440px viewport.
+ * Clean, flat, generous whitespace. Fixed px values, no fluid scaling.
  */
 
 import { T, rgba } from './theme'
 
 /** Common inline style patterns for modal content */
 export const MS = {
-  /** Standard section container — fluid padding & gap */
-  section: { padding: 'clamp(12px, 1.67vw, 24px)' as unknown as number, display: 'flex', flexDirection: 'column' as const, gap: 'clamp(10px, 1.11vw, 16px)', height: '100%', overflow: 'auto' as const, WebkitOverflowScrolling: 'touch' as const },
-  /** Input row with fluid gap */
-  inputRow: { display: 'flex', gap: 'clamp(6px, 0.83vw, 12px)', flexWrap: 'wrap' as const, alignItems: 'center' as const },
-  /** Standard themed input — fluid font/padding/radius */
+  /** Standard section container */
+  section: { padding: 20, display: 'flex', flexDirection: 'column' as const, gap: 20, height: '100%', overflow: 'auto' as const, WebkitOverflowScrolling: 'touch' as const },
+  /** Input row */
+  inputRow: { display: 'flex', gap: 10, flexWrap: 'wrap' as const, alignItems: 'center' as const },
+  /** Standard themed input */
   input: (): React.CSSProperties => ({
-    padding: 'clamp(8px, 0.69vw, 10px) clamp(10px, 1.11vw, 16px)',
-    borderRadius: 'clamp(8px, 0.83vw, 12px)', border: 'none',
-    background: rgba(T.fg, 0.06), color: rgba(T.fg, 0.92),
-    fontSize: 'clamp(14px, 1.18vw, 17px)', outline: 'none',
-    minHeight: 'clamp(36px, 3.06vw, 44px)', lineHeight: 1.29, letterSpacing: '-0.41px',
+    padding: '10px 16px',
+    borderRadius: 10, border: 'none',
+    background: 'rgba(255,255,255,0.06)', color: rgba(T.fg, 0.92),
+    fontSize: 17, outline: 'none',
+    minHeight: 44, lineHeight: 1.29,
   }),
-  /** Primary action button — fluid */
+  /** Primary action button */
   btnPrimary: (): React.CSSProperties => ({
-    padding: 'clamp(8px, 0.83vw, 12px) clamp(16px, 1.67vw, 24px)',
-    borderRadius: 'clamp(8px, 0.83vw, 12px)', border: 'none',
-    background: rgba(T.teal, 0.15), color: T.teal,
-    fontSize: 'clamp(14px, 1.18vw, 17px)', fontWeight: 600, cursor: 'pointer',
-    minHeight: 'clamp(36px, 3.06vw, 44px)', lineHeight: 1.29, letterSpacing: '-0.41px',
+    padding: '10px 20px',
+    borderRadius: 10, border: 'none',
+    background: T.teal, color: '#fff',
+    fontSize: 17, fontWeight: 600, cursor: 'pointer',
+    minHeight: 44, lineHeight: 1.29,
   }),
-  /** Danger action button — fluid */
+  /** Danger action button */
   btnDanger: (): React.CSSProperties => ({
-    padding: 'clamp(8px, 0.83vw, 12px) clamp(12px, 1.39vw, 20px)',
-    borderRadius: 'clamp(8px, 0.83vw, 12px)', border: 'none',
-    background: rgba(T.danger, 0.1), color: rgba(T.danger, 0.85),
-    fontSize: 'clamp(14px, 1.18vw, 17px)', cursor: 'pointer',
-    minHeight: 'clamp(36px, 3.06vw, 44px)', lineHeight: 1.29, letterSpacing: '-0.41px',
+    padding: '10px 20px',
+    borderRadius: 10, border: 'none',
+    background: rgba(T.danger, 0.12), color: T.danger,
+    fontSize: 17, cursor: 'pointer',
+    minHeight: 44, lineHeight: 1.29,
   }),
-  /** Empty state placeholder — fluid */
+  /** Empty state placeholder */
   empty: (text: string): { style: React.CSSProperties; text: string } => ({
-    style: { textAlign: 'center' as const, color: rgba(T.fg, 0.30), fontSize: 'clamp(12px, 1.04vw, 15px)', padding: 'clamp(24px, 2.78vw, 40px)', lineHeight: 1.33 },
+    style: { textAlign: 'center' as const, color: rgba(T.fg, 0.25), fontSize: 15, padding: 32, lineHeight: 1.33 },
     text,
   }),
-  /** Grouped card container — fluid radius */
+  /** Grouped card container */
   group: (): React.CSSProperties => ({
-    background: rgba(T.fg, 0.06), borderRadius: 'clamp(8px, 0.83vw, 12px)', overflow: 'hidden' as const,
+    background: 'rgba(255,255,255,0.06)', borderRadius: 10, overflow: 'hidden' as const,
   }),
-  /** Group row item — fluid height, gap, padding */
+  /** Group row item */
   groupRow: (last?: boolean): React.CSSProperties => ({
     display: 'flex', alignItems: 'center',
-    gap: 'clamp(8px, 0.83vw, 12px)',
-    padding: '0 clamp(10px, 1.11vw, 16px)',
-    minHeight: 'clamp(36px, 3.06vw, 44px)',
-    borderBottom: last ? 'none' : `0.5px solid ${rgba(T.fg, 0.08)}`,
-    fontSize: 'clamp(14px, 1.18vw, 17px)', color: rgba(T.fg, 0.92), lineHeight: 1.29, letterSpacing: '-0.41px',
+    gap: 12,
+    padding: '0 16px',
+    minHeight: 44,
+    borderBottom: last ? 'none' : '0.5px solid rgba(255,255,255,0.06)',
+    fontSize: 17, color: rgba(T.fg, 0.92), lineHeight: 1.29,
   }),
-  /** Info item row — fluid gap */
-  infoRow: { display: 'flex', flexWrap: 'wrap' as const, gap: 'clamp(4px, 0.56vw, 8px) clamp(10px, 1.11vw, 16px)' },
-  /** Small label text — fluid */
-  label: (): React.CSSProperties => ({ fontSize: 'clamp(11px, 0.90vw, 13px)', color: rgba(T.fg, 0.40), marginBottom: 'clamp(2px, 0.28vw, 4px)', lineHeight: 1.38, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }),
-  /** Value text — fluid */
-  value: (): React.CSSProperties => ({ fontSize: 'clamp(12px, 1.04vw, 15px)', color: rgba(T.fg, 0.92), fontFamily: 'monospace', lineHeight: 1.33 }),
+  /** Info item row */
+  infoRow: { display: 'flex', flexWrap: 'wrap' as const, gap: '6px 14px' },
+  /** Small label text */
+  label: (): React.CSSProperties => ({ fontSize: 13, color: rgba(T.fg, 0.35), marginBottom: 4, lineHeight: 1.38, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }),
+  /** Value text */
+  value: (): React.CSSProperties => ({ fontSize: 15, color: rgba(T.fg, 0.92), fontFamily: 'monospace', lineHeight: 1.33 }),
 } as const

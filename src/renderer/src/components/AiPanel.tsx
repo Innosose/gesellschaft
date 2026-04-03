@@ -213,25 +213,25 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
   // ── asPanel mode ────────────────────────────────────────────────────────────
   if (asPanel) {
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: rgba(T.bg, 0.97) }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#000' }}>
         {/* Tab header */}
         <div style={{
-          height: 'clamp(40px, 3.6vw, 52px)', display: 'flex', alignItems: 'center', gap: 0,
-          padding: '0 clamp(8px, 1.11vw, 16px)', borderBottom: `1px solid ${rgba(T.fg, 0.08)}`,
+          height: 48, display: 'flex', alignItems: 'center', gap: 0,
+          padding: '0 16px', borderBottom: '0.33px solid rgba(255,255,255,0.06)',
           flexShrink: 0,
         }}>
-          <div style={{ display: 'flex', background: rgba(T.fg, 0.06), borderRadius: 'clamp(8px, 0.83vw, 12px)', padding: 2 }}>
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: 2 }}>
           {(['chat', 'history', 'settings'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               style={{
-                padding: 'clamp(6px, 0.56vw, 8px) clamp(14px, 1.39vw, 20px)', borderRadius: 'clamp(4px, 0.56vw, 8px)',
+                padding: '6px 18px', borderRadius: 8,
                 border: 'none',
-                background: tab === t ? rgba(T.fg, 0.10) : 'transparent',
-                color: tab === t ? rgba(T.fg, 0.92) : rgba(T.fg, 0.60),
+                background: tab === t ? 'rgba(255,255,255,0.10)' : 'transparent',
+                color: tab === t ? '#ffffff' : 'rgba(255,255,255,0.50)',
                 fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                transition: 'all 0.2s ease', minHeight: 36,
+                transition: 'all 0.2s ease', minHeight: 30,
               }}
             >
               {t === 'chat' ? '채팅' : t === 'history' ? '기록' : '설정'}
@@ -313,35 +313,34 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
       )}
 
       <div style={{
-        position: 'fixed', top: 32, right: 0, bottom: 0, width: 'min(clamp(300px, 26.4vw, 380px), 85vw)', zIndex: 201,
+        position: 'fixed', top: 32, right: 0, bottom: 0, width: 'min(380px, 85vw)', zIndex: 201,
         display: 'flex', flexDirection: 'column',
-        background: rgba(T.fg, 0.04), backdropFilter: 'blur(40px) saturate(1.8)',
-        WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
-        borderLeft: `0.5px solid ${rgba(T.fg, 0.08)}`,
-        borderRadius: 'clamp(10px, 1.11vw, 16px) 0 0 0',
+        background: '#1c1c1e',
+        borderLeft: '0.33px solid rgba(255,255,255,0.06)',
+        borderRadius: '16px 0 0 0',
         transform: effectiveOpen ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+        transition: 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
         boxShadow: effectiveOpen ? '0 24px 80px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.35)' : 'none',
       }}>
         {/* Header */}
         <div style={{
-          display: 'flex', alignItems: 'center', height: 'clamp(40px, 3.6vw, 52px)',
-          padding: '0 clamp(8px, 1.11vw, 16px)', borderBottom: `0.5px solid ${rgba(T.fg, 0.08)}`,
-          minHeight: 'clamp(40px, 3.6vw, 52px)',
+          display: 'flex', alignItems: 'center', height: 48,
+          padding: '0 16px', borderBottom: '0.33px solid rgba(255,255,255,0.06)',
+          minHeight: 48,
           flexShrink: 0,
         }}>
-          <span style={{ fontSize: 'clamp(14px, 1.18vw, 17px)', fontWeight: 600, flex: 1, letterSpacing: '-0.41px', lineHeight: 1.29, color: rgba(T.fg, 0.92) }}>AI</span>
-          <div style={{ display: 'flex', gap: 2, background: rgba(T.fg, 0.06), borderRadius: 'clamp(8px, 0.83vw, 12px)', padding: 2 }}>
+          <span style={{ fontSize: 17, fontWeight: 600, flex: 1, color: '#ffffff' }}>AI</span>
+          <div style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: 2 }}>
             {(['chat', 'settings'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 style={{
-                  fontSize: 13, padding: 'clamp(6px, 0.56vw, 8px) clamp(14px, 1.39vw, 20px)', borderRadius: 'clamp(4px, 0.56vw, 8px)', border: 'none', cursor: 'pointer',
-                  background: tab === t ? rgba(T.fg, 0.10) : 'transparent',
-                  color: tab === t ? rgba(T.fg, 0.92) : rgba(T.fg, 0.60),
+                  fontSize: 13, padding: '6px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  background: tab === t ? 'rgba(255,255,255,0.10)' : 'transparent',
+                  color: tab === t ? '#ffffff' : 'rgba(255,255,255,0.50)',
                   fontWeight: 500,
-                  transition: 'all 0.2s ease', lineHeight: 1.38, minHeight: 36,
+                  transition: 'all 0.2s ease', minHeight: 30,
                 }}
               >{t === 'chat' ? '채팅' : '설정'}</button>
             ))}
@@ -349,10 +348,9 @@ export default function AiPanel({ open, onClose, asPanel = false }: AiPanelProps
           <button
             onClick={onClose}
             style={{
-              marginLeft: 10, width: 'clamp(24px, 2.08vw, 30px)', height: 'clamp(24px, 2.08vw, 30px)', borderRadius: 'clamp(12px, 1.04vw, 15px)', border: 'none',
-              background: rgba(T.fg, 0.08), color: rgba(T.fg, 0.40), cursor: 'pointer', fontSize: 12,
+              marginLeft: 10, width: 30, height: 30, borderRadius: 15, border: 'none',
+              background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.40)', cursor: 'pointer', fontSize: 12,
               display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s',
-              minWidth: 44, minHeight: 44,
             }}
           ><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5"/></svg></button>
         </div>

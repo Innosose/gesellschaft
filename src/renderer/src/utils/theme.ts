@@ -82,7 +82,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: 'ruina', name: 'Library of Ruina',
     primary: '#c9a84c', accent: '#4de8c2',
-    bg: '#0a0804', surface: '#1c1810',
+    bg: '#000000', surface: '#1c1c1e',
     coverGradient: 'linear-gradient(175deg, #1e1a10 0%, #14110a 40%, #0e0c06 100%)',
     hubBg: 'radial-gradient(circle at 45% 40%, #1e1910 0%, #0c0a06 55%, #080704 100%)',
     hubBgOpen: '#0c0b08',
@@ -102,12 +102,12 @@ export const THEME_PRESETS: ThemePreset[] = [
     hubOpenAnim: 'hubRise',
     titleFont: "'Cinzel Decorative', Georgia, serif",
     bodyFont: "'Noto Serif KR', 'Pretendard', Georgia, serif",
-    fg: '#e6e0d2', danger: '#e06060', success: '#4dba6a', warning: '#e0a060',
+    fg: '#ffffff', danger: '#ff453a', success: '#30d158', warning: '#ffd60a',
   },
   {
     id: 'crimson', name: 'Crimson Night',
     primary: '#c45050', accent: '#f0a050',
-    bg: '#0a0404', surface: '#1c100c',
+    bg: '#000000', surface: '#1c1c1e',
     coverGradient: 'linear-gradient(175deg, #201010 0%, #160a0a 40%, #0e0606 100%)',
     hubBg: 'radial-gradient(circle at 45% 40%, #201008 0%, #120604 55%, #0a0404 100%)',
     hubBgOpen: '#100808',
@@ -128,12 +128,12 @@ export const THEME_PRESETS: ThemePreset[] = [
     hubOpenAnim: 'hubBurst',
     titleFont: "'Playfair Display', 'Nanum Myeongjo', Georgia, serif",
     bodyFont: "'Pretendard', 'Segoe UI', system-ui, sans-serif",
-    fg: '#e0d0c8', danger: '#e06060', success: '#e08040', warning: '#f0a050',
+    fg: '#ffffff', danger: '#ff453a', success: '#30d158', warning: '#ffd60a',
   },
   {
     id: 'violet', name: 'Violet Dream',
     primary: '#9070c0', accent: '#c4a0f0',
-    bg: '#06040a', surface: '#16101e',
+    bg: '#000000', surface: '#1c1c1e',
     coverGradient: 'linear-gradient(175deg, #1a1226 0%, #120c1a 40%, #0a0610 100%)',
     hubBg: 'radial-gradient(circle at 45% 40%, #1a1228 0%, #0e0816 55%, #06040a 100%)',
     hubBgOpen: '#0a0810',
@@ -154,12 +154,12 @@ export const THEME_PRESETS: ThemePreset[] = [
     hubOpenAnim: 'hubFloat',
     titleFont: "'Cormorant Garamond', 'Nanum Myeongjo', Georgia, serif",
     bodyFont: "'Nanum Myeongjo', 'Pretendard', Georgia, serif",
-    fg: '#dcd0e6', danger: '#d06080', success: '#a080e0', warning: '#c4a0f0',
+    fg: '#ffffff', danger: '#ff453a', success: '#30d158', warning: '#ffd60a',
   },
   {
     id: 'arctic', name: 'Arctic Blue',
     primary: '#5090c0', accent: '#80d0f0',
-    bg: '#040608', surface: '#0e1620',
+    bg: '#000000', surface: '#1c1c1e',
     coverGradient: 'linear-gradient(175deg, #101a24 0%, #0a1018 40%, #060a10 100%)',
     hubBg: 'radial-gradient(circle at 45% 40%, #101a28 0%, #081018 55%, #040810 100%)',
     hubBgOpen: '#080c12',
@@ -180,12 +180,12 @@ export const THEME_PRESETS: ThemePreset[] = [
     hubOpenAnim: 'hubCrystalize',
     titleFont: "'Raleway', 'Pretendard', 'Segoe UI', sans-serif",
     bodyFont: "'Pretendard', 'Segoe UI Variable', system-ui, sans-serif",
-    fg: '#d0dce6', danger: '#d06070', success: '#60c0d0', warning: '#80d0f0',
+    fg: '#ffffff', danger: '#ff453a', success: '#30d158', warning: '#ffd60a',
   },
   {
     id: 'emerald', name: 'Emerald Forest',
     primary: '#50a060', accent: '#a0e0a0',
-    bg: '#040804', surface: '#101c10',
+    bg: '#000000', surface: '#1c1c1e',
     coverGradient: 'linear-gradient(175deg, #142014 0%, #0c160c 40%, #060e06 100%)',
     hubBg: 'radial-gradient(circle at 45% 40%, #142218 0%, #0a140c 55%, #040a04 100%)',
     hubBgOpen: '#081008',
@@ -206,12 +206,12 @@ export const THEME_PRESETS: ThemePreset[] = [
     hubOpenAnim: 'hubBloom',
     titleFont: "'Merriweather', 'Nanum Myeongjo', Georgia, serif",
     bodyFont: "'Nanum Gothic', 'Pretendard', system-ui, sans-serif",
-    fg: '#d4e0d4', danger: '#d06060', success: '#60c060', warning: '#a0c060',
+    fg: '#ffffff', danger: '#ff453a', success: '#30d158', warning: '#ffd60a',
   },
   {
     id: 'rose', name: 'Rose Quartz',
     primary: '#c07088', accent: '#f0b0c0',
-    bg: '#0a0406', surface: '#1c1014',
+    bg: '#000000', surface: '#1c1c1e',
     coverGradient: 'linear-gradient(175deg, #201418 0%, #160c10 40%, #0e0608 100%)',
     hubBg: 'radial-gradient(circle at 45% 40%, #201418 0%, #120a0e 55%, #0a0608 100%)',
     hubBgOpen: '#0e080a',
@@ -231,12 +231,12 @@ export const THEME_PRESETS: ThemePreset[] = [
     hubOpenAnim: 'hubPulse',
     titleFont: "'Playfair Display', 'Noto Serif KR', Georgia, serif",
     bodyFont: "'Noto Serif KR', 'Pretendard', Georgia, serif",
-    fg: '#e0d0d8', danger: '#d06060', success: '#c080a0', warning: '#e0a0b0',
+    fg: '#ffffff', danger: '#ff453a', success: '#30d158', warning: '#ffd60a',
   },
   {
     id: 'mono', name: 'Monochrome',
     primary: '#909090', accent: '#d0d0d0',
-    bg: '#060606', surface: '#141414',
+    bg: '#000000', surface: '#1c1c1e',
     coverGradient: 'linear-gradient(175deg, #1a1a1a 0%, #111111 40%, #0a0a0a 100%)',
     hubBg: 'radial-gradient(circle at 45% 40%, #181818 0%, #0e0e0e 55%, #080808 100%)',
     hubBgOpen: '#0a0a0a',
@@ -256,12 +256,12 @@ export const THEME_PRESETS: ThemePreset[] = [
     hubOpenAnim: 'hubShrink',
     titleFont: "'JetBrains Mono', 'Fira Code', monospace",
     bodyFont: "'Pretendard', 'SF Mono', 'Segoe UI', system-ui, sans-serif",
-    fg: '#d8d8d8', danger: '#d06060', success: '#a0a0a0', warning: '#c0c0c0',
+    fg: '#ffffff', danger: '#ff453a', success: '#30d158', warning: '#ffd60a',
   },
   {
     id: 'sunset', name: 'Sunset Amber',
     primary: '#d08030', accent: '#f0c060',
-    bg: '#0a0804', surface: '#1c1408',
+    bg: '#000000', surface: '#1c1c1e',
     coverGradient: 'linear-gradient(175deg, #201808 0%, #161004 40%, #0e0a02 100%)',
     hubBg: 'radial-gradient(circle at 45% 40%, #221a0a 0%, #140e04 55%, #0a0804 100%)',
     hubBgOpen: '#0e0a06',
@@ -282,7 +282,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     hubOpenAnim: 'hubMelt',
     titleFont: "'Lora', 'Noto Serif KR', Georgia, serif",
     bodyFont: "'Pretendard', 'Segoe UI Variable', system-ui, sans-serif",
-    fg: '#e0d8c8', danger: '#e06050', success: '#d0a040', warning: '#f0c060',
+    fg: '#ffffff', danger: '#ff453a', success: '#30d158', warning: '#ffd60a',
   },
 ]
 
@@ -331,10 +331,10 @@ export function setTheme(id: string): void {
     // Sync --win-* CSS variables with theme
     root.style.setProperty('--win-bg', found.bg)
     root.style.setProperty('--win-surface', found.surface)
-    /* Apple HIG label hierarchy: primary 0.92 / secondary 0.60 / tertiary 0.40 */
-    root.style.setProperty('--win-text', rgba(found.fg, 0.92))
-    root.style.setProperty('--win-text-sub', rgba(found.fg, 0.60))
-    root.style.setProperty('--win-text-muted', rgba(found.fg, 0.40))
+    /* iOS label hierarchy — always pure white base */
+    root.style.setProperty('--win-text', 'rgba(255,255,255,0.92)')
+    root.style.setProperty('--win-text-sub', 'rgba(255,255,255,0.55)')
+    root.style.setProperty('--win-text-muted', 'rgba(255,255,255,0.30)')
     root.style.setProperty('--win-danger', found.danger)
     // Dynamic neon keyframes
     let dynStyle = document.getElementById('gs-theme-dynamic') as HTMLStyleElement | null
@@ -403,7 +403,7 @@ function buildTokens(theme: ThemePreset): ThemeTokens {
   return {
     gold: p, teal: a, fg: f, danger: d, success: s, warning: w, bg: theme.bg,
     surface: theme.surface, surface1: theme.surface, surface2: theme.surface, surface3: theme.surface,
-    text: rgba(f, 0.92), textSub: rgba(f, 0.60), textMuted: rgba(f, 0.40),
+    text: 'rgba(255,255,255,0.92)', textSub: 'rgba(255,255,255,0.55)', textMuted: 'rgba(255,255,255,0.30)',
     error: d,
     gold06: `rgba(${pr},${pg},${pb},0.06)`, gold10: `rgba(${pr},${pg},${pb},0.1)`,
     gold15: `rgba(${pr},${pg},${pb},0.15)`, gold20: `rgba(${pr},${pg},${pb},0.2)`,
