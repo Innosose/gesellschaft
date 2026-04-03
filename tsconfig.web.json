@@ -3,6 +3,9 @@
   "include": ["src/renderer/src/**/*"],
   "compilerOptions": {
     "composite": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
       "@renderer/*": ["src/renderer/src/*"],
