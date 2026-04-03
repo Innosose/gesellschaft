@@ -48,7 +48,7 @@ const LazySettings = lazy(() => import('./SettingsPanel'))
 
 const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds, animDuration, onSelect, onClose, onToggleFav }: {
   tools: Tool[]; recentIds: string[]
-  favoriteIds: string[]; animDuration: number; onSelect: (id: string) => void; onClose: () => void
+  favoriteIds: string[]; animDuration: number; onSelect: (id: string) => void; onClose?: () => void
   onToggleFav: (id: string) => void
 }) {
   const [ovSearch, setOvSearch] = useState('')
@@ -70,7 +70,7 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
   }, [tools, q])
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 40, animation: 'fadeIn 0.15s ease both' }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 40, animation: 'fadeIn 0.15s ease both' }} onClick={onClose || undefined}>
       <div onClick={e => e.stopPropagation()} style={{
         width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
         background: '#000', animation: 'sheetUp 0.3s cubic-bezier(0.32,0.72,0,1) both',
@@ -96,13 +96,15 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
                   </svg>
                 )}
               </button>
-              <button onClick={onClose} style={{
-                background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.55)',
-                cursor: 'pointer', width: 30, height: 30, borderRadius: 15,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 44,
-              }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
-              </button>
+              {onClose && (
+                <button onClick={onClose} style={{
+                  background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.55)',
+                  cursor: 'pointer', width: 30, height: 30, borderRadius: 15,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 44,
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+                </button>
+              )}
             </div>
           </div>
           {/* Search bar — only in tool list mode */}
@@ -230,7 +232,7 @@ export default function SpiralMenu({ tools, animSpeed, onSelectTool, onClose }: 
     <>
       <OverviewGrid tools={tools} recentIds={recentIds}
         favoriteIds={favoriteIds} animDuration={animDuration} onSelect={handleSelect}
-        onClose={onClose ?? (() => {})} onToggleFav={handleToggleFav} />
+        onClose={onClose} onToggleFav={handleToggleFav} />
       <style>{`@keyframes sheetUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </>
   )

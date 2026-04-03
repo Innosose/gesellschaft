@@ -25,7 +25,7 @@ const isWeb = !('__electron__' in window || navigator.userAgent.includes('Electr
 export default function App(): React.ReactElement {
   const { hubColor, hubSize, spiralScale, animSpeed, autoScan, loadFromAPI } = useAppStore()
   const theme = useTheme()
-  const [uiState, setUiState] = useState<UIState>('hub')
+  const [uiState, setUiState] = useState<UIState>(isWeb ? 'menu' : 'hub')
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
   const [recommended, setRecommended] = useState<string[]>([])
   const [reasons, setReasons] = useState<Record<string, string>>({})
@@ -111,7 +111,7 @@ export default function App(): React.ReactElement {
     }
   }, [uiState, autoScan, recommended.length, scanning, handleScan])
 
-  const handleBackdropClick = useCallback(() => setUiState(s => s === 'menu' ? 'hub' : s), [])
+  const handleBackdropClick = useCallback(() => { if (!isWeb) setUiState(s => s === 'menu' ? 'hub' : s) }, [])
   const handleMenuSelect = useCallback((id: string) => { handleToolSelect(id) }, [handleToolSelect])
 
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function App(): React.ReactElement {
       if (e.key === 'Escape') {
         if (showShortcuts) { setShowShortcuts(false); return }
         if (uiState === 'tool') handleBack()
-        else if (uiState === 'menu') { setUiState('hub') }
+        else if (uiState === 'menu' && !isWeb) { setUiState('hub') }
       }
       if (e.key === '?' && uiState !== 'tool') setShowShortcuts(s => !s)
     }
@@ -158,17 +158,17 @@ export default function App(): React.ReactElement {
       <div aria-live="assertive" style={{ position: 'absolute', left: '-9999px' }}>{activeTool ? `${activeTool.label} 도구가 열렸습니다` : ''}</div>
       <div id="gs-sr-announce" role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }} />
 
-      <div className={`app-backdrop ${uiState !== 'hub' ? 'active' : ''}`}
-        style={uiState !== 'hub' ? (isWeb ? {
-          background: '#000',
-        } : {
-          background: `${theme.bg}e0`,
-          backdropFilter: `blur(${theme.blurStrength}px) saturate(1.8) brightness(${theme.brightness})`,
-          WebkitBackdropFilter: `blur(${theme.blurStrength}px) saturate(1.8) brightness(${theme.brightness})`,
-        }) : undefined}
-        onClick={handleBackdropClick} />
+      {!isWeb && (
+        <div className={`app-backdrop ${uiState !== 'hub' ? 'active' : ''}`}
+          style={uiState !== 'hub' ? {
+            background: `${theme.bg}e0`,
+            backdropFilter: `blur(${theme.blurStrength}px) saturate(1.8) brightness(${theme.brightness})`,
+            WebkitBackdropFilter: `blur(${theme.blurStrength}px) saturate(1.8) brightness(${theme.brightness})`,
+          } : undefined}
+          onClick={handleBackdropClick} />
+      )}
 
-      {uiState !== 'tool' && (
+      {!isWeb && uiState !== 'tool' && (
         <CenterHub key={theme.id} isOpen={uiState === 'menu'} scanning={scanning}
           hubColor={hubColor} hubSize={hubSize}
           onClick={handleHubClick} onScan={handleScan} />
@@ -177,7 +177,7 @@ export default function App(): React.ReactElement {
       {uiState === 'menu' && (
         <SpiralMenu tools={ALL_TOOLS}
           spiralScale={spiralScale} animSpeed={animSpeed}
-          onSelectTool={handleMenuSelect} onClose={() => setUiState('hub')} />
+          onSelectTool={handleMenuSelect} onClose={isWeb ? undefined : () => setUiState('hub')} />
       )}
 
       {/* AI Recommendation overlay */}
