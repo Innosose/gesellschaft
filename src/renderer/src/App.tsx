@@ -168,7 +168,7 @@ export default function App(): React.ReactElement {
           onClick={handleBackdropClick} />
       )}
 
-      {!isWeb && uiState !== 'tool' && (
+      {uiState !== 'tool' && (
         <CenterHub key={theme.id} isOpen={uiState === 'menu'} scanning={scanning}
           hubColor={hubColor} hubSize={hubSize}
           onClick={handleHubClick} onScan={handleScan} />
