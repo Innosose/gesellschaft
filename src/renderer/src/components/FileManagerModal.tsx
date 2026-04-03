@@ -3,6 +3,8 @@ import { Modal } from './SearchModal'
 import { formatSize, formatDate, getFileIcon } from '../utils/format'
 import { T, rgba } from '../utils/theme'
 
+const DEFAULT_ROOT = navigator.platform?.startsWith('Win') ? DEFAULT_ROOT : '/'
+
 // ─── Types shared across tabs ───────────────────────────────────────────────
 
 export interface SearchResult {
@@ -71,7 +73,7 @@ function CheckOpt({ label, checked, onChange }: { label: string; checked: boolea
 function SearchTab(): React.ReactElement {
   const [opts, setOpts] = useState<SearchOptions>({
     query: '',
-    rootPath: 'C:\\',
+    rootPath: DEFAULT_ROOT,
     includeFiles: true,
     includeDirs: true,
     extensions: '',
@@ -315,7 +317,7 @@ function SearchTab(): React.ReactElement {
 // ─── Tab: 이름 변경 ───────────────────────────────────────────────────────────
 
 function BulkRenameTab(): React.ReactElement {
-  const [folder, setFolder] = useState('C:\\')
+  const [folder, setFolder] = useState(DEFAULT_ROOT)
   const [files, setFiles] = useState<FileItem[]>([])
   const [loading, setLoading] = useState(false)
   const [extFilter, setExtFilter] = useState('')

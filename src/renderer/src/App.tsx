@@ -186,7 +186,7 @@ export default function App(): React.ReactElement {
       if (e.key === 'Escape') {
         if (showShortcuts) { setShowShortcuts(false); return }
         if (uiState === 'tool') handleBack()
-        else if (uiState === 'menu') { setToolSearch(''); setUiState('hub') }
+        else if (uiState === 'menu') { setUiState('hub') }
       }
       if (e.key === '?' && uiState !== 'tool') setShowShortcuts(s => !s)
     }

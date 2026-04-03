@@ -199,6 +199,16 @@ export interface OrganizeRule {
 export interface SmartFolder {
   id: string
   name: string
-  query: SearchOptions
-  createdAt: number
+  options: {
+    query: string
+    rootPath: string
+    extensions?: string[]
+    minSize?: number
+    maxSize?: number
+    includeFiles: boolean
+    includeDirs: boolean
+    caseSensitive?: boolean
+    regex?: boolean
+    contentSearch?: boolean
+  }
 }

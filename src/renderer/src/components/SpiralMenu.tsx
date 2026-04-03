@@ -21,7 +21,7 @@ function isCompact(vw: number, vh: number): boolean { return vw <= 768 || vh <= 
 function getCardSize(vw: number, vh: number): { w: number; h: number } {
   const ar = getCurrentTheme().shape.aspectRatio
   const compact = isCompact(vw, vh)
-  const minW = compact ? 90 : 90
+  const minW = compact ? 80 : 90
   const maxW = compact ? 130 : 150
   const factor = compact ? 0.18 : 0.085
   const w = Math.round(Math.min(Math.max(vw * factor, minW), maxW))

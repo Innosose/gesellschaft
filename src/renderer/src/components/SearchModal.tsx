@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { formatSize, formatDate, getFileIcon } from '../utils/format'
+import type { SmartFolder } from '../../../shared/types'
 
 const RECENT_SEARCH_KEY = 'gesellschaft-recent-searches'
+const DEFAULT_ROOT = navigator.platform?.startsWith('Win') ? 'C:\\' : '/'
 
 export interface SearchResult {
   path: string
@@ -40,7 +42,7 @@ export default function SearchModal({
 }): React.ReactElement {
   const [opts, setOpts] = useState<SearchOptions>({
     query: initialOptions?.query || '',
-    rootPath: initialOptions?.rootPath || initialFolder || 'C:\\',
+    rootPath: initialOptions?.rootPath || initialFolder || DEFAULT_ROOT,
     includeFiles: initialOptions?.includeFiles ?? true,
     includeDirs: initialOptions?.includeDirs ?? true,
     extensions: initialOptions?.extensions?.join(',') || '',
