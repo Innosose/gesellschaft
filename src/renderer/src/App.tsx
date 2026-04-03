@@ -19,13 +19,11 @@ const NC: Record<string, { dot: string }> = {
   success: { dot: T.teal },
 }
 
-/** True when running in a normal browser (not Electron) */
-const isWeb = !('__electron__' in window || navigator.userAgent.includes('Electron'))
 
 export default function App(): React.ReactElement {
   const { hubColor, hubSize, spiralScale, animSpeed, autoScan, loadFromAPI } = useAppStore()
   const theme = useTheme()
-  const [uiState, setUiState] = useState<UIState>(isWeb ? 'menu' : 'hub')
+  const [uiState, setUiState] = useState<UIState>('hub')
   const [activeTool, setActiveTool] = useState<Tool | null>(null)
   const [recommended, setRecommended] = useState<string[]>([])
   const [reasons, setReasons] = useState<Record<string, string>>({})
@@ -78,7 +76,6 @@ export default function App(): React.ReactElement {
   const handleBack = useCallback(() => { setActiveTool(null); setUiState('menu') }, [])
 
   const handleScan = useCallback(async () => {
-    if (isWeb) { addNotification('화면 분석은 데스크톱 앱에서만 사용 가능합니다.', 'info'); return }
     setScanning(true)
     try {
       const result = await window.api.screen.captureAndAnalyze()
@@ -111,11 +108,10 @@ export default function App(): React.ReactElement {
     }
   }, [uiState, autoScan, recommended.length, scanning, handleScan])
 
-  const handleBackdropClick = useCallback(() => { if (!isWeb) setUiState(s => s === 'menu' ? 'hub' : s) }, [])
+  const handleBackdropClick = useCallback(() => setUiState(s => s === 'menu' ? 'hub' : s), [])
   const handleMenuSelect = useCallback((id: string) => { handleToolSelect(id) }, [handleToolSelect])
 
   useEffect(() => {
-    if (isWeb) return
     if (uiState !== 'hub') { window.api.window.setIgnoreMouseEvents(false); return }
     window.api.window.setIgnoreMouseEvents(true, { forward: true })
     let lastCall = 0, lastHit = false
@@ -134,7 +130,7 @@ export default function App(): React.ReactElement {
       if (e.key === 'Escape') {
         if (showShortcuts) { setShowShortcuts(false); return }
         if (uiState === 'tool') handleBack()
-        else if (uiState === 'menu' && !isWeb) { setUiState('hub') }
+        else if (uiState === 'menu') { setUiState('hub') }
       }
       if (e.key === '?' && uiState !== 'tool') setShowShortcuts(s => !s)
     }
@@ -144,7 +140,7 @@ export default function App(): React.ReactElement {
 
   return (
     <div role="application" style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden',
-      background: isWeb ? '#000' : undefined }}>
+      background: undefined }}>
 
       <a href="#main-content" style={{
         position: 'absolute', left: '-9999px', top: 'auto',
@@ -158,15 +154,13 @@ export default function App(): React.ReactElement {
       <div aria-live="assertive" style={{ position: 'absolute', left: '-9999px' }}>{activeTool ? `${activeTool.label} 도구가 열렸습니다` : ''}</div>
       <div id="gs-sr-announce" role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }} />
 
-      {!isWeb && (
-        <div className={`app-backdrop ${uiState !== 'hub' ? 'active' : ''}`}
+      <div className={`app-backdrop ${uiState !== 'hub' ? 'active' : ''}`}
           style={uiState !== 'hub' ? {
             background: `${theme.bg}e0`,
             backdropFilter: `blur(${theme.blurStrength}px) saturate(1.8) brightness(${theme.brightness})`,
             WebkitBackdropFilter: `blur(${theme.blurStrength}px) saturate(1.8) brightness(${theme.brightness})`,
           } : undefined}
           onClick={handleBackdropClick} />
-      )}
 
       {uiState !== 'tool' && (
         <CenterHub key={theme.id} isOpen={uiState === 'menu'} scanning={scanning}
@@ -177,7 +171,7 @@ export default function App(): React.ReactElement {
       {uiState === 'menu' && (
         <SpiralMenu tools={ALL_TOOLS}
           spiralScale={spiralScale} animSpeed={animSpeed}
-          onSelectTool={handleMenuSelect} onClose={isWeb ? undefined : () => setUiState('hub')} />
+          onSelectTool={handleMenuSelect} onClose={() => setUiState('hub')} />
       )}
 
       {/* AI Recommendation overlay */}

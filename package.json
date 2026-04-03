@@ -17,9 +17,6 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "web:dev": "vite --config vite.web.config.ts",
-    "web:build": "vite build --config vite.web.config.ts",
-    "web:preview": "vite preview --config vite.web.config.ts",
     "postinstall": "patch-package"
   },
   "dependencies": {
