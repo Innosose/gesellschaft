@@ -370,7 +370,6 @@ function BulkRenameTab(): React.ReactElement {
         return { ...f, newName, changed: newName !== f.name }
       })
     )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, findText, replaceText, useRegex, affixText, numStart, numStep, numPad, numSep, numPos, newExt])
 
   const computeNewName = (name: string, index: number): string => {

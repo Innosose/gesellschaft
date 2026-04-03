@@ -97,7 +97,7 @@ export default function PomodoroModal({ onClose, asPanel }: PomodoroModalProps):
       })
     }, 1000)
     return () => { if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null } }
-  }, [running, phase])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [running, phase])
 
   function handlePhaseEnd(): void {
     setRunning(false)

@@ -26,7 +26,7 @@ export default function RecommendOverlay({ recommendations, reasons, onSelect, o
     if (e.key === 'Escape') { onDismiss(); return }
     const n = parseInt(e.key)
     if (n >= 1 && n <= tools.length) handleSelect(n - 1)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
   useEffect(() => { window.addEventListener('keydown', handleKey); return () => window.removeEventListener('keydown', handleKey) }, [handleKey])
 
   const tools = recommendations.map(id => ALL_TOOLS.find(t => t.id === id)).filter(Boolean) as typeof ALL_TOOLS

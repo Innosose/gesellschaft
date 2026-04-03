@@ -282,7 +282,7 @@ const FanCard = memo(function FanCard({
   const prevId = useRef(tool.id)
   const typedDesc = useTypewriter(tool.description ?? '', isCenter && hovered && !disabled, 25, 550)
 
-  useEffect(() => { const t = setTimeout(() => setMounted(true), slotIndex * staggerMs + 20); return () => clearTimeout(t) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const t = setTimeout(() => setMounted(true), slotIndex * staggerMs + 20); return () => clearTimeout(t) }, [slotIndex, staggerMs])
   useEffect(() => {
     if (prevId.current !== tool.id) { prevId.current = tool.id; setContentFade(true); const t = setTimeout(() => setContentFade(false), 180); return () => clearTimeout(t) }
   }, [tool.id])

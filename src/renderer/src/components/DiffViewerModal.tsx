@@ -16,7 +16,7 @@ function computeDiff(a: string, b: string): DiffLine[] {
     for (let j = 1; j <= n; j++)
       dp[i][j] = linesA[i - 1] === linesB[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1])
 
-  let i = m, j = n, lineNum = 0
+  let i = m, j = n
   const rev: DiffLine[] = []
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && linesA[i - 1] === linesB[j - 1]) {

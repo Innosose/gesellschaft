@@ -45,5 +45,5 @@ export function useKeydown(key: string, handler: () => void, deps: unknown[] = [
     const h = (e: KeyboardEvent) => { if (e.key === key) handler() }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
-  }, [key, ...deps]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key, ...deps])
 }

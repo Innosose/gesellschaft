@@ -34,12 +34,12 @@ export function useIpc<T>(
       .catch((err: unknown) =>
         setState({ data: null, loading: false, error: err instanceof Error ? err.message : String(err) })
       )
-  }, [])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   // Re-run whenever deps change (mirrors useEffect semantics)
   useEffect(() => {
     call()
-  }, [call, ...deps])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [call, ...deps])
 
   return { ...state, refetch: call }
 }

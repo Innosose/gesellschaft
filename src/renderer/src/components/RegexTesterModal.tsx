@@ -27,7 +27,7 @@ export default function RegexTesterModal({ onClose, asPanel }: { onClose: () => 
         if (!flags.includes('g')) break
       }
       // highlighted
-      let parts: React.ReactNode[] = []
+      const parts: React.ReactNode[] = []
       let lastIdx = 0
       const re3 = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g')
       let m2: RegExpExecArray | null
