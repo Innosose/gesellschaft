@@ -119,7 +119,7 @@ const TABS: { id: PanelTab; icon: string; label: string }[] = [
   { id: 'ai',       icon: '', label: 'AI' },
 ]
 
-export default function SettingsPanel(): React.ReactElement {
+export default function SettingsPanel({ onClose }: { onClose?: () => void }): React.ReactElement {
   const { hubSize, overlayOpacity, spiralScale, animSpeed, autoScan, setAutoScan, setDisplay } = useAppStore()
   const currentTheme = useTheme()
   const [tab, setTab] = useState<PanelTab>('display')
@@ -219,96 +219,46 @@ export default function SettingsPanel(): React.ReactElement {
   const aiProvider = (aiDraft.provider ?? aiConfig?.provider ?? '') as string
   const aiModels = aiProvider === 'ollama' ? aiOllamaModels : (aiPresetModels[aiProvider] ?? [])
 
-  const compact = useCompact() || isWeb
-
   return (
-    <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', flex: 1, overflow: 'hidden' }}>
-      {compact ? (
-        <div style={{
-          flexShrink: 0,
-          padding: 'clamp(12px, 3vw, 16px) clamp(12px, 4vw, 20px)',
-          borderBottom: `0.5px solid ${rgba(T.fg, 0.08)}`,
-        }}>
-          <div role="tablist" aria-label="설정 탭" style={{
-            display: 'flex', gap: 'clamp(2px, 0.28vw, 4px)',
-            background: rgba(T.fg, 0.06), borderRadius: 'clamp(8px, 0.83vw, 12px)', padding: 'clamp(2px, 0.14vw, 3px)',
-            overflow: 'auto', WebkitOverflowScrolling: 'touch',
-          }}>
-          {TABS.map(t => {
-            const isActive = tab === t.id
-            return (
-              <button key={t.id} role="tab" aria-selected={isActive} onClick={() => setTab(t.id)}
-                style={{
-                  flex: 1, minWidth: 0,
-                  padding: 'clamp(6px, 0.56vw, 8px) clamp(8px, 1.11vw, 14px)',
-                  cursor: 'pointer', border: 'none',
-                  borderRadius: 'clamp(6px, 0.69vw, 10px)',
-                  background: isActive ? rgba(T.fg, 0.1) : 'transparent',
-                  color: isActive ? rgba(T.fg, 0.92) : rgba(T.fg, 0.60),
-                  fontSize: 'clamp(11px, 0.90vw, 13px)', fontWeight: isActive ? 600 : 500,
-                  letterSpacing: '-0.41px', lineHeight: 1.38,
-                  whiteSpace: 'nowrap', transition: 'all 0.2s ease',
-                  minHeight: 'clamp(28px, 2.22vw, 32px)',
-                }}>
-                {t.label}
-              </button>
-            )
-          })}
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: T.bg }}>
+      <div style={{ flexShrink: 0, padding: 'clamp(12px, 3vw, 24px)', paddingBottom: 0, paddingTop: 'max(clamp(12px, 3vw, 24px), env(safe-area-inset-top, 12px))' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(10px, 1.11vw, 16px)' }}>
+          <span style={{ fontSize: 'clamp(16px, 1.39vw, 20px)', fontWeight: 700, color: rgba(T.fg, 0.95), letterSpacing: '-0.02em', flex: 1 }}>설정</span>
+          {onClose && (
+            <button onClick={onClose} style={{ background: rgba(T.fg, 0.1), border: 'none', color: rgba(T.fg, 0.60), cursor: 'pointer', width: 'clamp(24px, 2.08vw, 30px)', height: 'clamp(24px, 2.08vw, 30px)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 44 }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+            </button>
+          )}
         </div>
-      ) : (
-        <div style={{
-          width: 'clamp(120px, 12.5vw, 180px)',
-          flexShrink: 0,
-          borderRight: `0.5px solid ${rgba(T.fg, 0.08)}`,
-          padding: 'clamp(16px, 1.67vw, 24px) clamp(8px, 0.83vw, 12px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
+        <div role="tablist" aria-label="설정 탭" style={{
+          display: 'flex', gap: 'clamp(2px, 0.28vw, 4px)',
+          background: rgba(T.fg, 0.06), borderRadius: 'clamp(8px, 0.83vw, 12px)', padding: 'clamp(2px, 0.14vw, 3px)',
+          marginBottom: 'clamp(10px, 1.11vw, 16px)',
         }}>
-          <div style={{
-            padding: '0 12px',
-            marginBottom: 'clamp(16px, 1.67vw, 24px)',
-            fontSize: 'clamp(18px, 1.53vw, 22px)', fontWeight: 700, color: rgba(T.fg, 0.92), letterSpacing: '0.35px', lineHeight: 1.27,
-          }}>
-            설정
-          </div>
-          <div role="tablist" aria-label="설정 탭" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {TABS.map(t => {
-            const isActive = tab === t.id
-            return (
-              <button
-                key={t.id}
-                role="tab"
-                aria-selected={isActive}
-                aria-label={t.label}
-                aria-controls={`tabpanel-${t.id}`}
-                onClick={() => setTab(t.id)}
-                style={{
-                  width: '100%',
-                  padding: 'clamp(6px, 0.56vw, 8px) clamp(8px, 0.83vw, 12px)',
-                  display: 'flex',
-                  gap: 10,
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  border: 'none',
-                  borderRadius: 'clamp(8px, 0.83vw, 12px)',
-                  background: isActive ? rgba(T.fg, 0.1) : 'transparent',
-                  color: isActive ? rgba(T.fg, 0.92) : rgba(T.fg, 0.60),
-                  textAlign: 'left',
-                  transition: 'all 0.2s ease',
-                  minHeight: 'clamp(36px, 3.06vw, 44px)',
-                }}
-              >
-                <span style={{ fontSize: 15, lineHeight: 1.33, fontWeight: isActive ? 600 : 400, letterSpacing: '-0.41px' }}>{t.label}</span>
-              </button>
-            )
-          })}
-          </div>
+        {TABS.map(t => {
+          const isActive = tab === t.id
+          return (
+            <button key={t.id} role="tab" aria-selected={isActive} onClick={() => setTab(t.id)}
+              style={{
+                flex: 1, minWidth: 0,
+                padding: 'clamp(6px, 0.56vw, 8px) clamp(8px, 1.11vw, 14px)',
+                cursor: 'pointer', border: 'none',
+                borderRadius: 'clamp(6px, 0.69vw, 10px)',
+                background: isActive ? rgba(T.fg, 0.1) : 'transparent',
+                color: isActive ? rgba(T.fg, 0.92) : rgba(T.fg, 0.60),
+                fontSize: 'clamp(11px, 0.90vw, 13px)', fontWeight: isActive ? 600 : 500,
+                letterSpacing: '-0.41px', lineHeight: 1.38,
+                whiteSpace: 'nowrap', transition: 'all 0.2s ease',
+                minHeight: 'clamp(28px, 2.22vw, 32px)',
+              }}>
+              {t.label}
+            </button>
+          )
+        })}
         </div>
-      )}
+      </div>
 
-      <div role="tabpanel" id={`tabpanel-${tab}`} style={{ flex: 1, overflowY: 'auto', padding: 'clamp(16px, 4vw, 32px)' }}>
+      <div role="tabpanel" id={`tabpanel-${tab}`} style={{ flex: 1, overflowY: 'auto', padding: '0 clamp(12px, 3vw, 24px)', paddingBottom: 'max(clamp(16px, 1.67vw, 24px), env(safe-area-inset-bottom, 16px))' }}>
 
         {/* ════ DISPLAY TAB ════ */}
         {tab === 'display' && (

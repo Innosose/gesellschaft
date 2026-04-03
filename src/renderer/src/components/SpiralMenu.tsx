@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, memo, useRef, lazy, Suspense } from 'react'
 
 // ═══════════════════════════════════════════════
 // SECTION: Types & Constants
@@ -9,7 +9,6 @@ interface SpiralMenuProps {
   tools: Tool[]
   spiralScale: number; animSpeed: 'slow' | 'normal' | 'fast' | 'none'
   filterQuery?: string; onSelectTool: (id: string) => void
-  onOpenSettings?: () => void
 }
 
 const ANIM_MS: Record<string, number> = { slow: 600, normal: 350, fast: 180, none: 0 }
@@ -551,12 +550,15 @@ const FanCard = memo(function FanCard({
 // ═══════════════════════════════════════════════
 // SECTION: Overview Grid (all-tools view)
 // ═══════════════════════════════════════════════
-const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds, animDuration, onSelect, onClose, onToggleFav, onOpenSettings }: {
+const LazySettings = lazy(() => import('./SettingsPanel'))
+
+const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds, animDuration, onSelect, onClose, onToggleFav }: {
   tools: Tool[]; recentIds: string[]
   favoriteIds: string[]; animDuration: number; onSelect: (id: string) => void; onClose: () => void
-  onToggleFav: (id: string) => void; onOpenSettings?: () => void
+  onToggleFav: (id: string) => void
 }) {
   const [ovSearch, setOvSearch] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
   const toolMap = useMemo(() => new Map(tools.map(t => [t.id, t])), [tools])
   const recentTools = useMemo(() => recentIds.map(id => toolMap.get(id)).filter(Boolean) as Tool[], [recentIds, toolMap])
   const favTools = useMemo(() => favoriteIds.map(id => toolMap.get(id)).filter(Boolean) as Tool[], [favoriteIds, toolMap])
@@ -582,21 +584,25 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
       }}>
         <div style={{ flexShrink: 0, padding: 'clamp(12px, 3vw, 24px)', paddingBottom: 0, paddingTop: 'max(clamp(12px, 3vw, 24px), env(safe-area-inset-top, 12px))' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(10px, 1.11vw, 16px)' }}>
-            <span style={{ fontSize: 'clamp(16px, 1.39vw, 20px)', fontWeight: 700, color: rgba(T.fg, 0.95), letterSpacing: '-0.02em', flex: 1 }}>{tools.length}개 기능</span>
+            <span style={{ fontSize: 'clamp(16px, 1.39vw, 20px)', fontWeight: 700, color: rgba(T.fg, 0.95), letterSpacing: '-0.02em', flex: 1 }}>
+              {showSettings ? '설정' : `${tools.length}개 기능`}
+            </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(4px, 0.42vw, 8px)' }}>
-              {onOpenSettings && (
-                <button onClick={onOpenSettings} title="설정" style={{ background: rgba(T.fg, 0.1), border: 'none', color: rgba(T.fg, 0.60), cursor: 'pointer', width: 'clamp(24px, 2.08vw, 30px)', height: 'clamp(24px, 2.08vw, 30px)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 44 }}>
+              <button onClick={() => setShowSettings(s => !s)} title={showSettings ? '도구 목록' : '설정'} style={{ background: rgba(T.fg, showSettings ? 0.15 : 0.1), border: 'none', color: rgba(T.fg, 0.60), cursor: 'pointer', width: 'clamp(24px, 2.08vw, 30px)', height: 'clamp(24px, 2.08vw, 30px)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 44 }}>
+                {showSettings ? (
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="5" height="5" rx="1.5"/><rect x="9" y="2" width="5" height="5" rx="1.5"/><rect x="2" y="9" width="5" height="5" rx="1.5"/><rect x="9" y="9" width="5" height="5" rx="1.5"/></svg>
+                ) : (
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
                     <circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4"/>
                   </svg>
-                </button>
-              )}
+                )}
+              </button>
               <button onClick={onClose} style={{ background: rgba(T.fg, 0.1), border: 'none', color: rgba(T.fg, 0.60), cursor: 'pointer', width: 'clamp(24px, 2.08vw, 30px)', height: 'clamp(24px, 2.08vw, 30px)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 44 }}>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
               </button>
             </div>
           </div>
-          <div style={{ position: 'relative', marginBottom: 'clamp(10px, 1.11vw, 16px)' }}>
+          {!showSettings && <div style={{ position: 'relative', marginBottom: 'clamp(10px, 1.11vw, 16px)' }}>
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ position: 'absolute', left: 'clamp(8px, 0.83vw, 12px)', top: '50%', transform: 'translateY(-50%)', opacity: 0.3, pointerEvents: 'none' }}>
               <circle cx="7" cy="7" r="5.5" stroke={T.fg} strokeWidth="1.5"/><path d="M11 11l3.5 3.5" stroke={T.fg} strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
@@ -615,9 +621,14 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
                 width: 'clamp(14px, 1.25vw, 18px)', height: 'clamp(14px, 1.25vw, 18px)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>✕</button>
             )}
-          </div>
+          </div>}
         </div>
 
+        {showSettings ? (
+          <Suspense fallback={null}>
+            <LazySettings onClose={() => setShowSettings(false)} />
+          </Suspense>
+        ) : (
         <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 clamp(12px, 3vw, 24px)', paddingBottom: 'max(clamp(16px, 1.67vw, 24px), env(safe-area-inset-bottom, 16px))' }}>
           {isFiltering ? (
             filteredAll && filteredAll.length > 0
@@ -636,6 +647,7 @@ const OverviewGrid = memo(function OverviewGrid({ tools, recentIds, favoriteIds,
             </>
           )}
         </div>
+        )}
       </div>
     </div>
   )
@@ -710,7 +722,7 @@ const SearchCard = memo(function SearchCard({ tool, animDuration, onSelect }: { 
 // ═══════════════════════════════════════════════
 // SECTION: Main SpiralMenu Component
 // ═══════════════════════════════════════════════
-export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery: externalQuery, onSelectTool, onOpenSettings }: SpiralMenuProps): React.ReactElement {
+export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery: externalQuery, onSelectTool }: SpiralMenuProps): React.ReactElement {
   const theme = useTheme() // triggers re-render on theme change
   const [vw, setVw] = useState(window.innerWidth)
   const [vh, setVh] = useState(window.innerHeight)
@@ -818,7 +830,7 @@ export default function SpiralMenu({ tools, spiralScale, animSpeed, filterQuery:
 
       {showOverview && <OverviewGrid tools={tools} recentIds={recentIds}
         favoriteIds={favoriteIds} animDuration={animDuration} onSelect={(id) => { setShowOverview(false); handleSelect(id) }}
-        onClose={() => setShowOverview(false)} onToggleFav={handleToggleFav} onOpenSettings={onOpenSettings} />}
+        onClose={() => setShowOverview(false)} onToggleFav={handleToggleFav} />}
 
       <style>{`
         @keyframes slideUpFade { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
