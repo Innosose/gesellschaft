@@ -3,7 +3,7 @@ import { Modal } from './SearchModal'
 import { formatSize, formatDate, getFileIcon } from '../utils/format'
 import { T, rgba } from '../utils/theme'
 
-const DEFAULT_ROOT = navigator.platform?.startsWith('Win') ? DEFAULT_ROOT : '/'
+const DEFAULT_ROOT = navigator.platform?.startsWith('Win') ? 'C:\\' : '/'
 
 // ─── Types shared across tabs ───────────────────────────────────────────────
 
