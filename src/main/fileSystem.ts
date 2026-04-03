@@ -7,7 +7,7 @@ import { z } from 'zod'
 import log, { logIpcError } from './logger'
 import { isValidFileName } from '../shared/utils'
 
-export interface FileEntry {
+interface FileEntry {
   name: string
   path: string
   isDirectory: boolean

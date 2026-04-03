@@ -3,7 +3,7 @@
  *
  * Tool metadata defined here (ALL_TOOLS).
  * Tool component registry in src/renderer/src/components/ToolPanel.tsx (TOOL_REGISTRY).
- * To add a new tool: 1) Add entry to ALL_TOOLS  2) Add lazy import to TOOL_REGISTRY
+ * To add a new tool: 1) Add to ALL_TOOLS  2) Add lazy import to TOOL_REGISTRY
  */
 
 export interface ToolDef {
@@ -15,7 +15,6 @@ export interface ToolDef {
 }
 
 export const ALL_TOOLS: ToolDef[] = [
-  // A–Z 알파벳 순서
   { id: 'ai',           icon: '', label: 'AI Assistant',   color: '#c9a84c', description: '화면 분석, 질문, 문서 작성, 요약, 번역' },
   { id: 'batch',        icon: '', label: 'Batch',           color: '#e0a060', description: '여러 파일의 이름을 규칙에 맞춰 일괄 변경' },
   { id: 'clipboard',    icon: '', label: 'Clipboard',      color: '#5ec9a0', description: '복사한 내용을 자동으로 기록하고 재사용' },
@@ -44,105 +43,47 @@ export const ALL_TOOLS: ToolDef[] = [
   { id: 'zone',          icon: '', label: 'Zone',            color: '#6080a0', description: '화면을 영역별로 분할하고 창 배치를 관리' },
 ]
 
-/** id → description 매핑 */
+/** id -> description 매핑 */
 export const TOOL_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
   ALL_TOOLS.map(t => [t.id, t.description])
 )
 
-// ──────────────────────────────────────────────
-// 앱 설정 기본값
-// ──────────────────────────────────────────────
+// ── 앱 설정 기본값 ──────────────────────────────
 
-export const DEFAULT_THEME_COLOR = '#4de8c2'
-export const DEFAULT_SHORTCUT    = 'Ctrl+Shift+G'
-export const DEFAULT_HUB_SIZE    = 140
+export const DEFAULT_THEME_COLOR     = '#4de8c2'
+export const DEFAULT_SHORTCUT        = 'Ctrl+Shift+G'
+export const DEFAULT_HUB_SIZE        = 140
 export const DEFAULT_OVERLAY_OPACITY = 0.88
-export const DEFAULT_SPIRAL_SCALE   = 1.0
-export const DEFAULT_ANIM_SPEED     = 'normal' as const
+export const DEFAULT_SPIRAL_SCALE    = 1.0
+export const DEFAULT_ANIM_SPEED      = 'normal' as const
 
-// ──────────────────────────────────────────────
-// 기능별 한계값
-// ──────────────────────────────────────────────
+// ── 기능별 한계값 ───────────────────────────────
 
 export const CLIPBOARD_HISTORY_LIMIT = 50
 export const CLIPBOARD_POLL_INTERVAL = 500
 export const REMINDER_CHECK_INTERVAL = 60 * 1000
-export const CLIPBOARD_MAX_LENGTH = 10_000
+export const CLIPBOARD_MAX_LENGTH    = 10_000
 
-// ──────────────────────────────────────────────
-// localStorage key 레지스트리
-// ──────────────────────────────────────────────
+// ── localStorage key 레지스트리 ─────────────────
+// 실제 사용되는 키만 등록 — 단일 출처 원칙
 
-/** localStorage keys used across the app — single source of truth */
 export const STORAGE_KEYS = {
-  // Core app
   theme:              'gs-theme',
   favorites:          'gs-favorites',
   recentTools:        'gesellschaft-recent-tools',
-  toolOrder:          'gs-tool-order',
-
-  // Productivity
-  goals:              'gs-goals',
-  yearly:             'gs-yearly-events',
-  bookmarks:          'gs-bookmarks',
-  assignments:        'gs-assignments',
-  countdowns:         'gs-countdowns',
-  kanban:             'gs-kanban',
-  diary:              'gs-diary',
-  wishlist:           'gs-wishlist',
-  contacts:           'gs-contacts',
-  widgetBoard:        'gs-widget-board',
   organizer: {
     todos:            'gs-organizer-todos',
     templates:        'gs-organizer-templates',
   },
-  focusSessions:      'gs-focus-sessions',
   launcherItems:      'gs-launcher-items',
   customShortcuts:    'gs-custom-shortcuts',
-  zoneLayouts:        'gs-zone-layouts',
-  mindmaps:           'gs-mindmaps',
   screenPins:         'gs-screen-pins',
-  markdownDocs:       'gs-markdown-docs',
-  codeSnippets:       'gs-code-snippets',
-  colorPalettes:      'gs-color-palettes',
   quickCalcHistory:   'gs-quick-calc-history',
-  weeklyReview:       'gs-weekly-review',
-  expenses:           'gs-expenses',
-  breakTimer:         'gs-break-timer',
-  water:              'gs-water',
-  stretch:            'gs-stretch',
-  motivationFavs:     'gs-motivation-favs',
-  worldClock:         'gs-world-clock',
   typeRecent:         'gs-type-recent',
   colorHistory:       'gs_color_history',
-
-  // AI
   aiConversationHistory: 'ai-conversation-history',
-
-  // Study
-  studyLog:           'gesellschaft-study-log',
-  studyStreak:        'gs-study-streak',
-  studyGoals:         'gs-study-goals',
-  studyGroups:        'gs-study-groups',
-  habits:             'gs-habits',
-  flashcards:         'gesellschaft-flashcards',
-  formulas:           'gs-formulas',
-  examSchedule:       'gs-exam-schedule',
-  lectureNotes:       'gs-lecture-notes',
-  reviewPlanner:      'gs-review-planner',
-  timetable:          'gesellschaft-timetable',
-  wrongNotes:         'gesellschaft-wrong-notes',
-  readingLog:         'gs-reading-log',
-
-  // Health
-  sleep:              'gs-sleep',
-  meals:              'gs-meals',
-  exercise:           'gs-exercise',
-
-  // Other
   clipboardPins:      'gesellschaft-clipboard-pins',
   recentSearches:     'gesellschaft-recent-searches',
-  translateHistory:   'gesellschaft-translate-history',
 } as const
 
 export const QUICK_NOTE_COLORS = ['#12121e', '#0e1a28', '#0e0e28', '#1e0e18', '#181818'] as const

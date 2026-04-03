@@ -4,7 +4,7 @@ import path from 'path'
 import { z } from 'zod'
 import log, { logIpcError } from './logger'
 
-export interface OrganizeRule {
+interface OrganizeRule {
   id: string
   name: string
   enabled: boolean

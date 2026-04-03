@@ -7,9 +7,9 @@ import {
   DEFAULT_ANIM_SPEED,
 } from '../../../shared/constants'
 
-export type AnimSpeed = 'slow' | 'normal' | 'fast' | 'none'
+type AnimSpeed = 'slow' | 'normal' | 'fast' | 'none'
 
-export interface DisplaySettings {
+interface DisplaySettings {
   hubSize: number
   overlayOpacity: number
   spiralScale: number

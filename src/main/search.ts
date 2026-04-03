@@ -2,7 +2,7 @@ import { ipcMain } from 'electron'
 import fs from 'fs'
 import path from 'path'
 
-export interface SearchOptions {
+interface SearchOptions {
   query: string
   rootPath: string
   includeFiles: boolean
@@ -17,7 +17,7 @@ export interface SearchOptions {
   contentSearch?: boolean
 }
 
-export interface SearchResult {
+interface SearchResult {
   path: string
   name: string
   isDirectory: boolean

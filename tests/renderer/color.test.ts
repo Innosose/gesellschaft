@@ -1,7 +1,7 @@
 /**
- * color.ts — rgba helper and THEMES registry tests
+ * color.ts — rgba helper tests
  */
-import { rgba, THEMES } from '../../src/renderer/src/utils/color'
+import { rgba } from '../../src/renderer/src/utils/color'
 
 describe('rgba', () => {
   it('basic red conversion', () => {
@@ -30,37 +30,5 @@ describe('rgba', () => {
 
   it('uppercase hex', () => {
     expect(rgba('#AABBCC', 0.5)).toBe('rgba(170, 187, 204, 0.5)')
-  })
-})
-
-describe('THEMES', () => {
-  it('has 12 themes', () => {
-    expect(THEMES).toHaveLength(12)
-  })
-
-  it('all themes have id, name, color', () => {
-    for (const theme of THEMES) {
-      expect(theme.id).toBeTruthy()
-      expect(theme.name).toBeTruthy()
-      expect(theme.color).toMatch(/^#[0-9a-fA-F]{6}$/)
-    }
-  })
-
-  it('all theme IDs are unique', () => {
-    const ids = THEMES.map(t => t.id)
-    expect(new Set(ids).size).toBe(ids.length)
-  })
-
-  it('all theme names are unique', () => {
-    const names = THEMES.map(t => t.name)
-    expect(new Set(names).size).toBe(names.length)
-  })
-
-  it('contains common theme IDs', () => {
-    const ids = THEMES.map(t => t.id)
-    expect(ids).toContain('purple')
-    expect(ids).toContain('blue')
-    expect(ids).toContain('rose')
-    expect(ids).toContain('emerald')
   })
 })
